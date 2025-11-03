@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "optiplex"
+description = "Distributed optimization for very large-scale MDO problems."
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [{name = "Nicholas Orndorff", email = "norndorff@ucsd.edu"}]
+dependencies = [
+    'numpy',
+]
+version = "1.0"
+
+[tool.setuptools]
+package-dir = {"" = "."}
