@@ -4,7 +4,7 @@ from sub_problem import make_sub_problem
 from constraint import constraint
 
 N = 2
-mission_ranges = np.linspace(1000, 3000, N)
+mission_ranges = np.linspace(1e6, 3e6, N)
 
 subP_functions = []
 for i in range(N):

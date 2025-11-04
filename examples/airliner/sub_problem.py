@@ -83,10 +83,10 @@ def make_sub_problem(mission_range: float, ind: int):
             fuel_used = m0 - m_f
 
 
-            b_list[ind] = b
-            c_b = combo(b_list) # consensus for b
-            # c = jnp.concatenate((c_b))
-            c = c_b
+            # b_list[ind] = b
+            # c_b = combo(b_list) # consensus for b
+            # # c = jnp.concatenate((c_b))
+            # c = c_b
 
             # return 1e-3 * fuel_used
             return 1e-3 * fuel_used #+ y.T @ c + mu * jnp.sum(c**2)
@@ -151,18 +151,12 @@ def make_sub_problem(mission_range: float, ind: int):
         xu = np.concatenate((eta_u, theta_u, tf_u, b_u))
 
 
-        # initial guess for ModOpt ??????????????????????????????? not convinced these indices are all correct...
-        # start = ind * 4
-        # eta0 = v_init[start]
-        # theta0 = v_init[start + 1]
-        # tf0 = v_init[start + 2]
-        # b0 = v_init[start + 3]
-
-        # eta0 = np.linspace(0.6, 0.2, nu) * eta_scale
-        # theta0 = np.linspace(np.deg2rad(3), np.deg2rad(1), nu) * theta_scale
-        # tf0 = np.array([7000.0]) * tf_scale
-        # b0 = np.array([32.0]) * b_scale
-        x0 = np.concatenate((eta_list[ind], theta_list[ind], tf_list[ind], b_list[ind]))
+        eta0 = np.linspace(0.6, 0.2, nu) * eta_scale
+        theta0 = np.linspace(np.deg2rad(3), np.deg2rad(1), nu) * theta_scale
+        tf0 = np.array([7000.0]) * tf_scale
+        b0 = np.array([32.0]) * b_scale
+        x0 = np.concatenate((eta0, theta0, tf0, b0))
+        # x0 = np.concatenate((eta_list[ind], theta_list[ind], tf_list[ind], b_list[ind]))
 
 
 
