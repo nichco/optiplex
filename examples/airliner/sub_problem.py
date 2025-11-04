@@ -6,13 +6,28 @@ jax.config.update("jax_enable_x64", True)
 from vanilla_rk4 import jax_rk4
 from mass_fun import _mass
 from dynamics import f
+from optiplex import combo
 
-def make_sub_problem(mission_range: float):
+def make_sub_problem(mission_range: float, ind: int):
     # Define the sub-problem for a given mission range
     def sub_problem(v_init: list,
                     y: np.ndarray = None, # lagrange multipliers
                     mu: float = 1, # penalty coefficient
                     ) -> list:
+        
+        eta1 = v_init[0]
+        theta1 = v_init[1]
+        tf1 = v_init[2]
+        b1= v_init[3]
+        eta2 = v_init[4]
+        theta2 = v_init[5]
+        tf2 = v_init[6]
+        b2= v_init[7]
+
+        eta_list = [eta1, eta2] # need to expand for changing N
+        theta_list = [theta1, theta2] # need to expand for changing N
+        tf_list = [tf1, tf2] # need to expand for changing N
+        b_list = [b1, b2] # need to expand for changing N
         
         t0 = 0.0
         nu = 60 # control n
@@ -67,7 +82,14 @@ def make_sub_problem(mission_range: float):
 
             fuel_used = m0 - m_f
 
-            return 1e-3 * fuel_used
+
+            b_list[ind] = b
+            c_b = combo(b_list) # consensus for b
+            # c = jnp.concatenate((c_b))
+            c = c_b
+
+            # return 1e-3 * fuel_used
+            return 1e-3 * fuel_used #+ y.T @ c + mu * jnp.sum(c**2)
 
 
         def jax_con(d):
@@ -129,12 +151,18 @@ def make_sub_problem(mission_range: float):
         xu = np.concatenate((eta_u, theta_u, tf_u, b_u))
 
 
-        # initial guess for ModOpt
-        eta0 = np.linspace(0.6, 0.2, nu) * eta_scale
-        theta0 = np.linspace(np.deg2rad(3), np.deg2rad(1), nu) * theta_scale
-        tf0 = np.array([7000.0]) * tf_scale
-        b0 = np.array([32.0]) * b_scale
-        x0 = np.concatenate((eta0, theta0, tf0, b0))
+        # initial guess for ModOpt ??????????????????????????????? not convinced these indices are all correct...
+        # start = ind * 4
+        # eta0 = v_init[start]
+        # theta0 = v_init[start + 1]
+        # tf0 = v_init[start + 2]
+        # b0 = v_init[start + 3]
+
+        # eta0 = np.linspace(0.6, 0.2, nu) * eta_scale
+        # theta0 = np.linspace(np.deg2rad(3), np.deg2rad(1), nu) * theta_scale
+        # tf0 = np.array([7000.0]) * tf_scale
+        # b0 = np.array([32.0]) * b_scale
+        x0 = np.concatenate((eta_list[ind], theta_list[ind], tf_list[ind], b_list[ind]))
 
 
 
@@ -143,7 +171,7 @@ def make_sub_problem(mission_range: float):
 
 
         # optimizer = SLSQP(jaxprob, solver_options={'maxiter': 300, 'ftol': 1e-6}, turn_off_outputs=True)
-        optimizer = IPOPT(jaxprob, solver_options={'max_iter': 300, 'tol': 1e-6}, turn_off_outputs=True)
+        optimizer = IPOPT(jaxprob, solver_options={'max_iter': 150, 'tol': 1e-5}, turn_off_outputs=True)
         optimizer.solve()
         optimizer.print_results()
 
@@ -154,7 +182,12 @@ def make_sub_problem(mission_range: float):
         tf = x[-2] / tf_scale
         b = x[-1] / b_scale
 
-        
-        return v_init  # Return updated variables (placeholder)
+        start = ind * 4
+        v_init[start] = eta.flatten()
+        v_init[start + 1] = theta.flatten()
+        v_init[start + 2] = tf.flatten()
+        v_init[start + 3] = b.flatten()
+
+        return v_init
     
     return sub_problem
