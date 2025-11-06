@@ -7,6 +7,7 @@ from vanilla_rk4 import jax_rk4
 from mass_fun import _mass
 from dynamics import f
 from optiplex import combo
+from plot import plot_trajectory
 
 def make_sub_problem(mission_range: float, ind: int):
     # Define the sub-problem for a given mission range
@@ -15,20 +16,22 @@ def make_sub_problem(mission_range: float, ind: int):
                     mu: float = 1, # penalty coefficient
                     ) -> list:
         
-        eta1 = v_init[0]
-        theta1 = v_init[1]
-        tf1 = v_init[2]
-        b1= v_init[3]
-        eta2 = v_init[4]
-        theta2 = v_init[5]
-        tf2 = v_init[6]
-        b2= v_init[7]
-
-        eta_list = [eta1, eta2] # need to expand for changing N
-        theta_list = [theta1, theta2] # need to expand for changing N
-        tf_list = [tf1, tf2] # need to expand for changing N
-        b_list = [b1, b2] # need to expand for changing N
+        print('**********IND IND IND: ', ind)
         
+        eta11 = v_init[0]
+        theta11 = v_init[1]
+        tf11 = v_init[2]
+        b11= v_init[3]
+        eta22 = v_init[4]
+        theta22 = v_init[5]
+        tf22 = v_init[6]
+        b22= v_init[7]
+
+        eta_list = [eta11, eta22] # need to expand for changing N
+        theta_list = [theta11, theta22] # need to expand for changing N
+        tf_list = [tf11, tf22] # need to expand for changing N
+        b_list = [b11, b22] # need to expand for changing N
+
         t0 = 0.0
         nu = 60 # control n
         num_steps = 6000 # num steps
@@ -151,12 +154,12 @@ def make_sub_problem(mission_range: float, ind: int):
         xu = np.concatenate((eta_u, theta_u, tf_u, b_u))
 
 
-        eta0 = np.linspace(0.6, 0.2, nu) * eta_scale
-        theta0 = np.linspace(np.deg2rad(3), np.deg2rad(1), nu) * theta_scale
-        tf0 = np.array([7000.0]) * tf_scale
-        b0 = np.array([32.0]) * b_scale
-        x0 = np.concatenate((eta0, theta0, tf0, b0))
-        # x0 = np.concatenate((eta_list[ind], theta_list[ind], tf_list[ind], b_list[ind]))
+        # eta0 = np.linspace(0.6, 0.2, nu) * eta_scale
+        # theta0 = np.linspace(np.deg2rad(3), np.deg2rad(1), nu) * theta_scale
+        # tf0 = np.array([7000.0]) * tf_scale
+        # b0 = np.array([32.0]) * b_scale
+        # x0 = np.concatenate((eta0, theta0, tf0, b0))
+        x0 = np.concatenate((eta_list[ind] * eta_scale, theta_list[ind] * theta_scale, tf_list[ind] * tf_scale, b_list[ind] * b_scale))
 
 
 
@@ -176,12 +179,25 @@ def make_sub_problem(mission_range: float, ind: int):
         tf = x[-2] / tf_scale
         b = x[-1] / b_scale
 
-        start = ind * 4
-        v_init[start] = eta.flatten()
-        v_init[start + 1] = theta.flatten()
-        v_init[start + 2] = tf.flatten()
-        v_init[start + 3] = b.flatten()
+        # plot_trajectory(h, r, v, gamma, m, eta, theta, tf)
 
-        return v_init
-    
+        # start = ind * 4
+        # v_init[start] = eta.flatten()
+        # v_init[start + 1] = theta.flatten()
+        # v_init[start + 2] = tf.flatten()
+        # v_init[start + 3] = b.flatten()
+        eta_list[ind] = eta.flatten()
+        theta_list[ind] = theta.flatten()
+        tf_list[ind] = tf.flatten()
+        b_list[ind] = b.flatten()
+
+        v_post = []
+        for i in range(2):
+            v_post.append(eta_list[i])
+            v_post.append(theta_list[i])
+            v_post.append(tf_list[i])
+            v_post.append(b_list[i])
+
+        return v_post
+
     return sub_problem
