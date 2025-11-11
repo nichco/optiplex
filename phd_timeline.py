@@ -21,13 +21,13 @@ levels = [1, 0.5, 1, 0.5, 1]
 fig, ax = plt.subplots(figsize=(8, 1), layout="constrained")
 
 # The vertical stems.
-ax.vlines(dates, 0, levels, color="tab:red")
+ax.vlines(dates, 0, levels, color="tab:blue")
 # The baseline.
 ax.axhline(0, c="black")
 # The markers on the baseline.
 # meso_dates = [date for date, release in zip(dates, releases) if is_feature(release)]
 micro_dates = [date for date, release in zip(dates, releases)]
-ax.plot(micro_dates, np.zeros_like(micro_dates), "ko", mfc="white")
+ax.plot(micro_dates, np.zeros_like(micro_dates), "ko", mfc="tab:blue")
 # ax.plot(meso_dates, np.zeros_like(meso_dates), "ko", mfc="tab:red")
 
 # Annotate the lines.
