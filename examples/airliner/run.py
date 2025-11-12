@@ -14,14 +14,10 @@ for i in range(N):
 
 
 nu = 60
-# eta_scale = 1.0
-# theta_scale = 1e1
-# tf_scale = 1e-3
-# b_scale = 1e-1
-eta0 = np.linspace(0.6, 0.2, nu) #* eta_scale
-theta0 = np.linspace(np.deg2rad(3), np.deg2rad(1), nu) #* theta_scale
-tf0 = np.array([7000.0]) #* tf_scale
-b0 = np.array([32.0]) #* b_scale
+eta0 = np.linspace(0.6, 0.2, nu)
+theta0 = np.linspace(np.deg2rad(3), np.deg2rad(1), nu)
+tf0 = np.array([7000.0])
+b0 = np.array([32.0])
 
 v_init = []
 # automate the construction of v_init for changing N
@@ -30,24 +26,17 @@ for i in range(N):
     v_init.append(theta0)
     v_init.append(tf0)
     v_init.append(b0)
-    # v_init.append(0)
-    # v_init.append(1)
-    # v_init.append(2)
-    # v_init.append(3)
-
-# print(v_init)
-# exit()
 
 opt = Plex(blocks=subP_functions,
            constraint=constraint,
            x_init=v_init)
 
-opt.mu = 1e-5
+opt.mu = 1e-2
 
-opt.solve(max_iter=5, 
-          rho=1.2,
-          tol=1e-7,
-          ctol=1e-4)
+opt.solve(max_iter=30, 
+          rho=1.5,
+          tol=1e-3,
+          ctol=1e-3)
 
 print("Success:", opt.success)
 print('Iterations: ', opt.num_iter)

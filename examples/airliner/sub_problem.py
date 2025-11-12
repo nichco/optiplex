@@ -3,7 +3,7 @@ import jax
 import numpy as np
 from modopt import JaxProblem, SLSQP, IPOPT
 jax.config.update("jax_enable_x64", True)
-from vanilla_rk4 import jax_rk4
+from vanilla_midpoint_rule import jax_midpoint
 from mass_fun import _mass
 from dynamics import f
 from optiplex import combo
@@ -34,7 +34,7 @@ def make_sub_problem(mission_range: float, ind: int):
 
         t0 = 0.0
         nu = 60 # control n
-        num_steps = 6000 # num steps
+        num_steps = 8000 # num steps
 
         # variable scaling
         eta_scale = 1.0
@@ -78,7 +78,8 @@ def make_sub_problem(mission_range: float, ind: int):
 
             h = tf / num_steps
             y0 = jnp.array([h0, r0, v0, gamma0, m0])
-            sol = jax_rk4(f, t0=t0, y0=y0, h=h, n=num_steps, args=args)
+            # sol = jax_rk4(f, t0=t0, y0=y0, h=h, n=num_steps, args=args)
+            sol = jax_midpoint(f, t0=t0, y0=y0, h=h, n=num_steps, args=args)
 
             m = sol[:, 4].ravel()
             m_f = m[-1]
@@ -86,13 +87,13 @@ def make_sub_problem(mission_range: float, ind: int):
             fuel_used = m0 - m_f
 
 
-            # b_list[ind] = b
-            # c_b = combo(b_list) # consensus for b
-            # # c = jnp.concatenate((c_b))
-            # c = c_b
+            b_list[ind] = b
+            c_b = combo(b_list) # consensus for b
+            # c = jnp.concatenate((c_b))
+            c = c_b
 
             # return 1e-3 * fuel_used
-            return 1e-3 * fuel_used #+ y.T @ c + mu * jnp.sum(c**2)
+            return 1e-3 * fuel_used + y.T @ c + mu * jnp.sum(c**2)
 
 
         def jax_con(d):
@@ -116,7 +117,8 @@ def make_sub_problem(mission_range: float, ind: int):
 
             h = tf / num_steps
             y0 = jnp.array([h0, r0, v0, gamma0, m0])
-            sol = jax_rk4(f, t0=t0, y0=y0, h=h, n=num_steps, args=args)
+            # sol = jax_rk4(f, t0=t0, y0=y0, h=h, n=num_steps, args=args)
+            sol = jax_midpoint(f, t0=t0, y0=y0, h=h, n=num_steps, args=args)
 
             # solution
             h = sol[:, 0].ravel()

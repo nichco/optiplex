@@ -35,6 +35,8 @@ class Plex():
 
         for k in range(max_iter):
 
+            print('PLEX ITR: ', k)
+
             x_k_minus_1 = self.x_init.copy()
 
             for block in self.blocks:
@@ -50,6 +52,14 @@ class Plex():
                    for new, old in zip(self.x_init, x_k_minus_1)) and all(np.abs(c) < ctol):
                 self.success = True
                 break
+
+            # printing the convergence status
+            diff = max([np.max(np.abs(new - old) / (np.abs(old) + 1e-12)) 
+                     for new, old in zip(self.x_init, x_k_minus_1)])
+            max_constraint = max(np.abs(c)) if len(c) > 0 else 0.0
+            print('MAX DIFF: ', diff, 'MAX CONSTRAINT VIOLATION: ', max_constraint)
+
+
 
             # prevent overflow
             if any(np.abs(c)) > ctol:
