@@ -261,6 +261,33 @@ USatm1976Data.viscosity = _raw_data[:, 5]
 
 # akima_interp_T = interpax.Akima1DInterpolator(USatm1976Data.alt, USatm1976Data.T)
 # akima_interp_P = interpax.Akima1DInterpolator(USatm1976Data.alt, USatm1976Data.P)
-akima_interp_rho = interpax.Akima1DInterpolator(USatm1976Data.alt, USatm1976Data.rho)
+akima_interp_rho = interpax.Akima1DInterpolator(USatm1976Data.alt, USatm1976Data.rho, extrapolate=True)
 # akima_interp_viscosity = interpax.Akima1DInterpolator(USatm1976Data.alt, USatm1976Data.viscosity)
-akima_interp_a = interpax.Akima1DInterpolator(USatm1976Data.alt, USatm1976Data.a)
+akima_interp_a = interpax.Akima1DInterpolator(USatm1976Data.alt, USatm1976Data.a, extrapolate=True)
+
+
+
+
+
+
+if __name__ == "__main__":
+    import matplotlib.pyplot as plt
+
+    # valid range -4572 m to 76200 m
+    altitudes = np.linspace(-4572, 76200, 1000)
+
+    plt.figure()
+    plt.plot(altitudes, akima_interp_rho(altitudes))
+    plt.title('1976 US Standard Atmosphere - Density')
+    plt.xlabel('Altitude (m)')
+    plt.ylabel('Density (kg/m^3)')
+    plt.grid(True)
+
+    plt.figure()
+    plt.plot(altitudes, akima_interp_a(altitudes))
+    plt.title('1976 US Standard Atmosphere - Speed of Sound')
+    plt.xlabel('Altitude (m)')
+    plt.ylabel('Speed of Sound (m/s)')
+    plt.grid(True)
+
+    plt.show()

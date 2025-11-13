@@ -61,10 +61,10 @@ class Plex():
             self.diffs.append(max_diff)
             max_constraint_violation = max(np.abs(c)) if len(c) > 0 else 0.0
             self.constraint_violations.append(max_constraint_violation)
-            print('MAX DIFF: ', max_diff, 'MAX CONSTRAINT VIOLATION: ', max_constraint_violation)
-
+            
+            print('MAX DIFF: ', max_diff)
             print('LAGRANGE MULTIPLIERS: ', self.y)
-            print('ABS CONSTRAINT VALUES: ', np.abs(c), 'CTOL: ', ctol)
+            print('MAX CONSTRAINT VIOLATION: ', max_constraint_violation, 'CTOL: ', ctol)
             print('PENALTY COEFFICIENT: ', self.mu)
 
             # prevent overflow

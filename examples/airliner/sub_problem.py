@@ -7,9 +7,9 @@ from vanilla_midpoint_rule import jax_midpoint
 from mass_fun import _mass
 from dynamics import f
 from optiplex import combo
-from plot import plot_trajectory
+# from plot import plot_trajectory
 
-def make_sub_problem(mission_range: float, ind: int):
+def make_sub_problem(mission_range: float, ind: int, N: int):
     # Define the sub-problem for a given mission range
     def sub_problem(v_init: list,
                     y: np.ndarray = None, # lagrange multipliers
@@ -18,23 +18,36 @@ def make_sub_problem(mission_range: float, ind: int):
         
         print('**********IND IND IND: ', ind)
         
-        eta11 = v_init[0]
-        theta11 = v_init[1]
-        tf11 = v_init[2]
-        b11= v_init[3]
-        eta22 = v_init[4]
-        theta22 = v_init[5]
-        tf22 = v_init[6]
-        b22= v_init[7]
+        # eta11 = v_init[0]
+        # theta11 = v_init[1]
+        # tf11 = v_init[2]
+        # b11= v_init[3]
+        # eta22 = v_init[4]
+        # theta22 = v_init[5]
+        # tf22 = v_init[6]
+        # b22= v_init[7]
 
-        eta_list = [eta11, eta22] # need to expand for changing N
-        theta_list = [theta11, theta22] # need to expand for changing N
-        tf_list = [tf11, tf22] # need to expand for changing N
-        b_list = [b11, b22] # need to expand for changing N
+        eta_list = []
+        theta_list = []
+        tf_list = []
+        b_list = []
+
+        for i in range(N):
+            start = i * 4
+            eta_list.append(v_init[start])
+            theta_list.append(v_init[start + 1])
+            tf_list.append(v_init[start + 2])
+            b_list.append(v_init[start + 3])
+
+
+        # eta_list = [eta11, eta22] # need to expand for changing N
+        # theta_list = [theta11, theta22] # need to expand for changing N
+        # tf_list = [tf11, tf22] # need to expand for changing N
+        # b_list = [b11, b22] # need to expand for changing N
 
         t0 = 0.0
         nu = 60 # control n
-        num_steps = 8000 # num steps
+        num_steps = 10000 # num steps
 
         # variable scaling
         eta_scale = 1.0
@@ -161,9 +174,8 @@ def make_sub_problem(mission_range: float, ind: int):
         # tf0 = np.array([7000.0]) * tf_scale
         # b0 = np.array([32.0]) * b_scale
         # x0 = np.concatenate((eta0, theta0, tf0, b0))
-        x0 = np.concatenate((eta_list[ind] * eta_scale, theta_list[ind] * theta_scale, tf_list[ind] * tf_scale, b_list[ind] * b_scale))
-
-
+        x0 = np.concatenate((eta_list[ind] * eta_scale, theta_list[ind] * theta_scale, 
+                             tf_list[ind] * tf_scale, b_list[ind] * b_scale))
 
         jaxprob = JaxProblem(x0=x0, jax_obj=jax_obj, jax_con=jax_con, 
                             order=1, xl=xl, xu=xu, cl=0., cu=0.)
@@ -194,7 +206,7 @@ def make_sub_problem(mission_range: float, ind: int):
         b_list[ind] = b.flatten()
 
         v_post = []
-        for i in range(2):
+        for i in range(N):
             v_post.append(eta_list[i])
             v_post.append(theta_list[i])
             v_post.append(tf_list[i])

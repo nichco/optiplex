@@ -6,11 +6,11 @@ import matplotlib.pyplot as plt
 
 N = 2
 # mission_ranges = np.linspace(1.5e6, 2e6, N)
-mission_ranges = np.array([2e6, 2e6])
+mission_ranges = np.array([2e6, 2.5e6])
 
 subP_functions = []
 for i in range(N):
-    subPfunc = make_sub_problem(mission_ranges[i], i)
+    subPfunc = make_sub_problem(mission_ranges[i], i, N)
     subP_functions.append(subPfunc)
 
 
@@ -44,6 +44,11 @@ print('Iterations: ', opt.num_iter)
 print('Time (s): ', opt.time)
 
 
+x_init = opt.x_init
+b1 = x_init[3]
+b2 = x_init[7]
+print('b1: ', b1, 'b2: ', b2)
+
 diffs = opt.diffs
 constraint_violations = opt.constraint_violations
 
@@ -51,5 +56,5 @@ constraint_violations = opt.constraint_violations
 plt.semilogy(diffs, label='Max Relative Diff')
 plt.semilogy(constraint_violations, label='Max Constraint Violation')
 plt.xlabel('Iteration', fontsize=14)
-
+plt.grid(color='lavender', alpha=0.5)
 plt.show()
