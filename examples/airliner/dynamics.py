@@ -52,7 +52,7 @@ def f(t, y, args):
 
     # sfc = interp_sfc(mach, h / 1e3, eta)
     h_km_clipped = jnp.clip(h / 1e3, 0.0, 15.0)
-    # sfc = interp_sfc(jnp.clip(mach, 0.0, 1.0), h_km_clipped, eta) # kg/N/s
+    # sfc = interp_sfc(clipped_mach, h_km_clipped, eta) # kg/N/s
     sfc = interp_sfc(mach, h_km_clipped, eta) # kg/N/s
 
     # equations of motion

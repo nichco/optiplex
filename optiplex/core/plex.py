@@ -19,6 +19,8 @@ class Plex():
         self.constraint = constraint
         self.mu = 1.0 # augmented Lagrangian penalty coefficient
         self.y = np.zeros_like(constraint(x_init)) # Lagrange multipliers
+        self.diffs = []
+        self.constraint_violations = []
 
     def solve(self, 
               max_iter: int=100, 
@@ -54,21 +56,26 @@ class Plex():
                 break
 
             # printing the convergence status
-            diff = max([np.max(np.abs(new - old) / (np.abs(old) + 1e-12)) 
+            max_diff = max([np.max(np.abs(new - old) / (np.abs(old) + 1e-12)) 
                      for new, old in zip(self.x_init, x_k_minus_1)])
-            max_constraint = max(np.abs(c)) if len(c) > 0 else 0.0
-            print('MAX DIFF: ', diff, 'MAX CONSTRAINT VIOLATION: ', max_constraint)
+            self.diffs.append(max_diff)
+            max_constraint_violation = max(np.abs(c)) if len(c) > 0 else 0.0
+            self.constraint_violations.append(max_constraint_violation)
+            print('MAX DIFF: ', max_diff, 'MAX CONSTRAINT VIOLATION: ', max_constraint_violation)
 
-
+            print('LAGRANGE MULTIPLIERS: ', self.y)
+            print('ABS CONSTRAINT VALUES: ', np.abs(c), 'CTOL: ', ctol)
+            print('PENALTY COEFFICIENT: ', self.mu)
 
             # prevent overflow
-            if any(np.abs(c)) > ctol:
+            if any(np.abs(c) > ctol): # fixed a syntax error here
 
                 # Update the Lagrange multipliers
                 self.y = self.y + self.mu * c
                 
                 # Update the penalty coefficient
                 self.mu = rho * self.mu
+                print('NEW PENALTY COEFFICIENT: ', self.mu)
 
 
         self.num_iter = k + 1

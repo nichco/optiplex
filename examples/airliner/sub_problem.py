@@ -169,8 +169,8 @@ def make_sub_problem(mission_range: float, ind: int):
                             order=1, xl=xl, xu=xu, cl=0., cu=0.)
 
 
-        # optimizer = SLSQP(jaxprob, solver_options={'maxiter': 300, 'ftol': 1e-6}, turn_off_outputs=True)
-        optimizer = IPOPT(jaxprob, solver_options={'max_iter': 150, 'tol': 1e-5}, turn_off_outputs=True)
+        # optimizer = SLSQP(jaxprob, solver_options={'maxiter': 200, 'ftol': 1e-6}, turn_off_outputs=True)
+        optimizer = IPOPT(jaxprob, solver_options={'max_iter': 200, 'tol': 1e-6}, turn_off_outputs=True)
         optimizer.solve()
         optimizer.print_results()
 
