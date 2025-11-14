@@ -5,8 +5,7 @@ from constraint import constraint
 import matplotlib.pyplot as plt
 
 N = 2
-# mission_ranges = np.linspace(1.5e6, 2e6, N)
-mission_ranges = np.array([2e6, 2.5e6])
+mission_ranges = np.linspace(1.5e6, 3e6, N)
 
 subP_functions = []
 for i in range(N):
