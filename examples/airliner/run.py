@@ -28,8 +28,8 @@ for i in range(N):
     v_init.append(b0)
 
 opt = Plex(blocks=subP_functions,
-           constraint=constraint,
-           x_init=v_init)
+           x_init=v_init,
+           constraint=constraint)
 
 opt.mu = 1e-2
 

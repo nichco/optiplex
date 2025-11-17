@@ -7,7 +7,6 @@ from vanilla_midpoint_rule import jax_midpoint
 from mass_fun import _mass
 from dynamics import f
 from optiplex import combo
-# from plot import plot_trajectory
 
 def make_sub_problem(mission_range: float, ind: int, N: int):
     # Define the sub-problem for a given mission range
