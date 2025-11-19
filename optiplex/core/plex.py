@@ -93,6 +93,13 @@ class Plex():
 
 
             else:
+
+                max_diff = max([np.max(np.abs(new - old) / (np.abs(old) + 1e-12)) 
+                        for new, old in zip(self.x_init, x_k_minus_1)])
+                self.diffs.append(max_diff)
+                
+                print('MAX DIFF: ', max_diff)
+
                 # Check convergence for unconstrained problems
                 if all(np.allclose(new, old, rtol=tol) 
                     for new, old in zip(self.x_init, x_k_minus_1)):

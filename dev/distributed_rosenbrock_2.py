@@ -11,7 +11,7 @@ objective = []
 time = []
 
 n = 200
-N = 4
+N = 2
 
 def make_sub_problem(subp, N, n):
 
@@ -31,10 +31,11 @@ def make_sub_problem(subp, N, n):
             if j==subp:
                 xj.set_as_design_variable(scaler=1)
 
-        coef = 100
+        coef = 200
+        boef = 10
         f = 0
         for i in csdl.frange(n - 1):
-            f += coef * (x[i + 1] - x[i]**2)**2 + (1 - x[i])**2
+            f += coef * (x[i + 1] - x[i]**2)**2 + (boef - x[i])**2
 
         f.set_as_objective(scaler=1)
         recorder.stop()
@@ -49,7 +50,6 @@ def make_sub_problem(subp, N, n):
         objective.append(results['objective'])
         time.append(results['total_time'] + (time[-1] if len(time)>0 else 0))
 
-        # print('index: ', subp)
         x_init[subp] = results['x']
         # print(x_init)
 
@@ -73,8 +73,7 @@ if n % N != 0:
 size = int(n / N)
 
 v_init = []
-# for i in range(N): v_init.append(np.zeros(size))
-for i in range(N): v_init.append(np.ones(size) * -1)
+for i in range(N): v_init.append(np.zeros(size))
 
 
 
@@ -82,7 +81,7 @@ opt = Plex(blocks=subP_functions,
            x_init=v_init)
 
 opt.solve(max_iter=300,
-          tol=1e-5)
+          tol=1e-9)
 
 print('Solution: ', opt.x_init)
 print("Success:", opt.success)
@@ -92,36 +91,15 @@ print('Optimization time (s): ', time[-1])
 
 
 
-exit()
 
-with open('distributed_400.pkl', 'wb') as f:
-    data = {'objective': objective, 'time': time}
-    pickle.dump(data, f)
-
-# parse the .out file
-filename = 'monolithic_400.out'
-# Read the header line separately
-with open(filename, 'r') as file: headers = file.readline().strip().split()
-mf_df = pd.read_csv(filename, delim_whitespace=True, skiprows=1, names=headers)
-
-monolithic_major = mf_df['MAJOR'].to_numpy()
-monolithic_optimality = mf_df['OPT']
-monolithic_feasibility = mf_df['FEAS']
-monolithic_objective = mf_df['OBJFUN'].to_numpy()
-
-monolithic_time_200 = 6.602
-monolithic_time_400 = 71.98
-monolithic_time = np.linspace(0, monolithic_time_400, len(monolithic_major))
 
 
 
 plt.figure(figsize=(5,4))
 
-plt.semilogy(monolithic_time, monolithic_objective, color='tab:blue', linewidth=2, label='Monolithic')
-# plt.show()
 
-
-plt.semilogy(time, objective, color='tab:orange', linewidth=2, label='Distributed')
+# plt.semilogy(time, objective, color='tab:orange', linewidth=2, label='Distributed')
+plt.plot(time, objective, color='tab:orange', linewidth=2, label='Distributed')
 
 # plt.ylim(1e-5, 1e5)
 plt.ylabel('Objective function value')
