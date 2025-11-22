@@ -11,7 +11,7 @@ objective = []
 time = []
 
 n = 200
-N = 4
+N = 2
 
 def make_sub_problem(subp, N, n):
 
@@ -41,8 +41,8 @@ def make_sub_problem(subp, N, n):
 
         sim = csdl.experimental.JaxSimulator(recorder=recorder)
         prob = CSDLAlphaProblem(simulator=sim)
-        # optimizer = SLSQP(prob, solver_options={'maxiter': 300, 'ftol': 1E-6}, turn_off_outputs=True)
-        optimizer = PySLSQP(prob, solver_options={'maxiter': 300, 'acc': 1E-10}, turn_off_outputs=True)
+        # optimizer = SLSQP(prob, solver_options={'maxiter': 500, 'ftol': 1E-6}, turn_off_outputs=True)
+        optimizer = PySLSQP(prob, solver_options={'maxiter': 500, 'acc': 1E-10}, turn_off_outputs=True)
         results = optimizer.solve()
         optimizer.print_results()
 
@@ -73,8 +73,8 @@ if n % N != 0:
 size = int(n / N)
 
 v_init = []
-# for i in range(N): v_init.append(np.zeros(size))
-for i in range(N): v_init.append(np.ones(size) * -1)
+for i in range(N): v_init.append(np.zeros(size))
+# for i in range(N): v_init.append(np.ones(size) * -1)
 
 
 
@@ -92,11 +92,16 @@ print('Optimization time (s): ', time[-1])
 
 
 
-exit()
+objective.insert(0, 199.0)
+time.insert(0, 0.0)
 
-with open('distributed_400.pkl', 'wb') as f:
+# exit()
+
+with open('distributed_200.pkl', 'wb') as f:
     data = {'objective': objective, 'time': time}
     pickle.dump(data, f)
+
+exit()
 
 # parse the .out file
 filename = 'monolithic_400.out'

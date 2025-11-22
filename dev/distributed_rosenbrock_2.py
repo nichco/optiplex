@@ -137,7 +137,7 @@ opt = WarmPlex(blocks=subP_functions,
                problem=problem,
                x_init=v_init)
 
-opt.solve(max_iter=4,
+opt.solve(max_iter=2,
           tol=1e-9)
 
 print('Solution: ', opt.x_init)
@@ -171,18 +171,42 @@ monolithic_time = np.linspace(0, monolithic_time_200, len(monolithic_major))
 
 
 
+
+filename = 'slsqp_summary.out'
+# Read the header line separately
+with open(filename, 'r') as file: headers = file.readline().strip().split()
+warm_df = pd.read_csv(filename, delim_whitespace=True, skiprows=1, names=headers)
+
+warm_major = warm_df['MAJOR'].to_numpy()
+warm_optimality = warm_df['OPT']
+warm_feasibility = warm_df['FEAS']
+warm_objective = warm_df['OBJFUN'].to_numpy()
+
+
+with open('distributed_200.pkl', 'rb') as f:
+    data = pickle.load(f)
+    dist_objective = data['objective']
+    dist_time = data['time']
+
+
+
 plt.figure(figsize=(5,4))
 
-plt.semilogy(monolithic_time, monolithic_objective, color='tab:blue', linewidth=2, label='Monolithic')
+plt.semilogy(monolithic_time, monolithic_objective, color='tab:blue', linewidth=2, label='Monolithic SLSQP')
 # plt.plot(monolithic_time, monolithic_objective, color='tab:blue', linewidth=2, label='Monolithic')
 
-plt.semilogy(time[:-2], objective[:-2], color='tab:orange', linewidth=2, label='Distributed', marker='s')
-plt.semilogy(time[-2:], objective[-2:], color='tab:green', linewidth=2, label='Warm-Start Monolithic', marker='o', linestyle='--')
+plt.semilogy(time[:-2], objective[:-2], color='tab:orange', linewidth=2, label='Distributed SLSQP', marker='s')
+# plt.semilogy(time[-2:], objective[-2:], color='tab:green', linewidth=2, label='Warm-Start Monolithic', marker='o', linestyle='--')
+
+# plt.semilogy(dist_time, dist_objective, color='tab:purple', linewidth=2, label='Distributed', marker='s', alpha=0.7)
+
+warm_time = np.linspace(time[-2], time[-1], len(warm_major))
+# plt.semilogy(warm_time, warm_objective, color='tab:green', linewidth=2, label='Warm-Start Monolithic', marker='o', linestyle='--')
+plt.semilogy(warm_time, warm_objective, color='tab:green', linewidth=2, label='Warm-Start Monolithic SLSQP', linestyle='--', alpha=0.8)
 
 plt.ylabel('Objective Function Value')
 plt.xlabel('Wall Time (s)')
 plt.legend()
-# plt.ylim(1e-12, 1e5)
 plt.grid(color='lavender', alpha=0.5)
 
 plt.savefig('rosenbrock_warmstart.png', dpi=300, transparent=True, bbox_inches='tight')
