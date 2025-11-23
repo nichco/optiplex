@@ -11,7 +11,7 @@ objective = []
 time = []
 
 n = 200
-N = 2
+N = 10
 
 def make_sub_problem(subp, N, n):
 
@@ -92,14 +92,14 @@ print('Optimization time (s): ', time[-1])
 
 
 
-objective.insert(0, 199.0)
-time.insert(0, 0.0)
+# objective.insert(0, 199.0)
+# time.insert(0, 0.0)
 
-# exit()
 
-with open('distributed_200.pkl', 'wb') as f:
-    data = {'objective': objective, 'time': time}
-    pickle.dump(data, f)
+
+# with open('distributed_rosenbrock_n200_N2.pkl', 'wb') as f:
+#     data = {'objective': objective, 'time': time}
+#     pickle.dump(data, f)
 
 exit()
 
