@@ -18,7 +18,8 @@ knowledge = 100 * knowledge / np.max(knowledge)
 freedom = 100 * freedom / np.max(freedom)
 
 
-plt.figure(figsize=(4, 3))
+# plt.figure(figsize=(4, 3))
+plt.figure(figsize=(4, 2.5))
 plt.plot(time, knowledge, label='KNOWLEDGE ABOUT\nTHE OBJECT OF DESIGN', linewidth=3)
 # plt.plot(time, freedom, label='DESIGN\nFREEDOM', linewidth=3)
 plt.plot(time, freedom, label='DESIGN FREEDOM', linewidth=3)
