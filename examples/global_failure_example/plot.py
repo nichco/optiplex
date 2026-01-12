@@ -20,8 +20,8 @@ levels = np.linspace(0, max(Z.flatten()), 30)
 plt.contour(X, Y, Z, levels=levels, cmap='Blues_r', alpha=0.4, linewidths=0.5)
 plt.contourf(X, Y, Z, levels=levels, cmap='Blues_r', alpha=0.5)
 
-plt.plot(x1, x2, 'o-', color='tab:red', linewidth=2.5, markersize=5, zorder=10)
-plt.plot(x1_new, x2_new, 'o-', color='tab:red', linewidth=2.5, markersize=5, zorder=10)
+plt.plot(x1, x2, 's-', color='tab:red', linewidth=2.5, markersize=6, mec='k', zorder=10)
+plt.plot(x1_new, x2_new, 'o-', color='tab:blue', linewidth=2.5, markersize=6, mec='k', zorder=10)
 plt.xlim(-1.5, 1.5)
 plt.ylim(-1.5, 1.5)
 plt.xlabel('x')
@@ -43,5 +43,5 @@ plt.yticks(ticks)
 
 plt.gca().set_aspect('equal')
 
-# plt.savefig('global_constraint_example.pdf', bbox_inches='tight')
+plt.savefig('global_constraint_example.pdf', bbox_inches='tight')
 plt.show()
