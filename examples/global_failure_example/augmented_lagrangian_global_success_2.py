@@ -1,10 +1,11 @@
-from optiplex import Plex
+from optiplex import Plex2
 import numpy as np
 import modopt as mo
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
 from optiplex import combo
 
+# v_init = [np.array([1.0]), np.array([-1.0]), np.array([1.0]), np.array([-1.0])]
 v_init = [1.0, -1.0, 1.0, -1.0]
 
 x1_1_history = [v_init[0]]
@@ -108,12 +109,12 @@ def constraint(v_init):
     return jnp.concatenate([c_1, c_2])
 
 
-opt = Plex(blocks=[subproblem1, subproblem2],
-           x_init=v_init,
-           constraint=constraint,
-           )
+opt = Plex2(blocks=[subproblem1, subproblem2],
+            x_init=v_init,
+            constraint=constraint,
+            )
 
-opt.solve(max_iter=100, tol=1e-3)
+opt.solve(max_iter=100, tol=1e-4, ctol=1e-4, itol=2)
 
 
 print('Solution: ', opt.solution)
@@ -158,5 +159,5 @@ plt.legend()
 
 plt.gca().set_aspect('equal')
 
-# plt.savefig('augmented_lagrangian_example.pdf', bbox_inches='tight')
+# plt.savefig('augmented_lagrangian_example_2.pdf', bbox_inches='tight')
 plt.show()
