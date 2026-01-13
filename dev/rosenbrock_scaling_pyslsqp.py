@@ -14,16 +14,15 @@ monolithic_time = np.array([1.23, 6.95, 71.98, 342.43])
 
 plt.figure(figsize=(5,4))
 
-plt.semilogy(dimension, monolithic_time, marker='o', label='Monolithic SLSQP', color='tab:blue')
-plt.semilogy(dimension, distributed_time_2_subp, marker='s', label='Distributed SLSQP 2', color='tab:orange')
-plt.semilogy(dimension, distributed_time_4_subp, marker='^', label='Distributed SLSQP 4', color='tab:green')
+plt.semilogy(dimension, monolithic_time, marker='o', label='Monolithic', color='tab:blue')
+plt.semilogy(dimension, distributed_time_2_subp, marker='s', label='Distributed (2 subproblems)', color='tab:orange')
+plt.semilogy(dimension, distributed_time_4_subp, marker='^', label='Distributed (4 subproblems)', color='tab:green')
 
-# add the rosenbrock function as text
-plt.text(0.5, 0.1, r'$f(x) = \sum_{i=1}^{n-1} \left[100 (x_{i+1} - x_i^2)^2 + (1 - x_i)^2\right]$', fontsize=12, ha='center', va='center', transform=plt.gca().transAxes)
+# plt.text(0.5, 0.1, r'$f(x) = \sum_{i=1}^{n-1} \left[100 (x_{i+1} - x_i^2)^2 + (1 - x_i)^2\right]$', fontsize=12, ha='center', va='center', transform=plt.gca().transAxes)
 
-plt.xlabel('Problem Dimension (n)')
-plt.ylabel('Wall Time (s)')
+plt.xlabel('Dimension (n)')
+plt.ylabel('Time (s)')
 plt.grid(color='lavender')
 plt.legend()
-plt.savefig('scaling.png', bbox_inches='tight', dpi=300, transparent=True)
+# plt.savefig('scaling.png', bbox_inches='tight', dpi=300, transparent=True)
 plt.show()
