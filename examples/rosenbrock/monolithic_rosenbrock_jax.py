@@ -1,15 +1,10 @@
 import numpy as np
 import modopt as mo
+import jax.numpy as jnp
 
 n = 100 # dimension
 
-def jax_obj(v):
-
-    f = 0
-    for i in range(n - 1):
-        f += 100 * (v[i + 1] - v[i]**2)**2 + (1 - v[i])**2
-
-    return f
+jax_obj = lambda v: jnp.sum(100 * (v[1:] - v[:-1]**2)**2 + (1 - v[:-1])**2)
     
 guess = np.array([-1.2, 1] * (n // 2))
 x0 = guess
@@ -20,3 +15,4 @@ optimizer = mo.SLSQP(jaxprob, solver_options={'maxiter': 1000, 'ftol': 1e-7}, tu
 optimizer.solve()
 optimizer.print_results()
 ans = optimizer.results['x']
+print(ans)
