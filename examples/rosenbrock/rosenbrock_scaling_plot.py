@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-
+# PySLSQP data:
 dimension = np.array([100, 200, 400, 600])
 
 distributed_time_2_subp = np.array([5.73, 8.25, 25.849, 90.312])
