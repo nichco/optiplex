@@ -30,10 +30,7 @@ def make_sub_problem(subp, N, n):
             if j==subp:
                 xj.set_as_design_variable(scaler=1)
 
-        coef = 100
-        f = 0
-        for i in csdl.frange(n - 1):
-            f += coef * (x[i + 1] - x[i]**2)**2 + (1 - x[i])**2
+        f = csdl.sum(100 * (x[1:] - x[:-1]**2)**2 + (1 - x[:-1])**2)
 
         f.set_as_objective(scaler=1)
         recorder.stop()
@@ -46,11 +43,8 @@ def make_sub_problem(subp, N, n):
         results = optimizer.solve()
         t2 = time.perf_counter()
         opt_time = t2 - t1
-        # print(opt_time)
-        optimizer.print_results()
 
-        # print results keys
-        print(results.keys())
+        optimizer.print_results()
 
         # objective.append(results['objective'])
         objective.append(results['fun'])
@@ -61,7 +55,6 @@ def make_sub_problem(subp, N, n):
 
         return x_init
     
-    # subP_functions.append(sub_problem)
     return sub_problem
 
 
