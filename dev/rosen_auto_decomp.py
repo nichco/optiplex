@@ -4,7 +4,6 @@ from modopt import CSDLAlphaProblem
 from modopt import IPOPT, PySLSQP
 import numpy as np
 import matplotlib.pyplot as plt
-import pandas as pd
 import pickle
 
 

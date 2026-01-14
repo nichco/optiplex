@@ -1,17 +1,16 @@
 from optiplex import Plex
 import csdl_alpha as csdl
 from modopt import CSDLAlphaProblem
-from modopt import IPOPT, PySLSQP
+from modopt import IPOPT, SLSQP
 import numpy as np
 import matplotlib.pyplot as plt
-import pandas as pd
-import pickle
+import time
 
 objective = []
-time = []
+times = []
 
 n = 200
-N = 10
+N = 2
 
 def make_sub_problem(subp, N, n):
 
@@ -41,17 +40,24 @@ def make_sub_problem(subp, N, n):
 
         sim = csdl.experimental.JaxSimulator(recorder=recorder)
         prob = CSDLAlphaProblem(simulator=sim)
-        # optimizer = SLSQP(prob, solver_options={'maxiter': 500, 'ftol': 1E-6}, turn_off_outputs=True)
-        optimizer = PySLSQP(prob, solver_options={'maxiter': 500, 'acc': 1E-10}, turn_off_outputs=True)
+        optimizer = SLSQP(prob, solver_options={'maxiter': 500, 'ftol': 1E-6}, turn_off_outputs=True)
+        # optimizer = PySLSQP(prob, solver_options={'maxiter': 500, 'acc': 1E-10}, turn_off_outputs=True)
+        t1 = time.perf_counter()
         results = optimizer.solve()
+        t2 = time.perf_counter()
+        opt_time = t2 - t1
+        # print(opt_time)
         optimizer.print_results()
 
-        objective.append(results['objective'])
-        time.append(results['total_time'] + (time[-1] if len(time)>0 else 0))
+        # print results keys
+        print(results.keys())
 
-        # print('index: ', subp)
+        # objective.append(results['objective'])
+        objective.append(results['fun'])
+        # time.append(results['total_time'] + (time[-1] if len(time)>0 else 0))
+        times.append(opt_time + (times[-1] if len(times)>0 else 0))
+
         x_init[subp] = results['x']
-        # print(x_init)
 
         return x_init
     
@@ -88,48 +94,9 @@ print('Solution: ', opt.x_init)
 print("Success:", opt.success)
 print('Iterations: ', opt.num_iter)
 print('Time (s): ', opt.time)
-print('Optimization time (s): ', time[-1])
+print('Optimization time (s): ', times[-1])
 
 
 
 # objective.insert(0, 199.0)
 # time.insert(0, 0.0)
-
-
-
-# with open('distributed_rosenbrock_n200_N2.pkl', 'wb') as f:
-#     data = {'objective': objective, 'time': time}
-#     pickle.dump(data, f)
-
-exit()
-
-# parse the .out file
-filename = 'monolithic_400.out'
-# Read the header line separately
-with open(filename, 'r') as file: headers = file.readline().strip().split()
-mf_df = pd.read_csv(filename, delim_whitespace=True, skiprows=1, names=headers)
-
-monolithic_major = mf_df['MAJOR'].to_numpy()
-monolithic_optimality = mf_df['OPT']
-monolithic_feasibility = mf_df['FEAS']
-monolithic_objective = mf_df['OBJFUN'].to_numpy()
-
-monolithic_time_200 = 6.602
-monolithic_time_400 = 71.98
-monolithic_time = np.linspace(0, monolithic_time_400, len(monolithic_major))
-
-
-
-plt.figure(figsize=(5,4))
-
-plt.semilogy(monolithic_time, monolithic_objective, color='tab:blue', linewidth=2, label='Monolithic')
-# plt.show()
-
-
-plt.semilogy(time, objective, color='tab:orange', linewidth=2, label='Distributed')
-
-# plt.ylim(1e-5, 1e5)
-plt.ylabel('Objective function value')
-plt.xlabel('Wall time (s)')
-plt.legend()
-plt.show()
