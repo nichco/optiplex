@@ -22,10 +22,8 @@ def make_sub_problem(subp, N, n):
         x = csdl.Variable(value=np.zeros((n)))
 
         for j in range(N):
-            start = j * n // N
-            stop = (j + 1) * n // N
             xj = csdl.Variable(value=x_init[j])
-            x = x.set(csdl.slice[start:stop], xj)
+            x = x.set(csdl.slice[j * n // N : (j + 1) * n // N], xj)
 
             if j==subp:
                 xj.set_as_design_variable(scaler=1)

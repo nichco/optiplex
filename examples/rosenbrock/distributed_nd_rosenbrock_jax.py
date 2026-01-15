@@ -17,12 +17,9 @@ def make_sub_problem(subp, N, n):
     def sub_problem(x_init, y, mu):
 
         def jax_obj(v):
-            x = jnp.zeros((n,))
-
             x_init[subp] = v
 
-            for i in range(N):
-                x = x.at[i * n // N : (i + 1) * n // N].set(x_init[i])
+            x = jnp.concatenate(x_init)
 
             return jnp.sum(100 * (x[1:] - x[:-1]**2)**2 + (1 - x[:-1])**2)
         
