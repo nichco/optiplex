@@ -5,7 +5,7 @@ import numpy as np
 import time
 
 n = 100 # dimension
-N = 2 # number of subproblems
+N = 4 # number of subproblems
 
 # n must be divisible by N
 if n % N != 0: raise ValueError("n must be divisible by N")
@@ -27,7 +27,7 @@ def make_sub_problem(subp, N, n):
         
         jaxprob = mo.JaxProblem(x0=v0, jax_obj=jax_obj, xl=-np.inf, xu=np.inf, order=1)
 
-        optimizer = mo.SLSQP(jaxprob, solver_options={'maxiter': 300, 'ftol': 1e-7}, turn_off_outputs=True)
+        optimizer = mo.SLSQP(jaxprob, solver_options={'maxiter': 6000, 'ftol': 1e-7}, turn_off_outputs=True)
 
         t1 = time.perf_counter()
         optimizer.solve()
@@ -56,10 +56,10 @@ for i in range(N):
 
 
 size = int(n / N)
-guess = np.array([-1.2, 1] * (n // 2))
+# guess = np.array([-1.2, 1] * (n // 2))
 v_init = []
-# for i in range(N): v_init.append(np.zeros(size))
-for i in range(N): v_init.append(guess[i*size:(i+1)*size])
+for i in range(N): v_init.append(np.zeros(size))
+# for i in range(N): v_init.append(guess[i*size:(i+1)*size])
 
 
 opt = Plex(blocks=subP_functions,
@@ -71,5 +71,5 @@ opt.solve(max_iter=300,
 print('Solution: ', opt.x_init)
 print("Success:", opt.success)
 print('Iterations: ', opt.num_iter)
-print('Time (s): ', opt.time)
+# print('Time (s): ', opt.time)
 print('Optimization time (s): ', times[-1])
