@@ -20,6 +20,8 @@ distributed_time_2_subp_slsqp = np.array([0.47, 0.84, 4.41, 13.58, 32.81, 61.49]
 
 distributed_time_4_subp_slsqp = np.array([1.05, 1.33, 1.87, 4.52, 11.45, 18.22])
 
+distributed_time_5_subp_slsqp = np.array([1.46, 1.92, 2.27, 3.11, 7.76, 13.99])
+
 plt.figure(figsize=(5,4))
 
 # plt.semilogy(dimension, monolithic_time, marker='o', label='Monolithic', color='tab:blue')
@@ -28,6 +30,7 @@ plt.figure(figsize=(5,4))
 plt.semilogy(dimension_slsqp, monolithic_time_slsqp, marker='o', label='Monolithic SLSQP', color='tab:blue')
 plt.semilogy(dimension_slsqp, distributed_time_2_subp_slsqp, marker='s', label='Distributed SLSQP (2 subproblems)', color='tab:orange')
 plt.semilogy(dimension_slsqp, distributed_time_4_subp_slsqp, marker='^', label='Distributed SLSQP (4 subproblems)', color='tab:green')
+plt.semilogy(dimension_slsqp, distributed_time_5_subp_slsqp, marker='v', label='Distributed SLSQP (5 subproblems)', color='tab:red')
 
 plt.xlabel('Dimension (n)')
 plt.ylabel('Optimization time (s)')
