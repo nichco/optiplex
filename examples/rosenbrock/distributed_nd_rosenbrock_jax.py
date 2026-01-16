@@ -4,8 +4,8 @@ import modopt as mo
 import numpy as np
 import time
 
-n = 1000 # dimension
-N = 5 # number of subproblems
+n = 100 # dimension
+N = 10 # number of subproblems
 
 # n must be divisible by N
 if n % N != 0: raise ValueError("n must be divisible by N")
@@ -66,7 +66,7 @@ for i in range(N): v_init.append(np.zeros(size))
 opt = Plex(blocks=subP_functions,
            x_init=v_init)
 
-opt.solve(max_iter=300,
+opt.solve(max_iter=500,
           tol=1e-5)
 
 print('Solution: ', opt.x_init)
