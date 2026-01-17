@@ -27,7 +27,7 @@ plt.semilogy(dimension_slsqp, monolithic_time_slsqp, marker='o', label='Monolith
 plt.semilogy(dimension_slsqp, distributed_time_2_subp_slsqp, marker='s', label='Distributed SLSQP (2 subproblems)', color='tab:orange', linewidth=2, markersize=8)
 plt.semilogy(dimension_slsqp, distributed_time_4_subp_slsqp, marker='^', label='Distributed SLSQP (4 subproblems)', color='tab:green', linewidth=2, markersize=8)
 plt.semilogy(dimension_slsqp, distributed_time_5_subp_slsqp, marker='v', label='Distributed SLSQP (5 subproblems)', color='tab:red', linewidth=2, markersize=8)
-plt.semilogy(dimension_slsqp, distributed_time_10_subp_slsqp, marker='x', label='Distributed SLSQP (10 subproblems)', color='tab:purple', linewidth=2, markersize=8)
+plt.semilogy(dimension_slsqp, distributed_time_10_subp_slsqp, marker='d', label='Distributed SLSQP (10 subproblems)', color='tab:purple', linewidth=2, markersize=8)
 
 plt.xlabel('Dimension (n)')
 plt.ylabel('Optimization time (s)')

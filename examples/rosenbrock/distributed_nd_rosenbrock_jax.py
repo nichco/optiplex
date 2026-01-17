@@ -3,8 +3,10 @@ import jax.numpy as jnp
 import modopt as mo
 import numpy as np
 import time
+import tracemalloc
+import gc
 
-n = 100 # dimension
+n = 1000 # dimension
 N = 10 # number of subproblems
 
 # n must be divisible by N
@@ -42,6 +44,8 @@ def make_sub_problem(subp, N, n):
 
         x_init[subp] = optimizer.results['x']
 
+        gc.collect()
+
         return x_init
     
     return sub_problem
@@ -66,10 +70,18 @@ for i in range(N): v_init.append(np.zeros(size))
 opt = Plex(blocks=subP_functions,
            x_init=v_init)
 
+tracemalloc.start()
+
 opt.solve(max_iter=500,
           tol=1e-5)
 
-print('Solution: ', opt.x_init)
+current, peak = tracemalloc.get_traced_memory()
+# print(f"Current: {current / 10**6:.2f} MB")
+print(f"Peak: {peak / 10**6:.2f} MB")
+
+tracemalloc.stop()
+
+# print('Solution: ', opt.x_init)
 print("Success:", opt.success)
 print('Iterations: ', opt.num_iter)
 # print('Time (s): ', opt.time)
