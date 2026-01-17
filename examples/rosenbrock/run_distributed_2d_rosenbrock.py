@@ -17,7 +17,7 @@ def subproblem1(v_init, y, mu):
 
     def jax_obj(v):
         x1 = v[0]
-        return jnp.squeeze((1 - x1)**2 + 5 * (x2 - x1**2)**2)
+        return jnp.squeeze((1 - x1)**2 + 1 * (x2 - x1**2)**2)
     
     jaxprob = mo.JaxProblem(x0=v0, jax_obj=jax_obj, xl=-np.inf, xu=np.inf, order=1)
 
@@ -39,7 +39,7 @@ def subproblem2(v_init, y, mu):
 
     def jax_obj(v):
         x2 = v[0]
-        return jnp.squeeze((1 - x1)**2 + 5 * (x2 - x1**2)**2)
+        return jnp.squeeze((1 - x1)**2 + 1 * (x2 - x1**2)**2)
     
     jaxprob = mo.JaxProblem(x0=v0, jax_obj=jax_obj, xl=-np.inf, xu=np.inf, order=1)
 
@@ -72,12 +72,12 @@ plt.rcParams.update({'font.size': 14})
 x = np.linspace(-1.5, 1.5, 200)
 y = np.linspace(-1.5, 1.5, 200)
 X, Y = np.meshgrid(x, y)
-Z = (1 - X)**2 + 5 * (Y - X**2)**2
+Z = (1 - X)**2 + 1 * (Y - X**2)**2
 levels = np.linspace(0, max(Z.flatten()), 30)
 plt.contour(X, Y, Z, levels=levels, cmap='Blues_r', alpha=0.4, linewidths=0.5)
 plt.contourf(X, Y, Z, levels=levels, cmap='Blues_r', alpha=0.5)
 
-plt.plot(x1_history, x2_history, '-', color='tab:red', linewidth=2.5, markersize=4, zorder=10)
+plt.plot(x1_history, x2_history, '-o', mec='k', color='tab:red', linewidth=2.5, markersize=7, zorder=10)
 plt.xlim(-1.5, 1.5)
 plt.ylim(-1.5, 1.5)
 plt.xlabel('x')
