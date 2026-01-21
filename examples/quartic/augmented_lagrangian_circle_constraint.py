@@ -5,8 +5,9 @@ import jax.numpy as jnp
 import matplotlib.pyplot as plt
 from optiplex import combo
 
-# v_init = [np.array([1.0]), np.array([-1.0]), np.array([1.0]), np.array([-1.0])]
-v_init = [1.0, -1.0, 1.0, -1.0]
+# v_init = [1.0, -1.0, 1.0, -1.0]
+# v_init = [-1.0, 1.0, -1.0, 1.0]
+v_init = [-0.5, 1.0, -0.5, 1.0]
 
 x1_1_history = [v_init[0]]
 x2_1_history = [v_init[1]]
@@ -37,10 +38,10 @@ def subproblem1(v_init, y, mu):
     def jax_con(v):
         x1_1 = v[0]
         x2_1 = v[1]
-        con = x1_1 - 0.5*x2_1
+        con = x1_1**2 + x2_1**2
         return con.flatten()
     
-    jaxprob = mo.JaxProblem(x0=v0, jax_obj=jax_obj, jax_con=jax_con, cl=0., cu=np.inf, order=1)
+    jaxprob = mo.JaxProblem(x0=v0, jax_obj=jax_obj, jax_con=jax_con, cl=0.5**2, cu=np.inf, order=1)
 
     optimizer = mo.SLSQP(jaxprob, solver_options={'maxiter': 100, 'ftol': 1e-7}, turn_off_outputs=True)
     optimizer.solve()
@@ -78,10 +79,10 @@ def subproblem2(v_init, y, mu):
     def jax_con(v):
         x1_2 = v[0]
         x2_2 = v[1]
-        con = x1_2 - 0.5*x2_2
+        con = x1_2**2 + x2_2**2
         return con.flatten()
     
-    jaxprob = mo.JaxProblem(x0=v0, jax_obj=jax_obj, jax_con=jax_con, cl=0., cu=np.inf, order=1)
+    jaxprob = mo.JaxProblem(x0=v0, jax_obj=jax_obj, jax_con=jax_con, cl=0.5**2, cu=np.inf, order=1)
 
     optimizer = mo.SLSQP(jaxprob, solver_options={'maxiter': 100, 'ftol': 1e-7}, turn_off_outputs=True)
     optimizer.solve()
@@ -114,7 +115,9 @@ opt = Plex2(blocks=[subproblem1, subproblem2],
             constraint=constraint,
             )
 
-opt.solve(max_iter=100, tol=1e-4, ctol=1e-4, itol=2)
+opt.mu = 1.0
+
+opt.solve(max_iter=100, tol=1e-4, ctol=1e-4, itol=100, rho=1.05)
 
 
 print('Solution: ', opt.solution)
@@ -141,15 +144,12 @@ plt.ylim(-1.5, 1.5)
 plt.xlabel('x')
 plt.ylabel('y')
 
-plt.plot(x, 2*x, '--', color='black', linewidth=2, alpha=0.5)
-
-plt.fill_between(
-    x,
-    1.5,        # top of plot
-    2*x,        # constraint line
-    color='black',
-    alpha=0.4,
-)
+# Draw circular keep-out constraint
+theta = np.linspace(0, 2*np.pi, 100)
+circle_x = 0.5 * np.cos(theta)
+circle_y = 0.5 * np.sin(theta)
+plt.plot(circle_x, circle_y, '--', color='black', linewidth=2, alpha=0.5)
+plt.fill(circle_x, circle_y, color='black', alpha=0.3)
 
 ticks = [-1, 0, 1]
 plt.xticks(ticks)
