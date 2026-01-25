@@ -4,6 +4,8 @@ import modopt as mo
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
 from optiplex import combo
+import warnings
+warnings.filterwarnings("ignore")
 
 # v_init = [1.0, -1.0, 1.0, -1.0]
 v_init = [-1.0, 1.0, -1.0, 1.0]
@@ -44,7 +46,7 @@ def subproblem1(v_init, y, mu):
 
     optimizer = mo.SLSQP(jaxprob, solver_options={'maxiter': 100, 'ftol': 1e-7}, turn_off_outputs=True)
     optimizer.solve()
-    optimizer.print_results()
+    # optimizer.print_results()
     ans = optimizer.results['x']
 
     x1_1_history.append(ans[0])
@@ -85,7 +87,7 @@ def subproblem2(v_init, y, mu):
 
     optimizer = mo.SLSQP(jaxprob, solver_options={'maxiter': 100, 'ftol': 1e-7}, turn_off_outputs=True)
     optimizer.solve()
-    optimizer.print_results()
+    # optimizer.print_results()
     ans = optimizer.results['x']
 
     x1_1_history.append(x1_1)
@@ -121,7 +123,7 @@ opt.solve(max_iter=100, tol=1e-4, ctol=1e-4, itol=100, rho=1.05)
 
 print('Solution: ', opt.solution)
 print('Success: ', opt.success)
-print('Iterations: ', opt.num_iter)
+print('Iterations: ', opt.k)
 print('Time (s): ', opt.time)
 
 
