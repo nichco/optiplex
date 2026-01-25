@@ -4,6 +4,8 @@ import modopt as mo
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
 from optiplex import combo
+import warnings
+warnings.filterwarnings("ignore")
 
 v_init = [1.0, -1.0, 1.0, -1.0]
 
