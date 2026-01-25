@@ -3,6 +3,8 @@ import numpy as np
 import modopt as mo
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
+import warnings
+warnings.filterwarnings("ignore")
 
 v_init = [np.array([-1.0]), np.array([-1.0])]
 
@@ -60,9 +62,9 @@ opt = Plex(blocks=[subproblem1, subproblem2],
 opt.solve(max_iter=300, tol=1e-3)
 
 
-print('Solution: ', opt.solution)
+print('Solution: ', opt.x)
 print('Success: ', opt.success)
-print('Iterations: ', opt.num_iter)
+print('Iterations: ', opt.k)
 print('Time (s): ', opt.time)
 
 

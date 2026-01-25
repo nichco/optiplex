@@ -1,4 +1,4 @@
-from optiplex import Plex2
+from optiplex import Plex
 import numpy as np
 import modopt as mo
 import jax.numpy as jnp
@@ -111,17 +111,17 @@ def constraint(v_init):
     return jnp.concatenate([c_1, c_2])
 
 
-opt = Plex2(blocks=[subproblem1, subproblem2],
-            x_init=v_init,
-            constraint=constraint,
-            )
+opt = Plex(blocks=[subproblem1, subproblem2],
+           x_init=v_init,
+           constraint=constraint,
+           )
 
 opt.mu = 1.0
 
-opt.solve(max_iter=100, tol=1e-4, ctol=1e-4, itol=100, rho=1.05)
+opt.solve(max_iter=100, tol=1e-4, ctol=1e-4, itol=1.0, rho=1.05)
 
 
-print('Solution: ', opt.solution)
+print('Solution: ', opt.x)
 print('Success: ', opt.success)
 print('Iterations: ', opt.k)
 print('Time (s): ', opt.time)

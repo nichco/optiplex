@@ -5,6 +5,8 @@ from modopt import IPOPT, SLSQP
 import numpy as np
 import matplotlib.pyplot as plt
 import time
+import warnings
+warnings.filterwarnings("ignore")
 
 objective = []
 times = []
@@ -78,12 +80,11 @@ for i in range(N): v_init.append(np.zeros(size))
 opt = Plex(blocks=subP_functions,
            x_init=v_init)
 
-opt.solve(max_iter=300,
-          tol=1e-5)
+opt.solve(max_iter=300, tol=1e-5)
 
-print('Solution: ', opt.x_init)
+print('Solution: ', opt.x)
 print("Success:", opt.success)
-print('Iterations: ', opt.num_iter)
+print('Iterations: ', opt.k)
 print('Time (s): ', opt.time)
 print('Optimization time (s): ', times[-1])
 

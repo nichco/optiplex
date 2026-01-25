@@ -3,6 +3,8 @@ import numpy as np
 import modopt as mo
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
+import warnings
+warnings.filterwarnings("ignore")
 
 # v_init = [np.array([1.0]), np.array([-1.0])]
 v_init = [np.array([1.0]), np.array([0.5])]
@@ -29,15 +31,11 @@ def subproblem1(v_init, y, mu):
 
     optimizer = mo.SLSQP(jaxprob, solver_options={'maxiter': 100, 'ftol': 1e-7}, turn_off_outputs=True)
     optimizer.solve()
-    optimizer.print_results()
+    # optimizer.print_results()
     ans = optimizer.results['x']
 
     x1_history.append(ans)
     x2_history.append(x2)
-
-    # print(x1_history)
-    # print(x2_history)
-    # exit()
 
     return [ans, x2]
 
@@ -60,7 +58,7 @@ def subproblem2(v_init, y, mu):
 
     optimizer = mo.SLSQP(jaxprob, solver_options={'maxiter': 100, 'ftol': 1e-7}, turn_off_outputs=True)
     optimizer.solve()
-    optimizer.print_results()
+    # optimizer.print_results()
     ans = optimizer.results['x']
 
     x1_history.append(x1)
@@ -72,12 +70,12 @@ def subproblem2(v_init, y, mu):
 opt = Plex(blocks=[subproblem1, subproblem2],
            x_init=v_init)
 
-opt.solve(max_iter=100, tol=1e-3)
+opt.solve(max_iter=100, tol=1e-5)
 
 
-print('Solution: ', opt.solution)
+print('Solution: ', opt.x)
 print('Success: ', opt.success)
-print('Iterations: ', opt.num_iter)
+print('Iterations: ', opt.k)
 print('Time (s): ', opt.time)
 
 

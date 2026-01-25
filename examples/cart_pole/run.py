@@ -1,7 +1,9 @@
 from optiplex import Plex
 import numpy as np
-from cart_pole.sub_problem import functions
-from cart_pole.constraint import constraint
+from examples.cart_pole.sub_problem import functions
+from examples.cart_pole.constraint import constraint
+import warnings
+warnings.filterwarnings("ignore")
 
 N = 2
 
@@ -29,10 +31,11 @@ opt = Plex(blocks=functions,
 opt.solve(max_iter=100, 
           rho=1.2,
           tol=1e-7,
+          itol=100,
           ctol=1e-4)
 
 
 
 print('Success: ', opt.success)
-print('Iterations: ', opt.num_iter)
+print('Iterations: ', opt.k)
 print('Time (s): ', opt.time)

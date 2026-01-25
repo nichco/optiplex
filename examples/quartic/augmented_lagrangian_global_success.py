@@ -45,7 +45,7 @@ def subproblem1(v_init, y, mu):
 
     optimizer = mo.SLSQP(jaxprob, solver_options={'maxiter': 100, 'ftol': 1e-7}, turn_off_outputs=True)
     optimizer.solve()
-    optimizer.print_results()
+    # optimizer.print_results()
     ans = optimizer.results['x']
 
     x1_1_history.append(ans[0])
@@ -86,7 +86,7 @@ def subproblem2(v_init, y, mu):
 
     optimizer = mo.SLSQP(jaxprob, solver_options={'maxiter': 100, 'ftol': 1e-7}, turn_off_outputs=True)
     optimizer.solve()
-    optimizer.print_results()
+    # optimizer.print_results()
     ans = optimizer.results['x']
 
     x1_1_history.append(x1_1)
@@ -118,9 +118,9 @@ opt = Plex(blocks=[subproblem1, subproblem2],
 opt.solve(max_iter=100, tol=1e-3)
 
 
-print('Solution: ', opt.solution)
+print('Solution: ', opt.x)
 print('Success: ', opt.success)
-print('Iterations: ', opt.num_iter)
+print('Iterations: ', opt.k)
 print('Time (s): ', opt.time)
 
 

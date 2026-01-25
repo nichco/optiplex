@@ -5,9 +5,11 @@ import numpy as np
 import time
 import tracemalloc
 import gc
+import warnings
+warnings.filterwarnings("ignore")
 
-n = 1000 # dimension
-N = 10 # number of subproblems
+n = 100 # dimension
+N = 2 # number of subproblems
 
 # n must be divisible by N
 if n % N != 0: raise ValueError("n must be divisible by N")
@@ -72,8 +74,7 @@ opt = Plex(blocks=subP_functions,
 
 tracemalloc.start()
 
-opt.solve(max_iter=500,
-          tol=1e-5)
+opt.solve(max_iter=500, tol=1e-5, itol=1000,)
 
 current, peak = tracemalloc.get_traced_memory()
 # print(f"Current: {current / 10**6:.2f} MB")
@@ -81,8 +82,8 @@ print(f"Peak: {peak / 10**6:.2f} MB")
 
 tracemalloc.stop()
 
-# print('Solution: ', opt.x_init)
+# print('Solution: ', opt.x)
 print("Success:", opt.success)
-print('Iterations: ', opt.num_iter)
+print('Iterations: ', opt.k)
 # print('Time (s): ', opt.time)
 print('Optimization time (s): ', times[-1])
