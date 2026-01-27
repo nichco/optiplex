@@ -13,10 +13,9 @@ class Plex():
 
         self.blocks = blocks
         # self.x = x_init
-        self.x = [np.asarray(x) for x in x_init] # cast to numpy arrays
-        self.num_vars = len(x_init)
+        self.x = [np.asarray(xi) for xi in x_init] # cast to numpy arrays
         self.success = False
-        self.k = 1
+        self.dual_iterations = 1
         self.time = None
         self.constraint = constraint
         self.mu = 1.0 # augmented Lagrangian penalty coefficient
@@ -34,7 +33,7 @@ class Plex():
         assert rho > 1
         t1 = time.perf_counter()
 
-        while self.success is False and self.k < max_iter:
+        while self.success is False and self.dual_iterations < max_iter:
 
             x_out_minus_1 = np.concatenate([xi.ravel() for xi in self.x])
 
@@ -49,8 +48,8 @@ class Plex():
 
                 # Check inner loop convergence
                 x_in = np.concatenate([xi.ravel() for xi in self.x])
-                inner_loop_progress = np.linalg.norm(x_in - x_in_minus_1)
-                if inner_loop_progress < itol: inner_loop_converged = True
+                if np.linalg.norm(x_in - x_in_minus_1) < itol: 
+                    inner_loop_converged = True
 
                 inner_loop_iterations += 1
 
@@ -71,7 +70,7 @@ class Plex():
                 self.mu = rho * self.mu # Update the penalty coefficient
 
 
-            df = pd.DataFrame({'iter': self.k,
+            df = pd.DataFrame({'iter': self.dual_iterations,
                                'progress': outer_progress,
                                '||c||': feasibility,
                                'mu': [self.mu],
@@ -91,7 +90,7 @@ class Plex():
                  )
 
             # Update the iteration counter
-            self.k += 1
+            self.dual_iterations += 1
 
 
         self.time = time.perf_counter() - t1

@@ -3,6 +3,8 @@ import modopt as mo
 import jax.numpy as jnp
 import tracemalloc
 
+# https://www.sfu.ca/~ssurjano/sumsqu.html
+
 n = 1000 # dimension
 
 tracemalloc.start()

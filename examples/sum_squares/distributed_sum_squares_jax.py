@@ -8,10 +8,12 @@ import gc
 import warnings
 warnings.filterwarnings("ignore")
 
+# https://www.sfu.ca/~ssurjano/sumsqu.html
+
 n = 100 # dimension
 N = 2 # number of subproblems
 
-if n % N != 0: raise ValueError("n must be divisible by N")
+if n % N: raise ValueError("n must be divisible by N")
 
 objective, times = [], []
 

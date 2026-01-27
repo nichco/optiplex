@@ -64,7 +64,7 @@ opt.solve(max_iter=300, tol=1e-3)
 
 print('Solution: ', opt.x)
 print('Success: ', opt.success)
-print('Iterations: ', opt.k)
+print('Iterations: ', opt.dual_iterations)
 print('Time (s): ', opt.time)
 
 

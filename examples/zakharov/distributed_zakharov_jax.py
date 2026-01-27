@@ -11,7 +11,7 @@ warnings.filterwarnings("ignore")
 n = 100 # dimension
 N = 2 # number of subproblems
 
-if n % N != 0: raise ValueError("n must be divisible by N")
+if n % N: raise ValueError("n must be divisible by N")
 
 objective, times = [], []
 
