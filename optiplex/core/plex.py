@@ -39,7 +39,7 @@ class Plex():
 
             inner_loop_converged, inner_loop_iterations = False, 0
             while not inner_loop_converged:
-                print(f"  Inner Loop Iteration: {inner_loop_iterations+1}")
+                print(f"  inner loop iteration: {inner_loop_iterations + 1}")
 
                 x_k_minus_1 = self.x.copy()
 
