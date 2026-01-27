@@ -11,7 +11,6 @@ warnings.filterwarnings("ignore")
 n = 100 # dimension
 N = 2 # number of subproblems
 
-# n must be divisible by N
 if n % N != 0: raise ValueError("n must be divisible by N")
 
 objective, times = [], []
@@ -25,7 +24,7 @@ def make_sub_problem(subp, N, n):
 
             x = jnp.concatenate(x_init)
 
-            return jnp.sum(100 * (x[1:] - x[:-1]**2)**2 + (1 - x[:-1])**2)
+            return jnp.sum(jnp.arange(1, x.size + 1) * x**2)
         
         v0 = x_init[subp]
         
@@ -61,12 +60,9 @@ for i in range(N):
     subPfunc = make_sub_problem(i, N, n)
     subP_functions.append(subPfunc)
 
-
 size = int(n / N)
-# guess = np.array([-1.2, 1] * (n // 2))
 v_init = []
-for i in range(N): v_init.append(np.zeros(size))
-# for i in range(N): v_init.append(guess[i*size:(i+1)*size])
+for i in range(N): v_init.append(np.ones(size))
 
 
 opt = Plex(blocks=subP_functions,
@@ -74,7 +70,7 @@ opt = Plex(blocks=subP_functions,
 
 tracemalloc.start()
 
-opt.solve(max_iter=500, tol=1e-5, itol=1000,)
+opt.solve(max_iter=500, tol=1e-5, itol=1e3,)
 
 current, peak = tracemalloc.get_traced_memory()
 # print(f"Current: {current / 10**6:.2f} MB")

@@ -39,6 +39,7 @@ class Plex():
 
             inner_loop_converged, inner_loop_iterations = False, 0
             while not inner_loop_converged:
+                print(f"  Inner Loop Iteration: {inner_loop_iterations+1}")
 
                 x_j_minus_1 = self.x.copy()
 
@@ -46,7 +47,9 @@ class Plex():
                     self.x = block(self.x, self.y, self.mu)
 
                 # Check inner loop convergence
-                if all(np.allclose(n, o, rtol=itol) for n, o in zip(self.x, x_j_minus_1)): 
+                # if all(np.allclose(n, o, atol=itol, rtol=itol) for n, o in zip(self.x, x_j_minus_1)): 
+                # if np.allclose(np.linalg.norm(np.concatenate(self.x)), np.linalg.norm(np.concatenate(x_j_minus_1)), atol=itol, rtol=itol): 
+                if all(np.linalg.norm(n - o) <= itol * max(1.0, np.linalg.norm(o)) for n, o in zip(self.x, x_k_minus_1)):
                     inner_loop_converged = True
 
                 inner_loop_iterations += 1
@@ -54,13 +57,17 @@ class Plex():
 
             # Evaluate the consensus constraints
             c = self.constraint(self.x)
+            feasibility = np.linalg.norm(c)
 
             # Check outer loop convergence
-            if (all(np.allclose(n, o, rtol=tol) for n, o in zip(self.x, x_k_minus_1)) 
-                and np.all(np.abs(c) < ctol)): self.success = True
+            # if (all(np.allclose(n, o, rtol=tol) for n, o in zip(self.x, x_k_minus_1)) and feasibility < ctol): 
+            #     self.success = True
+
+            if all(np.linalg.norm(n - o) <= tol * max(1.0, np.linalg.norm(o)) for n, o in zip(self.x, x_k_minus_1)) and feasibility < ctol:
+                self.success = True
 
             # If infeasible, update multipliers
-            if np.any(np.abs(c) > ctol):
+            if feasibility > ctol:
 
                 # Update the Lagrange multipliers
                 self.y = self.y + self.mu * c
@@ -69,22 +76,32 @@ class Plex():
                 self.mu = rho * self.mu
 
 
-            progress = np.max([np.max(np.abs(new - old) / (np.abs(old) + 1e-12)) 
-                            for new, old in zip(self.x, x_k_minus_1)])
+            # progress = np.max([np.max(np.abs(new - old) / (np.abs(old) + 1e-12)) 
+            #                 for new, old in zip(self.x, x_k_minus_1)])
+            
+            progress = np.max([np.linalg.norm(n - o) for n, o in zip(self.x, x_k_minus_1)])
 
-            max_constraint_violation = np.max(np.abs(c))
+            # max_constraint_violation = np.max(np.abs(c))
 
 
             df = pd.DataFrame({'iter': self.k,
                                'progress': progress,
-                               'con': max_constraint_violation,
-                               'ctol': [ctol],
+                               '||c||': feasibility,
                                'mu': [self.mu],
                                '||y||': [np.linalg.norm(self.y)],
                                'cd iter': [inner_loop_iterations],
                                })
 
-            print(df.to_string(index=False, float_format='{:.3f}'.format))
+            # print(df.to_string(index=False, float_format='{:.3f}'.format))
+            print(df.to_string(index=False,
+                               formatters={
+                               'progress': '{:.7f}'.format,   # more precision here
+                               '||c||': '{:.5f}'.format,
+                               'mu': '{:.3f}'.format,
+                               '||y||': '{:.3f}'.format,
+                               }
+                               )
+                 )
 
             # Update the iteration counter
             self.k += 1
