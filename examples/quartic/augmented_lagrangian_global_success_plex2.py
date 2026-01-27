@@ -118,7 +118,8 @@ opt = Plex(blocks=[subproblem1, subproblem2],
 
 opt.mu = 1.0
 
-opt.solve(max_iter=100, tol=1e-4, ctol=1e-4, itol=1.0, rho=1.05)
+# opt.solve(max_iter=100, tol=1e-4, ctol=1e-4, itol=1.0, rho=1.05)
+opt.solve(max_iter=100, tol=1e-4, ctol=1e-4, itol=1e-1, rho=1.05)
 
 
 print('Solution: ', opt.x)

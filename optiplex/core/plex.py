@@ -12,14 +12,15 @@ class Plex():
                  ):
 
         self.blocks = blocks
-        self.x = x_init
+        # self.x = x_init
+        self.x = [np.asarray(x) for x in x_init] # cast to numpy arrays
         self.num_vars = len(x_init)
         self.success = False
         self.k = 1
         self.time = None
         self.constraint = constraint
         self.mu = 1.0 # augmented Lagrangian penalty coefficient
-        self.y = np.zeros_like(constraint(x_init)) # Lagrange multipliers
+        self.y = np.zeros_like(constraint(self.x)) # Lagrange multipliers
     
 
     def solve(self, 
@@ -35,24 +36,21 @@ class Plex():
 
         while self.success is False and self.k < max_iter:
 
-            x_i_minus_1 = self.x.copy()
+            x_out_minus_1 = np.concatenate([xi.ravel() for xi in self.x])
 
             inner_loop_converged, inner_loop_iterations = False, 0
             while not inner_loop_converged:
                 print(f"  inner loop iteration: {inner_loop_iterations + 1}")
 
-                x_k_minus_1 = self.x.copy()
+                x_in_minus_1 = np.concatenate([xi.ravel() for xi in self.x])
 
                 for block in self.blocks: 
                     self.x = block(self.x, self.y, self.mu)
 
                 # Check inner loop convergence
-                # if all(np.allclose(n, o, atol=itol, rtol=itol) for n, o in zip(self.x, x_k_minus_1)): 
-                # if np.allclose(np.linalg.norm(np.concatenate(self.x)), np.linalg.norm(np.concatenate(x_k_minus_1)), atol=itol, rtol=itol): 
-                if all(np.linalg.norm(n - o) <= itol * max(1.0, np.linalg.norm(o)) for n, o in zip(self.x, x_k_minus_1)):
-                    inner_loop_converged = True
-
-                # flat = np.concatenate([a.ravel() for a in arrays])
+                x_in = np.concatenate([xi.ravel() for xi in self.x])
+                inner_loop_progress = np.linalg.norm(x_in - x_in_minus_1)
+                if inner_loop_progress < itol: inner_loop_converged = True
 
                 inner_loop_iterations += 1
 
@@ -61,31 +59,20 @@ class Plex():
             c = self.constraint(self.x)
             feasibility = np.linalg.norm(c)
 
-            # Check outer loop convergence
-            # if (all(np.allclose(n, o, rtol=tol) for n, o in zip(self.x, x_k_minus_1)) and feasibility < ctol): 
-            #     self.success = True
+            x_out = np.concatenate([xi.ravel() for xi in self.x])
+            outer_progress = np.linalg.norm(x_out - x_out_minus_1)
 
-            if all(np.linalg.norm(n - o) <= tol * max(1.0, np.linalg.norm(o)) for n, o in zip(self.x, x_i_minus_1)) and feasibility < ctol:
+            # Check outer loop convergence
+            if outer_progress < tol and feasibility < ctol:
                 self.success = True
 
-            # If infeasible, update multipliers
-            if feasibility > ctol:
-
-                # Update the Lagrange multipliers
-                self.y = self.y + self.mu * c
-                    
-                # Update the penalty coefficient
-                self.mu = rho * self.mu
-
-
-            # progress = np.max([np.max(np.abs(new - old) / (np.abs(old) + 1e-12)) 
-            #                 for new, old in zip(self.x, x_k_minus_1)])
-            
-            progress = np.max([np.linalg.norm(n - o) for n, o in zip(self.x, x_i_minus_1)])
+            if feasibility > ctol: # If infeasible, update multipliers
+                self.y = self.y + self.mu * c # Update the multipliers
+                self.mu = rho * self.mu # Update the penalty coefficient
 
 
             df = pd.DataFrame({'iter': self.k,
-                               'progress': progress,
+                               'progress': outer_progress,
                                '||c||': feasibility,
                                'mu': [self.mu],
                                '||y||': [np.linalg.norm(self.y)],
