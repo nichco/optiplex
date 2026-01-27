@@ -35,22 +35,24 @@ class Plex():
 
         while self.success is False and self.k < max_iter:
 
-            x_k_minus_1 = self.x.copy()
+            x_i_minus_1 = self.x.copy()
 
             inner_loop_converged, inner_loop_iterations = False, 0
             while not inner_loop_converged:
                 print(f"  Inner Loop Iteration: {inner_loop_iterations+1}")
 
-                x_j_minus_1 = self.x.copy()
+                x_k_minus_1 = self.x.copy()
 
                 for block in self.blocks: 
                     self.x = block(self.x, self.y, self.mu)
 
                 # Check inner loop convergence
-                # if all(np.allclose(n, o, atol=itol, rtol=itol) for n, o in zip(self.x, x_j_minus_1)): 
-                # if np.allclose(np.linalg.norm(np.concatenate(self.x)), np.linalg.norm(np.concatenate(x_j_minus_1)), atol=itol, rtol=itol): 
+                # if all(np.allclose(n, o, atol=itol, rtol=itol) for n, o in zip(self.x, x_k_minus_1)): 
+                # if np.allclose(np.linalg.norm(np.concatenate(self.x)), np.linalg.norm(np.concatenate(x_k_minus_1)), atol=itol, rtol=itol): 
                 if all(np.linalg.norm(n - o) <= itol * max(1.0, np.linalg.norm(o)) for n, o in zip(self.x, x_k_minus_1)):
                     inner_loop_converged = True
+
+                # flat = np.concatenate([a.ravel() for a in arrays])
 
                 inner_loop_iterations += 1
 
@@ -63,7 +65,7 @@ class Plex():
             # if (all(np.allclose(n, o, rtol=tol) for n, o in zip(self.x, x_k_minus_1)) and feasibility < ctol): 
             #     self.success = True
 
-            if all(np.linalg.norm(n - o) <= tol * max(1.0, np.linalg.norm(o)) for n, o in zip(self.x, x_k_minus_1)) and feasibility < ctol:
+            if all(np.linalg.norm(n - o) <= tol * max(1.0, np.linalg.norm(o)) for n, o in zip(self.x, x_i_minus_1)) and feasibility < ctol:
                 self.success = True
 
             # If infeasible, update multipliers
@@ -79,7 +81,7 @@ class Plex():
             # progress = np.max([np.max(np.abs(new - old) / (np.abs(old) + 1e-12)) 
             #                 for new, old in zip(self.x, x_k_minus_1)])
             
-            progress = np.max([np.linalg.norm(n - o) for n, o in zip(self.x, x_k_minus_1)])
+            progress = np.max([np.linalg.norm(n - o) for n, o in zip(self.x, x_i_minus_1)])
 
 
             df = pd.DataFrame({'iter': self.k,
