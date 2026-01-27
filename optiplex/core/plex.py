@@ -59,10 +59,10 @@ class Plex():
             feasibility = np.linalg.norm(c)
 
             x_out = np.concatenate([xi.ravel() for xi in self.x])
-            outer_progress = np.linalg.norm(x_out - x_out_minus_1)
+            outer_loop_progress = np.linalg.norm(x_out - x_out_minus_1)
 
             # Check outer loop convergence
-            if outer_progress < tol and feasibility < ctol:
+            if outer_loop_progress < tol and feasibility < ctol:
                 self.success = True
 
             if feasibility > ctol: # If infeasible, update multipliers
@@ -71,25 +71,15 @@ class Plex():
 
 
             df = pd.DataFrame({'iter': self.dual_iterations,
-                               'progress': outer_progress,
+                               'progress': outer_loop_progress,
                                '||c||': feasibility,
                                'mu': [self.mu],
                                '||y||': [np.linalg.norm(self.y)],
                                'cd iter': [inner_loop_iterations],
                                })
 
-            # print(df.to_string(index=False, float_format='{:.3f}'.format))
-            print(df.to_string(index=False,
-                               formatters={
-                               'progress': '{:.7f}'.format,   # more precision here
-                               '||c||': '{:.5f}'.format,
-                               'mu': '{:.3f}'.format,
-                               '||y||': '{:.3f}'.format,
-                               }
-                               )
-                 )
+            print(df.to_string(index=False, float_format='{:.3e}'.format))
 
-            # Update the iteration counter
             self.dual_iterations += 1
 
 
