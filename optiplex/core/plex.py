@@ -81,8 +81,6 @@ class Plex():
             
             progress = np.max([np.linalg.norm(n - o) for n, o in zip(self.x, x_k_minus_1)])
 
-            # max_constraint_violation = np.max(np.abs(c))
-
 
             df = pd.DataFrame({'iter': self.k,
                                'progress': progress,
