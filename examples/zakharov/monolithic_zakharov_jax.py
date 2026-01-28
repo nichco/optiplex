@@ -9,7 +9,7 @@ tracemalloc.start()
 
 jax_obj = lambda v: jnp.sum(v**2) + (0.5 * jnp.sum(jnp.arange(1, v.size + 1) * v))**2 + (0.5 * jnp.sum(jnp.arange(1, v.size + 1) * v))**4
 
-    
+
 x0 = np.ones((n,))
 jaxprob = mo.JaxProblem(x0=x0, jax_obj=jax_obj, xl=-np.inf, xu=np.inf)
 

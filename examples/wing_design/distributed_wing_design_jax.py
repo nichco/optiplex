@@ -115,8 +115,8 @@ print('Iterations: ', opt.dual_iterations)
 print('Time (s): ', opt.time)
 
 
-# plt.figure(figsize=(2.5, 2.5))
-plt.rcParams.update({'font.size': 14})
+plt.figure(figsize=(4, 4))
+# plt.rcParams.update({'font.size': 14})
 
 b_vals = np.linspace(5, 35, 100)
 c_vals = np.linspace(0.3, 1.5, 100)
@@ -147,11 +147,5 @@ plt.ylim(0.3, 1.5)
 plt.xlabel('Wing span')
 plt.ylabel('Chord')
 
-# ticks = [-1, 0, 1]
-# plt.xticks(ticks)
-# plt.yticks(ticks)
-
-# plt.gca().set_aspect('equal')
-
-# plt.savefig('distributed_wing_design.pdf', bbox_inches='tight')
+# plt.savefig('wing_design.pdf', bbox_inches='tight')
 plt.show()

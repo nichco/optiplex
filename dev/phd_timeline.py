@@ -47,5 +47,5 @@ ax.yaxis.set_visible(False)
 ax.spines[["left", "top", "right"]].set_visible(False)
 
 # ax.margins(y=0.1)
-plt.savefig('phd_timeline.png', dpi=300)
+# plt.savefig('phd_timeline.png', dpi=300)
 plt.show()

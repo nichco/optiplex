@@ -68,8 +68,8 @@ print('Iterations: ', opt.dual_iterations)
 print('Time (s): ', opt.time)
 
 
-# plt.figure(figsize=(2.5, 2.5))
-plt.rcParams.update({'font.size': 14})
+plt.figure(figsize=(4, 4))
+# plt.rcParams.update({'font.size': 14})
 
 x = np.linspace(-1.5, 1.5, 200)
 y = np.linspace(-1.5, 1.5, 200)
@@ -89,7 +89,5 @@ ticks = [-1, 0, 1]
 plt.xticks(ticks)
 plt.yticks(ticks)
 
-plt.gca().set_aspect('equal')
-
-# plt.savefig('rosenbrock_bcd.pdf', bbox_inches='tight')
+# plt.savefig('rosenbrock.pdf', bbox_inches='tight')
 plt.show()

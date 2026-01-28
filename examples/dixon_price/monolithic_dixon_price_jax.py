@@ -10,7 +10,8 @@ n = 400 # dimension
 tracemalloc.start()
 
 jax_obj = lambda v: (v[0] - 1)**2 + jnp.sum(jnp.arange(2, n + 1) * (2 * v[1:]**2 - v[:-1])**2)
-    
+
+# The function is usually evaluated on the hypercube xi ∈ [-10, 10], for all i = 1, …, d.
 x0 = np.ones((n,))
 jaxprob = mo.JaxProblem(x0=x0, jax_obj=jax_obj, xl=-np.inf, xu=np.inf)
 
