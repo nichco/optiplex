@@ -83,6 +83,6 @@ tracemalloc.stop()
 
 # print('Solution: ', opt.x)
 print("Success:", opt.success)
-print('Iterations: ', opt.k)
+print('Iterations: ', opt.dual_iterations)
 # print('Time (s): ', opt.time)
 print('Optimization time (s): ', times[-1])

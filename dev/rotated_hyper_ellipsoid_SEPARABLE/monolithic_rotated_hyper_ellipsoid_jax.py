@@ -3,17 +3,17 @@ import modopt as mo
 import jax.numpy as jnp
 import tracemalloc
 
-# https://www.sfu.ca/~ssurjano/stybtang.html
+# https://www.sfu.ca/~ssurjano/rothyp.html
 
 n = 1000 # dimension
+# n=1000, t=6.32
 
 tracemalloc.start()
 
-
-# The function is usually evaluated on the hypercube xi ∈ [-5, 5], for all i = 1, …, d.
-jax_obj = lambda v: 0.5 * jnp.sum(v**4 - 16 * v**2 + 5 * v)
+# jax_obj = lambda v: jnp.sum(jnp.dot(jnp.arange(1, n + 1), v**2))
+jax_obj = lambda v: jnp.sum(jnp.cumsum(v**2))
     
-x0 = np.ones((n,)) * -1
+x0 = np.ones((n,))
 jaxprob = mo.JaxProblem(x0=x0, jax_obj=jax_obj, xl=-np.inf, xu=np.inf)
 
 optimizer = mo.SLSQP(jaxprob, solver_options={'maxiter': 5000, 'ftol': 1e-7}, turn_off_outputs=True)
@@ -27,6 +27,5 @@ tracemalloc.stop()
 
 optimizer.print_results()
 ans = optimizer.results['x']
-print(ans)
 
 print(f"Peak: {peak / 10**6:.2f} MB")

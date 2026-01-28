@@ -10,8 +10,8 @@ warnings.filterwarnings("ignore")
 
 # https://www.sfu.ca/~ssurjano/dixonpr.html
 
-n = 100 # dimension
-N = 2 # number of subproblems
+n = 1000 # dimension
+N = 5 # number of subproblems
 
 if n % N: raise ValueError("n must be divisible by N")
 
@@ -72,7 +72,7 @@ opt = Plex(blocks=subP_functions,
 
 tracemalloc.start()
 
-opt.solve(max_iter=300, tol=1e-6, itol=1e1,)
+opt.solve(max_iter=300, tol=1e-5, itol=1e1,)
 
 current, peak = tracemalloc.get_traced_memory()
 # print(f"Current: {current / 10**6:.2f} MB")

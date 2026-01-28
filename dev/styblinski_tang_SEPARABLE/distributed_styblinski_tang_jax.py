@@ -10,8 +10,8 @@ warnings.filterwarnings("ignore")
 
 # https://www.sfu.ca/~ssurjano/stybtang.html
 
-n = 100 # dimension
-N = 2 # number of subproblems
+n = 10000 # dimension
+N = 5 # number of subproblems
 
 if n % N: raise ValueError("n must be divisible by N")
 

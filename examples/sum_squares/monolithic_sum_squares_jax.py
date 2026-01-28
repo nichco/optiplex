@@ -9,7 +9,7 @@ n = 1000 # dimension
 
 tracemalloc.start()
 
-jax_obj = lambda v: jnp.sum(jnp.arange(1, v.size + 1) * v**2)
+jax_obj = lambda v: jnp.sum(jnp.arange(1, n + 1) * v**2)
 
     
 x0 = np.ones((n,))
