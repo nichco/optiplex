@@ -11,7 +11,7 @@ warnings.filterwarnings("ignore")
 # https://www.sfu.ca/~ssurjano/dixonpr.html
 
 n = 1000 # dimension
-N = 5 # number of subproblems
+N = 10 # number of subproblems
 
 if n % N: raise ValueError("n must be divisible by N")
 

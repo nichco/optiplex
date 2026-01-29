@@ -28,7 +28,7 @@ plt.fill_between(
     alpha=0.2,
 )
 
-plt.semilogy(dims, distributed_mean_2, 's-', color='tab:orange', linewidth=2, markersize=8, label='Distributed SLSQP (2 subproblems)')
+plt.semilogy(dims, distributed_mean_2, 's-', color='tab:orange', linewidth=2, markersize=8, label='Dist. SLSQP (2 subproblems)')
 
 plt.fill_between(
     np.ravel(dims),
@@ -38,7 +38,7 @@ plt.fill_between(
     alpha=0.2,
 )
 
-plt.semilogy(dims, distributed_mean_5, '^-', color='tab:green', linewidth=2, markersize=8, label='Distributed SLSQP (5 subproblems)')
+plt.semilogy(dims, distributed_mean_5, '^-', color='tab:green', linewidth=2, markersize=8, label='Dist. SLSQP (5 subproblems)')
 
 plt.fill_between(
     np.ravel(dims),
@@ -48,7 +48,7 @@ plt.fill_between(
     alpha=0.2,
 )
 
-plt.semilogy(dims, distributed_mean_10, 'v-', color='tab:red', linewidth=2, markersize=8, label='Distributed SLSQP (10 subproblems)')
+plt.semilogy(dims, distributed_mean_10, 'v-', color='tab:red', linewidth=2, markersize=8, label='Dist. SLSQP (10 subproblems)')
 
 plt.fill_between(
     np.ravel(dims),
@@ -65,6 +65,6 @@ plt.legend(loc='lower right', fontsize=10)
 
 plt.xlim(min(dims), max(dims))
 
-# plt.savefig('dixon_price_random_time.pdf', bbox_inches='tight')
+plt.savefig('dixon_price_random_time.pdf', bbox_inches='tight')
 
 plt.show()

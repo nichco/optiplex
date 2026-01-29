@@ -3,15 +3,15 @@ import matplotlib.pyplot as plt
 
 
 
-dimension = np.array([100, 200, 400, 600, 800, 1000])
+dimension = np.linspace(100, 1000, 10, dtype=int)
 
-monolithic_memory = np.array([3.37, 5.94, 16.12, 33.01, 56.63, 86.96])
+monolithic_memory = np.array([4.01, 6.10, 9.55, 14.36, 20.53, 28.05, 36.94, 47.19, 71.00, 87.01])
 
-distributed_memory_2_subp = np.array([2.91, 3.57, 6.14, 10.40, 16.35, 23.95])
+distributed_memory_2_subp = np.array([2.64, 3.18, 4.07, 5.29, 6.85, 8.75, 11.00, 13.58, 16.50, 19.76])
 
-distributed_memory_5_subp = np.array([2.81, 2.93, 3.34, 4.05, 5.00, 6.25])
+distributed_memory_5_subp = np.array([2.52, 2.64, 2.77, 2.98, 3.24, 3.56, 3.92, 4.35, 4.84, 5.37])
 
-distributed_memory_10_subp = np.array([2.98, 2.99, 3.1, 3.3, 3.53, 3.85])
+distributed_memory_10_subp = np.array([2.58, 2.60, 2.62, 2.71, 2.74, 2.83, 2.93, 3.05, 3.17, 3.31])
 
 
 plt.figure(figsize=(4,3))
@@ -27,5 +27,5 @@ plt.ylabel("Memory (MB)")
 plt.legend(fontsize=10)
 plt.grid(color='lavender')
 
-plt.savefig('rosenbrock_memory_scaling.pdf', bbox_inches='tight')
+plt.savefig('dixon_price_memory_scaling.pdf', bbox_inches='tight')
 plt.show()
