@@ -48,7 +48,8 @@ class Plex():
 
                 # Check inner loop convergence
                 x_in = np.concatenate([xi.ravel() for xi in self.x])
-                if np.linalg.norm(x_in - x_in_minus_1) < itol: 
+                # if np.linalg.norm(x_in - x_in_minus_1) < itol:
+                if np.allclose(np.linalg.norm(x_in), np.linalg.norm(x_in_minus_1), atol=itol, rtol=itol):
                     inner_loop_converged = True
 
                 inner_loop_iterations += 1
@@ -59,10 +60,15 @@ class Plex():
             feasibility = np.linalg.norm(c)
 
             x_out = np.concatenate([xi.ravel() for xi in self.x])
-            outer_loop_progress = np.linalg.norm(x_out - x_out_minus_1)
 
+            outer_loop_delta = np.linalg.norm(x_out - x_out_minus_1)
+
+            rhs = tol + tol * np.linalg.norm(x_out_minus_1)
+            # absolute(a - b) <= (atol + rtol * absolute(b))
+            outer_loop_progress = outer_loop_delta - rhs
+            
             # Check outer loop convergence
-            if outer_loop_progress < tol and feasibility < ctol:
+            if np.allclose(np.linalg.norm(x_out), np.linalg.norm(x_out_minus_1), atol=tol, rtol=tol) and feasibility < ctol:
                 self.success = True
 
             if feasibility > ctol: # If infeasible, update multipliers

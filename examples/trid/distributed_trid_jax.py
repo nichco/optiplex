@@ -8,11 +8,10 @@ import gc
 import warnings
 warnings.filterwarnings("ignore")
 
-# https://www.sfu.ca/~ssurjano/zakharov.html
+# https://www.sfu.ca/~ssurjano/trid.html
 
-n = 6000 # dimension
-N = 5 # number of subproblems
-# mono: 55.6
+n = 100 # dimension
+N = 2 # number of subproblems
 
 if n % N: raise ValueError("n must be divisible by N")
 
@@ -22,37 +21,19 @@ def make_sub_problem(subp, N, n):
 
     def sub_problem(x_init, y, mu):
         
-        # # modified Zakharov function (normalized by dimension)
-        # def jax_obj(v):
-        #     x_init[subp] = v
-
-        #     x = jnp.concatenate(x_init)
-
-        #     s = 0.5 * jnp.sum(jnp.arange(1, n + 1) * x) / n
-
-        #     return jnp.sum(x**2) + s**2 + s**4
-
-        # modified Zakharov function (normalized by dimension)
         def jax_obj(v):
             x_init[subp] = v
 
             x = jnp.concatenate(x_init)
 
-            arange = jnp.arange(1, n + 1)
-            arange = arange / (n*(n+1))
-
-            # coef = np.linspace(1, 1000, n)
-
-            s = 0.5 * jnp.sum(arange * x)
-
-            return jnp.sum(x**2) + s**2 + s**4
+            return jnp.sum((x - 1.0)**2) - jnp.sum(x[1:] * x[:-1])
         
         v0 = x_init[subp]
         
         jaxprob = mo.JaxProblem(x0=v0, jax_obj=jax_obj, xl=-np.inf, xu=np.inf)
 
-        optimizer = mo.SLSQP(jaxprob, solver_options={'maxiter': 1000, 'ftol': 1e-8}, turn_off_outputs=True)
-        # optimizer = mo.IPOPT(jaxprob, solver_options={'max_iter': 6000, 'tol': 1e-7}, turn_off_outputs=True)
+        optimizer = mo.SLSQP(jaxprob, solver_options={'maxiter': 1000, 'ftol': 1e-7}, turn_off_outputs=True)
+        # optimizer = mo.IPOPT(jaxprob, solver_options={'max_iter': 1000, 'tol': 1e-7}, turn_off_outputs=True)
 
         t1 = time.perf_counter()
         optimizer.solve()
@@ -91,7 +72,7 @@ opt = Plex(blocks=subP_functions,
 
 tracemalloc.start()
 
-opt.solve(max_iter=500, tol=1e-6, itol=1e3,)
+opt.solve(max_iter=500, tol=1e-5, itol=1e3,)
 
 current, peak = tracemalloc.get_traced_memory()
 # print(f"Current: {current / 10**6:.2f} MB")

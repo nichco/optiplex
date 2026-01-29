@@ -11,7 +11,7 @@ tracemalloc.start()
 
 jax_obj = lambda v: jnp.sum((v - 1.0)**2) - jnp.sum(v[1:] * v[:-1])
 
-# The function is usually evaluated on the hypercube xi ∈ [-d2, d2], for all i = 1, …, d.
+# The function is usually evaluated on the hypercube xi ∈ [-d^2, d^2], for all i = 1, …, d.
 x0 = np.ones((n,))
 
 jaxprob = mo.JaxProblem(x0=x0, jax_obj=jax_obj, xl=-np.inf, xu=np.inf)

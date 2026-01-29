@@ -6,7 +6,6 @@ import tracemalloc
 # https://www.sfu.ca/~ssurjano/dixonpr.html
 
 n = 1000 # dimension
-# n=1000, t=26.61
 
 tracemalloc.start()
 

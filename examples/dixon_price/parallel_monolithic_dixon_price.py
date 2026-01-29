@@ -1,3 +1,4 @@
+from joblib import Parallel, delayed
 import numpy as np
 import modopt as mo
 import jax.numpy as jnp
@@ -11,20 +12,16 @@ np.random.seed(0)
 # https://www.sfu.ca/~ssurjano/dixonpr.html
 
 dims = np.linspace(100, 1000, 10, dtype=int)
-# dims = np.linspace(100, 300, 3, dtype=int)
 
-jax_obj = lambda v: (v[0] - 1)**2 + jnp.sum(jnp.arange(2, n + 1) * (2 * v[1:]**2 - v[:-1])**2)
+num = 10 # the number of random samples for each dimension
 
-num = 20 # the number of random samples for each dimension
-# num = 3 # the number of random samples for each dimension
+def run_dims(n):
 
-mean, std = [], []
-
-for n in dims:
+    jax_obj = lambda v: (v[0] - 1)**2 + jnp.sum(jnp.arange(2, n + 1) * (2 * v[1:]**2 - v[:-1])**2)
 
     t = []
 
-    for i in range(num):
+    for _ in range(num):
 
         # The function is usually evaluated on the hypercube xi ∈ [-10, 10], for all i = 1, …, d.
         x0 = np.random.uniform(-10.0, 10.0, n)
@@ -43,21 +40,23 @@ for n in dims:
 
         t.append(t2 - t1)
 
-    mean.append(np.mean(t))
-    std.append(np.std(t))
+    return np.mean(t), np.std(t)
 
 
+results = Parallel(n_jobs=-1, backend="loky")(delayed(run_dims)(n) for n in dims)
+
+mean, std = map(np.array, zip(*results))
 
 
 mean = np.array(mean)
 std = np.array(std)
 
 
-file = 'monolithic_dixon_price_mean_n20'
-np.save(file, mean)
+# file = 'monolithic_dixon_price_mean_n20'
+# np.save(file, mean)
 
-file = 'monolithic_dixon_price_std_n20'
-np.save(file, std)
+# file = 'monolithic_dixon_price_std_n20'
+# np.save(file, std)
 
 
 plt.semilogy(dims, mean, 'o-', color='tab:red')

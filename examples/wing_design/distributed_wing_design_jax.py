@@ -92,7 +92,7 @@ def subproblem2(v_init, y, mu):
     
     jaxprob = mo.JaxProblem(x0=v0, jax_obj=jax_obj, xl=xl, xu=xu)
 
-    optimizer = mo.SLSQP(jaxprob, solver_options={'maxiter': 300, 'ftol': 1e-10}, turn_off_outputs=True)
+    optimizer = mo.SLSQP(jaxprob, solver_options={'maxiter': 300, 'ftol': 1e-7}, turn_off_outputs=True)
     optimizer.solve()
     optimizer.print_results()
     ans = optimizer.results['x']

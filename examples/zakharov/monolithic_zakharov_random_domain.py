@@ -8,15 +8,23 @@ warnings.filterwarnings("ignore")
 
 np.random.seed(0)
 
-# https://www.sfu.ca/~ssurjano/rosen.html
+# https://www.sfu.ca/~ssurjano/zakharov.html
 
 dims = np.linspace(100, 1000, 10, dtype=int)
-# dims = np.linspace(100, 300, 3, dtype=int)
+# dims = np.linspace(100, 500, 5, dtype=int)
 
-jax_obj = lambda v: jnp.sum(100 * (v[1:] - v[:-1]**2)**2 + (1 - v[:-1])**2)
+# # original Zakharov function (blows up at high dimensions)
+# def jax_obj(v):
+#     s = 0.5 * jnp.sum(jnp.arange(1, n + 1) * v)
+#     return jnp.sum(v**2) + s**2 + s**4
 
-num = 20 # the number of random samples for each dimension
-# num = 3 # the number of random samples for each dimension
+# modified Zakharov function (normalized by dimension)
+def jax_obj(v):
+    s = 0.5 * jnp.sum(jnp.arange(1, n + 1) * v) / n
+    return jnp.sum(v**2) + s**2 + s**4
+
+# num = 20 # the number of random samples for each dimension
+num = 10 # the number of random samples for each dimension
 
 mean, std = [], []
 
@@ -26,11 +34,11 @@ for n in dims:
 
     for i in range(num):
 
-        x0 = np.random.uniform(-1.0, 1.0, n)
+        x0 = np.random.uniform(-5.0, 5.0, n)
 
         jaxprob = mo.JaxProblem(x0=x0, jax_obj=jax_obj, xl=-np.inf, xu=np.inf)
 
-        optimizer = mo.SLSQP(jaxprob, solver_options={'maxiter': 10000, 'ftol': 1e-7}, turn_off_outputs=True)
+        optimizer = mo.SLSQP(jaxprob, solver_options={'maxiter': 1000, 'ftol': 1e-7}, turn_off_outputs=True)
 
         t1 = time.perf_counter()
 
@@ -52,14 +60,14 @@ mean = np.array(mean)
 std = np.array(std)
 
 
-file = 'monolithic_rosenbrock_mean_n20'
-np.save(file, mean)
+# file = 'monolithic_zakharov_mean_n3'
+# np.save(file, mean)
 
-file = 'monolithic_rosenbrock_std_n20'
-np.save(file, std)
+# file = 'monolithic_zakharov_std_n3'
+# np.save(file, std)
 
 
-plt.semilogy(dims, mean, 'o-', color='tab:blue')
+plt.semilogy(dims, mean, 'o-', color='tab:green')
 
 # plt.fill_between(
 #     np.ravel(dims),
@@ -71,7 +79,7 @@ plt.fill_between(
     np.ravel(dims),
     np.ravel(mean - std),
     np.ravel(mean + std),
-    color="tab:blue",
+    color="tab:green",
     alpha=0.2,
 )
 

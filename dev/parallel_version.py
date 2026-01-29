@@ -6,7 +6,9 @@ import time
 import matplotlib.pyplot as plt
 import gc
 import warnings
-warnings.filterwarnings("ignore")
+# warnings.filterwarnings("ignore")
+from joblib import Parallel, delayed
+
 
 np.random.seed(0)
 
@@ -59,51 +61,50 @@ def make_sub_problem(subp, N, n):
 
 
 
-dims = np.linspace(100, 1000, 10, dtype=int)
-# dims = np.linspace(100, 300, 3, dtype=int)
+# dims = np.linspace(100, 1000, 10, dtype=int)
+dims = np.linspace(100, 300, 3, dtype=int)
 
 N = 10 # number of subproblems
 
-num = 20 # the number of random samples for each dimension
-# num = 3 # the number of random samples for each dimension
+# num = 20 # the number of random samples for each dimension
+num = 2 # the number of random samples for each dimension
 
 mean, std = [], []
 
-for n in dims:
+def run_dimension(n):
 
-    if n % N: raise ValueError("n must be divisible by N")
+    warnings.filterwarnings("ignore")
 
-    t = []
+    if n % N:
+        raise ValueError("n must be divisible by N")
 
-    # run the function generator to generate subproblems
-    subP_functions = []
-    for i in range(N):
-        subPfunc = make_sub_problem(i, N, n)
-        subP_functions.append(subPfunc)
+    t_local = []
 
-    for i in range(num):
+    # generate subproblems
+    subP_functions = [
+        make_sub_problem(i, N, n) for i in range(N)
+    ]
 
-        tvar = 0 # reset tvar for each run
+    for _ in range(num):
+
+        global tvar
+        tvar = 0
 
         v_init = np.random.uniform(-1.0, 1.0, n)
-
-        size = int(n / N)
+        size = n // N
         v_init = [v_init[i*size:(i+1)*size] for i in range(N)]
 
-
         opt = Plex(blocks=subP_functions, x_init=v_init)
+        opt.solve(max_iter=500, tol=1e-5, itol=1e3)
 
-        opt.solve(max_iter=500, tol=1e-5, itol=1e2,)
+        t_local.append(tvar)
 
-        print("Success:", opt.success)
-        print('Iterations: ', opt.dual_iterations)
-        print('Optimization time (s): ', tvar)
+    return np.mean(t_local), np.std(t_local)
 
-        t.append(tvar)
 
-    mean.append(np.mean(t))
-    std.append(np.std(t))
+results = Parallel(n_jobs=-1, backend="loky")(delayed(run_dimension)(n) for n in dims)
 
+mean, std = map(np.array, zip(*results))
 
 
 

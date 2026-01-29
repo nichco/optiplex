@@ -23,7 +23,7 @@ def make_sub_problem(subp, N, n):
         def jax_obj(v):
             x_init[subp] = v
             x = jnp.concatenate(x_init)
-            return jnp.sum(100 * (x[1:] - x[:-1]**2)**2 + (1 - x[:-1])**2)
+            return (x[0] - 1)**2 + jnp.sum(jnp.arange(2, n + 1) * (2 * x[1:]**2 - x[:-1])**2)
         
         v0 = x_init[subp]
         
@@ -85,7 +85,7 @@ for n in dims:
 
         tvar = 0 # reset tvar for each run
 
-        v_init = np.random.uniform(-1.0, 1.0, n)
+        v_init = np.random.uniform(-10.0, 10.0, n)
 
         size = int(n / N)
         v_init = [v_init[i*size:(i+1)*size] for i in range(N)]
@@ -111,14 +111,14 @@ mean = np.array(mean)
 std = np.array(std)
 
 
-file = 'distributed_rosenbrock_mean_10subp'
+file = 'distributed_dixon_price_mean_10subp_n20'
 np.save(file, mean)
 
-file = 'distributed_rosenbrock_std_10subp'
+file = 'distributed_dixon_price_std_10subp_n20'
 np.save(file, std)
 
 
-plt.semilogy(dims, mean, 'o-', color='tab:blue')
+plt.semilogy(dims, mean, 'o-', color='tab:red')
 
 # plt.fill_between(
 #     np.ravel(dims),
@@ -130,7 +130,7 @@ plt.fill_between(
     np.ravel(dims),
     np.ravel(mean - std),
     np.ravel(mean + std),
-    color="tab:blue",
+    color="tab:red",
     alpha=0.2,
 )
 
