@@ -11,8 +11,8 @@ distributed_std_2 = np.load(path + 'distributed_dixon_price_std_2subp.npy')
 distributed_mean_5 = np.load(path + 'distributed_dixon_price_mean_5subp_n20.npy')
 distributed_std_5 = np.load(path + 'distributed_dixon_price_std_5subp_n20.npy')
 
-# distributed_mean_10 = np.load(path + 'distributed_dixon_price_mean_10subp.npy')
-# distributed_std_10 = np.load(path + 'distributed_dixon_price_std_10subp.npy')
+distributed_mean_10 = np.load(path + 'distributed_dixon_price_mean_10subp_n20.npy')
+distributed_std_10 = np.load(path + 'distributed_dixon_price_std_10subp_n20.npy')
 
 dims = np.linspace(100, 1000, 10, dtype=int)
 
@@ -48,15 +48,15 @@ plt.fill_between(
     alpha=0.2,
 )
 
-# plt.semilogy(dims, distributed_mean_10, 'v-', color='tab:red', linewidth=2, markersize=8, label='Distributed SLSQP (10 subproblems)')
+plt.semilogy(dims, distributed_mean_10, 'v-', color='tab:red', linewidth=2, markersize=8, label='Distributed SLSQP (10 subproblems)')
 
-# plt.fill_between(
-#     np.ravel(dims),
-#     np.ravel(distributed_mean_10 - 2*distributed_std_10),
-#     np.ravel(distributed_mean_10 + 2*distributed_std_10),
-#     color="tab:red",
-#     alpha=0.2,
-# )
+plt.fill_between(
+    np.ravel(dims),
+    np.ravel(distributed_mean_10 - 2*distributed_std_10),
+    np.ravel(distributed_mean_10 + 2*distributed_std_10),
+    color="tab:red",
+    alpha=0.2,
+)
 
 plt.xlabel('Dimension (n)')
 plt.ylabel('Optimization time (s)')
