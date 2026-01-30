@@ -122,7 +122,7 @@ opt.solve(max_iter=100, tol=1e-4, ctol=1e-3, itol=1, rho=1.1)
 
 print('Solution: ', opt.x)
 print('Success: ', opt.success)
-print('Iterations: ', opt.k)
+print('Iterations: ', opt.dual_iterations)
 print('Time (s): ', opt.time)
 
 
@@ -159,5 +159,5 @@ plt.legend()
 
 plt.gca().set_aspect('equal')
 
-# plt.savefig('augmented_lagrangian_example_2.pdf', bbox_inches='tight')
+plt.savefig('augmented_lagrangian_circle_constraint.pdf', bbox_inches='tight')
 plt.show()
