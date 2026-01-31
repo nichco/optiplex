@@ -141,11 +141,17 @@ levels = np.linspace(min(Z.flatten()), 3000, 30)
 plt.contour(B, C, Z, levels=levels, cmap='Blues_r', alpha=0.4, linewidths=0.5)
 plt.contourf(B, C, Z, levels=levels, cmap='Blues_r', alpha=0.5)
 
+dZ_dc, dZ_db = np.gradient(Z, c_vals, b_vals)
+
+# Zero level sets of the derivatives
+plt.contour(B, C, dZ_db, levels=[0], colors='tab:purple', linewidths=2, linestyles='-.', alpha=1)
+plt.contour(B, C, dZ_dc, levels=[0], colors='tab:olive', linewidths=2, linestyles='-.', alpha=1)
+
 plt.plot(b_history, c_history, '-o', mec='k', color='tab:red', linewidth=2.5, markersize=7, zorder=10)
 plt.xlim(5, 35)
 plt.ylim(0.3, 1.5)
 plt.xlabel('Wing span')
 plt.ylabel('Chord')
 
-# plt.savefig('wing_design.pdf', bbox_inches='tight')
+plt.savefig('wing_design.pdf', bbox_inches='tight')
 plt.show()

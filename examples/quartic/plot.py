@@ -37,6 +37,14 @@ plt.fill_between(
     alpha=0.4,
 )
 
+# Partial derivatives
+dZ_dx1 = 2 * X - 1.5 * Y
+dZ_dx2 = 2 * Y - 1.5 * X
+
+# Zero level sets of the derivatives
+plt.contour(X, Y, dZ_dx1, levels=[0], colors='tab:purple', linewidths=2, linestyles='dotted', alpha=1)
+plt.contour(X, Y, dZ_dx2, levels=[0], colors='tab:olive', linewidths=2, linestyles='dotted', alpha=1)
+
 ticks = [-1, 0, 1]
 plt.xticks(ticks)
 plt.yticks(ticks)

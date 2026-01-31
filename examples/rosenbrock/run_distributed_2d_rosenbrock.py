@@ -79,6 +79,13 @@ levels = np.linspace(0, max(Z.flatten()), 30)
 plt.contour(X, Y, Z, levels=levels, cmap='Blues_r', alpha=0.4, linewidths=0.5)
 plt.contourf(X, Y, Z, levels=levels, cmap='Blues_r', alpha=0.5)
 
+dZ_dx1 = -2 * (1 - X) - 4 * X * (Y - X**2)
+dZ_dx2 = 2 * (Y - X**2)
+
+# Zero level sets of the derivatives
+plt.contour(X, Y, dZ_dx1, levels=[0], colors='tab:purple', linewidths=2, linestyles='-.', alpha=1)
+plt.contour(X, Y, dZ_dx2, levels=[0], colors='tab:olive', linewidths=2, linestyles='-.', alpha=1)
+
 plt.plot(x1_history, x2_history, '-o', mec='k', color='tab:red', linewidth=2.5, markersize=7, zorder=10)
 plt.xlim(-1.5, 1.5)
 plt.ylim(-1.5, 1.5)
@@ -89,5 +96,5 @@ ticks = [-1, 0, 1]
 plt.xticks(ticks)
 plt.yticks(ticks)
 
-# plt.savefig('rosenbrock.pdf', bbox_inches='tight')
+plt.savefig('rosenbrock.pdf', bbox_inches='tight')
 plt.show()
