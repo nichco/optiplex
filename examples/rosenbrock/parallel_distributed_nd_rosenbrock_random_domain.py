@@ -48,13 +48,13 @@ def make_sub_problem(subp, N, n, timer):
 
 np.random.seed(0)
 
-dims = np.linspace(100, 1000, 10, dtype=int)
+dims = np.linspace(100, 2000, 10, dtype=int)
 # dims = np.linspace(100, 400, 4, dtype=int)
 
 num = 20 # the number of random samples for each dimension
 # num = 2 # the number of random samples for each dimension
 
-N = 5 # number of subproblems
+N = 10 # number of subproblems
 
 jax_obj = lambda v: jnp.sum(100 * (v[1:] - v[:-1]**2)**2 + (1 - v[:-1])**2)
 
@@ -109,10 +109,10 @@ mean = np.array(mean)
 std = np.array(std)
 
 
-file = 'distributed_rosenbrock_mean_5subp_n20_IPOPT'
+file = 'distributed_rosenbrock_mean_10subp_n20_d2000_IPOPT'
 np.save(file, mean)
 
-file = 'distributed_rosenbrock_std_5subp_n20_IPOPT'
+file = 'distributed_rosenbrock_std_10subp_n20_d2000_IPOPT'
 np.save(file, std)
 
 

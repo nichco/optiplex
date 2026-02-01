@@ -37,9 +37,9 @@ class Plex():
 
             x_out_minus_1 = np.concatenate([xi.ravel() for xi in self.x])
 
-            inner_loop_converged, inner_loop_iterations = False, 0
+            inner_loop_converged, primal_iterations = False, 0
             while not inner_loop_converged:
-                print(f"  inner loop iteration: {inner_loop_iterations + 1}")
+                print(f"  inner loop iteration: {primal_iterations + 1}")
 
                 x_in_minus_1 = np.concatenate([xi.ravel() for xi in self.x])
 
@@ -52,7 +52,7 @@ class Plex():
                 if np.allclose(np.linalg.norm(x_in), np.linalg.norm(x_in_minus_1), atol=itol, rtol=itol):
                     inner_loop_converged = True
 
-                inner_loop_iterations += 1
+                primal_iterations += 1
 
 
             # Evaluate the consensus constraints
@@ -81,7 +81,7 @@ class Plex():
                                '||c||': feasibility,
                                'mu': [self.mu],
                                '||y||': [np.linalg.norm(self.y)],
-                               'cd iter': [inner_loop_iterations],
+                               'cd iter': [primal_iterations],
                                })
 
             print(df.to_string(index=False, float_format='{:.3e}'.format))
