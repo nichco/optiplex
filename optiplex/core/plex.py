@@ -37,7 +37,6 @@ class Plex():
         assert rho > 1
         t1 = time.perf_counter()
 
-
         for k in range(max_outer_iter):
 
             x_old = np.concatenate([xi.ravel() for xi in self.x])
@@ -77,7 +76,6 @@ class Plex():
 
             # Outer loop convergence tolerance
             eps_outer = np.sqrt(self.n) * ATOL_out + RTOL_out * np.linalg.norm(x_old)
-
             eps_feas = np.sqrt(self.d) * ATOL_feas
 
             if feas >= eps_feas:
@@ -95,16 +93,6 @@ class Plex():
             if r_norm_outer < eps_outer and feas < eps_feas:
                 print('-Dual loop converged!-')
                 break
-
-            # if feas >= eps_feas:
-            #     self.y = self.y + self.mu * c # Update the multipliers
-            #     self.mu = rho * self.mu # Update the penalty coefficient
-
-            # print(f"du_itr={k:03d} | "
-            #       f"r_o={r_norm_outer:.3e} | "
-            #       f"feas={feas:.3e} | "
-            #       f"mu={self.mu:.2f}"
-            #       )
 
 
         self.time = time.perf_counter() - t1
