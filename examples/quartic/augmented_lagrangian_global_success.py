@@ -115,12 +115,12 @@ opt = Plex(blocks=[subproblem1, subproblem2],
            constraint=constraint,
            )
 
-opt.solve(max_iter=100, tol=1e-3)
+opt.solve(max_iter=100, tol=1e-4, itol=1e-2)
 
 
 print('Solution: ', opt.x)
 print('Success: ', opt.success)
-print('Iterations: ', opt.k)
+print('Iterations: ', opt.dual_iterations)
 print('Time (s): ', opt.time)
 
 

@@ -12,8 +12,6 @@ np.random.seed(0)
 # https://www.sfu.ca/~ssurjano/dixonpr.html
 
 dims = np.linspace(300, 3000, 10, dtype=int)
-# print(dims)
-# exit()
 
 num = 20 # the number of random samples for each dimension
 

@@ -27,29 +27,36 @@ class Plex():
               tol: float=1e-6, # outer loop tolerance
               rho: float=1.2, # penalty increase factor
               ctol: float=1e-4, # consensus constraint tolerance
-              itol: float=1e2, # inner loop tolerance
+              itol: float=1e3, # inner loop tolerance
+              ABSTOL_in: float=1e-3,
+              RELTOL_in: float=1e-2,
+            #   ABSTOL_out: float=1e-6,
+            #   RELTOL_out: float=1e-6,
               ) -> bool:
         
         assert rho > 1
         t1 = time.perf_counter()
 
-        while self.success is False and self.dual_iterations < max_iter:
+        # while self.success is False and self.dual_iterations < max_iter:
+        for k in range(max_iter):
 
-            x_out_minus_1 = np.concatenate([xi.ravel() for xi in self.x])
+            x_old = np.concatenate([xi.ravel() for xi in self.x])
 
             inner_loop_converged, primal_iterations = False, 0
             while not inner_loop_converged:
                 print(f"  inner loop iteration: {primal_iterations + 1}")
 
-                x_in_minus_1 = np.concatenate([xi.ravel() for xi in self.x])
+                z_old = np.concatenate([xi.ravel() for xi in self.x])
 
                 for block in self.blocks: 
                     self.x = block(self.x, self.y, self.mu)
 
                 # Check inner loop convergence
-                x_in = np.concatenate([xi.ravel() for xi in self.x])
-                # if np.linalg.norm(x_in - x_in_minus_1) < itol:
-                if np.allclose(np.linalg.norm(x_in), np.linalg.norm(x_in_minus_1), atol=itol, rtol=itol):
+                eps_primal = ABSTOL_in + RELTOL_in * np.linalg.norm(z_old)
+                z_new = np.concatenate([xi.ravel() for xi in self.x])
+                r_norm_inner = np.linalg.norm(z_new - z_old)
+
+                if r_norm_inner < eps_primal:
                     inner_loop_converged = True
 
                 primal_iterations += 1
@@ -59,25 +66,25 @@ class Plex():
             c = self.constraint(self.x)
             feasibility = np.linalg.norm(c)
 
-            x_out = np.concatenate([xi.ravel() for xi in self.x])
+            x_new = np.concatenate([xi.ravel() for xi in self.x])
 
-            outer_loop_delta = np.linalg.norm(x_out - x_out_minus_1)
+            r_norm_outer = np.linalg.norm(x_new - x_old)
 
-            rhs = tol + tol * np.linalg.norm(x_out_minus_1)
-            # absolute(a - b) <= (atol + rtol * absolute(b))
-            outer_loop_progress = outer_loop_delta - rhs
+            ABSTOL_out = RELTOL_out = tol
+            eps_primal = ABSTOL_out + RELTOL_out * np.linalg.norm(x_old)
             
             # Check outer loop convergence
-            if np.allclose(np.linalg.norm(x_out), np.linalg.norm(x_out_minus_1), atol=tol, rtol=tol) and feasibility < ctol:
+            if r_norm_outer < eps_primal and feasibility < ctol:
                 self.success = True
+                break
 
-            if feasibility > ctol: # If infeasible, update multipliers
+            if feasibility >= ctol: # If infeasible, update multipliers
                 self.y = self.y + self.mu * c # Update the multipliers
                 self.mu = rho * self.mu # Update the penalty coefficient
 
 
             df = pd.DataFrame({'iter': self.dual_iterations,
-                               'progress': outer_loop_progress,
+                               '||r||': r_norm_outer,
                                '||c||': feasibility,
                                'mu': [self.mu],
                                '||y||': [np.linalg.norm(self.y)],
@@ -86,8 +93,9 @@ class Plex():
 
             print(df.to_string(index=False, float_format='{:.3e}'.format))
 
-            self.dual_iterations += 1
-
+        
+        
+        self.dual_iterations = k + 1
 
         self.time = time.perf_counter() - t1
 

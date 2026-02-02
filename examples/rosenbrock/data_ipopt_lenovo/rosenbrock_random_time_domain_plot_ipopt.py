@@ -2,20 +2,28 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 path = 'examples/rosenbrock/data_ipopt_lenovo/'
-monolithic_mean = np.load(path + 'monolithic_rosenbrock_mean_n20_d2000_IPOPT.npy')
-monolithic_std = np.load(path + 'monolithic_rosenbrock_std_n20_d2000_IPOPT.npy')
+# monolithic_mean = np.load(path + 'monolithic_rosenbrock_mean_n20_d2000_IPOPT.npy')
+# monolithic_std = np.load(path + 'monolithic_rosenbrock_std_n20_d2000_IPOPT.npy')
+monolithic_mean = np.load(path + 'monolithic_rosenbrock_mean_n20_d3000_IPOPT.npy')
+monolithic_std = np.load(path + 'monolithic_rosenbrock_std_n20_d3000_IPOPT.npy')
 
-distributed_mean_2 = np.load(path + 'distributed_rosenbrock_mean_2subp_n20_d2000_IPOPT.npy')
-distributed_std_2 = np.load(path + 'distributed_rosenbrock_std_2subp_n20_d2000_IPOPT.npy')
+# distributed_mean_2 = np.load(path + 'distributed_rosenbrock_mean_2subp_n20_d2000_IPOPT.npy')
+# distributed_std_2 = np.load(path + 'distributed_rosenbrock_std_2subp_n20_d2000_IPOPT.npy')
+distributed_mean_2 = np.load(path + 'distributed_rosenbrock_mean_2subp_n20_d3000_IPOPT.npy')
+distributed_std_2 = np.load(path + 'distributed_rosenbrock_std_2subp_n20_d3000_IPOPT.npy')
 
-distributed_mean_5 = np.load(path + 'distributed_rosenbrock_mean_5subp_n20_d2000_IPOPT.npy')
-distributed_std_5 = np.load(path + 'distributed_rosenbrock_std_5subp_n20_d2000_IPOPT.npy')
+# distributed_mean_5 = np.load(path + 'distributed_rosenbrock_mean_5subp_n20_d2000_IPOPT.npy')
+# distributed_std_5 = np.load(path + 'distributed_rosenbrock_std_5subp_n20_d2000_IPOPT.npy')
+distributed_mean_5 = np.load(path + 'distributed_rosenbrock_mean_5subp_n20_d3000_IPOPT.npy')
+distributed_std_5 = np.load(path + 'distributed_rosenbrock_std_5subp_n20_d3000_IPOPT.npy')
 
-distributed_mean_10 = np.load(path + 'distributed_rosenbrock_mean_10subp_n20_d2000_IPOPT.npy')
-distributed_std_10 = np.load(path + 'distributed_rosenbrock_std_10subp_n20_d2000_IPOPT.npy')
+# distributed_mean_10 = np.load(path + 'distributed_rosenbrock_mean_10subp_n20_d2000_IPOPT.npy')
+# distributed_std_10 = np.load(path + 'distributed_rosenbrock_std_10subp_n20_d2000_IPOPT.npy')
+distributed_mean_10 = np.load(path + 'distributed_rosenbrock_mean_10subp_n20_d3000_IPOPT.npy')
+distributed_std_10 = np.load(path + 'distributed_rosenbrock_std_10subp_n20_d3000_IPOPT.npy')
 
-dims = np.linspace(100, 2000, 10, dtype=int)
-# dims = np.linspace(300, 3000, 10, dtype=int)
+# dims = np.linspace(100, 2000, 10, dtype=int)
+dims = np.linspace(300, 3000, 10, dtype=int)
 
 
 
@@ -68,6 +76,6 @@ plt.legend(loc='lower right', fontsize=10)
 
 plt.xlim(min(dims), max(dims))
 
-plt.savefig('rosenbrock_random_time.pdf', bbox_inches='tight')
+# plt.savefig('rosenbrock_random_time.pdf', bbox_inches='tight')
 
 plt.show()

@@ -124,7 +124,7 @@ opt.solve(max_iter=100, tol=1e-4, ctol=1e-4, itol=1e-1, rho=1.05)
 
 print('Solution: ', opt.x)
 print('Success: ', opt.success)
-print('Iterations: ', opt.k)
+print('Iterations: ', opt.dual_iterations)
 print('Time (s): ', opt.time)
 
 
