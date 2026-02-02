@@ -21,6 +21,7 @@ class Plex():
         self.con = con
         self.mu = 1.0 # augmented Lagrangian penalty coefficient
         self.y = np.zeros_like(con(self.x)) # Lagrange multipliers
+        self.d = len(self.y) # number of constraints
     
 
     def solve(self, 
