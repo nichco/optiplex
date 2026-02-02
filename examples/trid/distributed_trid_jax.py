@@ -67,12 +67,18 @@ v_init = []
 for i in range(N): v_init.append(np.ones(size))
 
 
-opt = Plex(blocks=subP_functions,
+opt = Plex(subproblems=subP_functions,
            x_init=v_init)
 
 tracemalloc.start()
 
-opt.solve(max_iter=500, tol=1e-5, itol=1e3,)
+opt.solve(max_outer_iter=500,
+          max_inner_iter=10,
+          ATOL_out=1e-4, 
+          RTOL_out=1e-4,
+          ATOL_in=1e-1, 
+          RTOL_in=1e-1,
+          )
 
 current, peak = tracemalloc.get_traced_memory()
 # print(f"Current: {current / 10**6:.2f} MB")
