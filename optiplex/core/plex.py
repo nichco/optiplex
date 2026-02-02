@@ -60,7 +60,7 @@ class Plex():
                       )
                 
                 # Check inner loop convergence
-                if r_norm_inner < eps_inner: 
+                if r_norm_inner <= eps_inner: 
                     print('-Primal loop converged!-')
                     break
             
@@ -78,7 +78,7 @@ class Plex():
             eps_outer = np.sqrt(self.n) * ATOL_out + RTOL_out * np.linalg.norm(x_old)
             eps_feas = np.sqrt(self.d) * ATOL_feas
 
-            if feas >= eps_feas:
+            if feas > eps_feas:
                 self.y = self.y + mu * c # Update the multipliers
                 mu = rho * mu # Update the penalty coefficient
 
@@ -90,7 +90,7 @@ class Plex():
                   )
             
             # Check outer loop convergence
-            if r_norm_outer < eps_outer and feas < eps_feas:
+            if r_norm_outer <= eps_outer and feas <= eps_feas:
                 print('-Dual loop converged!-')
                 break
 
