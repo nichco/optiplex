@@ -5,90 +5,83 @@ import pandas as pd
 
 class Plex():
     def __init__(self, 
-                 blocks: List[Callable],
+                 subproblems: List[Callable],
                  x_init: List[np.ndarray],
                 #  constraint: Callable = None,
-                 constraint: Callable = lambda x: 0,
+                 con: Callable = lambda x: np.zeros(0),
                  ):
 
-        self.blocks = blocks
+        self.subproblems = subproblems
         # self.x = x_init
         self.x = [np.asarray(xi) for xi in x_init] # cast to numpy arrays
+        self.n = sum(xi.size for xi in self.x) # dimension
         self.success = False
         self.dual_iterations = 1
         self.time = None
-        self.constraint = constraint
+        self.con = con
         self.mu = 1.0 # augmented Lagrangian penalty coefficient
-        self.y = np.zeros_like(constraint(self.x)) # Lagrange multipliers
+        self.y = np.zeros_like(con(self.x)) # Lagrange multipliers
     
 
     def solve(self, 
-              max_iter: int=100, # maximum number of outer iterations
-              tol: float=1e-6, # outer loop tolerance
+              max_outer_iter: int=100, # maximum number of outer iterations
+              max_inner_iter: int=1000, # maximum number of inner iterations
               rho: float=1.2, # penalty increase factor
-              ctol: float=1e-4, # consensus constraint tolerance
-              itol: float=1e3, # inner loop tolerance
-              ABSTOL_in: float=1e-3,
-              RELTOL_in: float=1e-2,
-            #   ABSTOL_out: float=1e-6,
-            #   RELTOL_out: float=1e-6,
+              ATOL_in: float=1e-1,
+              RTOL_in: float=1e-1,
+              ATOL_out: float=1e-4,
+              RTOL_out: float=1e-4,
+              EPS_pri: float=1e-6,
               ) -> bool:
         
         assert rho > 1
         t1 = time.perf_counter()
 
-        # while self.success is False and self.dual_iterations < max_iter:
-        for k in range(max_iter):
+
+        for k in range(max_outer_iter):
 
             x_old = np.concatenate([xi.ravel() for xi in self.x])
 
-            inner_loop_converged, primal_iterations = False, 0
-            while not inner_loop_converged:
-                print(f"  inner loop iteration: {primal_iterations + 1}")
+            for j in range(max_inner_iter):
+                print('inner iteration: ', j + 1)
 
                 z_old = np.concatenate([xi.ravel() for xi in self.x])
 
-                for block in self.blocks: 
-                    self.x = block(self.x, self.y, self.mu)
+                for subP in self.subproblems: 
+                    self.x = subP(self.x, self.y, self.mu)
 
                 # Check inner loop convergence
-                eps_primal = ABSTOL_in + RELTOL_in * np.linalg.norm(z_old)
+                eps_inner = np.sqrt(self.n) * ATOL_in + RTOL_in * np.linalg.norm(z_old)
                 z_new = np.concatenate([xi.ravel() for xi in self.x])
-                r_norm_inner = np.linalg.norm(z_new - z_old)
+                if np.linalg.norm(z_new - z_old) < eps_inner: 
+                    break
 
-                if r_norm_inner < eps_primal:
-                    inner_loop_converged = True
-
-                primal_iterations += 1
-
-
-            # Evaluate the consensus constraints
-            c = self.constraint(self.x)
-            feasibility = np.linalg.norm(c)
+            # Evaluate the constraints
+            c = self.con(self.x)
+            feas = np.linalg.norm(c)
 
             x_new = np.concatenate([xi.ravel() for xi in self.x])
+            r_norm = np.linalg.norm(x_new - x_old)
 
-            r_norm_outer = np.linalg.norm(x_new - x_old)
-
-            ABSTOL_out = RELTOL_out = tol
-            eps_primal = ABSTOL_out + RELTOL_out * np.linalg.norm(x_old)
+            # Outer loop convergence tolerance
+            eps_outer = np.sqrt(self.n) * ATOL_out + RTOL_out * np.linalg.norm(x_old)
             
             # Check outer loop convergence
-            if r_norm_outer < eps_primal and feasibility < ctol:
+            if r_norm < eps_outer and feas < EPS_pri:
                 self.success = True
                 break
 
-            if feasibility >= ctol: # If infeasible, update multipliers
+            if feas >= EPS_pri:
                 self.y = self.y + self.mu * c # Update the multipliers
                 self.mu = rho * self.mu # Update the penalty coefficient
 
 
-            df = pd.DataFrame({'iter': self.dual_iterations,
-                               '||r||': r_norm_outer,
-                               '||c||': feasibility,
+            df = pd.DataFrame({'out_iter': self.dual_iterations,
+                               '||r||': r_norm,
+                               '||c||': feas,
                                'mu': [self.mu],
                                '||y||': [np.linalg.norm(self.y)],
-                               'cd iter': [primal_iterations],
+                               'in_iter': j + 1,
                                })
 
             print(df.to_string(index=False, float_format='{:.3e}'.format))

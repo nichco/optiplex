@@ -73,7 +73,14 @@ opt = Plex(blocks=subP_functions,
 
 tracemalloc.start()
 
-opt.solve(max_iter=500, tol=1e-5, itol=1000,)
+# opt.solve(max_iter=500, tol=1e-5, itol=1000,)
+opt.solve(max_outer_iter=100,
+          max_inner_iter=10,
+          ATOL_out=1e-5, 
+          RTOL_out=1e-5,
+          ATOL_in=1e-1, 
+          RTOL_in=1e-1,
+          )
 
 current, peak = tracemalloc.get_traced_memory()
 # print(f"Current: {current / 10**6:.2f} MB")
@@ -81,7 +88,7 @@ print(f"Peak: {peak / 10**6:.2f} MB")
 
 tracemalloc.stop()
 
-# print('Solution: ', opt.x)
+print('Solution: ', opt.x)
 print("Success:", opt.success)
 print('Iterations: ', opt.dual_iterations)
 # print('Total time (s): ', opt.time)

@@ -91,9 +91,16 @@ for n in dims:
         v_init = [v_init[i*size:(i+1)*size] for i in range(N)]
 
 
-        opt = Plex(blocks=subP_functions, x_init=v_init)
+        opt = Plex(subproblems=subP_functions, x_init=v_init)
 
-        opt.solve(max_iter=500, tol=1e-5, itol=1e2,)
+        # opt.solve(max_iter=500, tol=1e-5, itol=1e2,)
+        opt.solve(max_outer_iter=500,
+                  max_inner_iter=10,
+                  ATOL_out=1e-5, 
+                  RTOL_out=1e-5,
+                  ATOL_in=1e0, 
+                  RTOL_in=1e0,
+                  )
 
         print("Success:", opt.success)
         print('Iterations: ', opt.dual_iterations)

@@ -98,7 +98,7 @@ def subproblem2(v_init, y, mu):
 
 
 
-def constraint(v_init):
+def con(v_init):
     
     x1_1 = v_init[0]
     x2_1 = v_init[1]
@@ -110,12 +110,21 @@ def constraint(v_init):
     return jnp.concatenate([c_1, c_2])
 
 
-opt = Plex(blocks=[subproblem1, subproblem2],
+opt = Plex(subproblems=[subproblem1, subproblem2],
            x_init=v_init,
-           constraint=constraint,
+           con=con,
            )
 
-opt.solve(max_iter=100, tol=1e-4, itol=1e-2)
+# opt.solve(max_iter=100, tol=1e-4, itol=1e-2)
+opt.solve(max_outer_iter=100,
+          max_inner_iter=10,
+          ATOL_out=1e-5, 
+          RTOL_out=1e-5,
+          ATOL_in=1e-2, 
+          RTOL_in=1e-2,
+          EPS_pri=1e-3,
+          rho=1.05
+          )
 
 
 print('Solution: ', opt.x)

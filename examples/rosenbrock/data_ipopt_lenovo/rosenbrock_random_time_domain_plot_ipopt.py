@@ -76,6 +76,6 @@ plt.legend(loc='lower right', fontsize=10)
 
 plt.xlim(min(dims), max(dims))
 
-# plt.savefig('rosenbrock_random_time.pdf', bbox_inches='tight')
+# plt.savefig('rosenbrock_time_ipopt.pdf', bbox_inches='tight')
 
 plt.show()
