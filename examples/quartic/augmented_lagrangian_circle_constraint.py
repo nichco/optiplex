@@ -109,7 +109,7 @@ def con(v_init):
 
     c_1 = combo([x1_1, x1_2])
     c_2 = combo([x2_1, x2_2])
-    return jnp.concatenate([c_1, c_2])
+    return np.concatenate([c_1, c_2])
 
 
 opt = Plex(subproblems=[subproblem1, subproblem2],
@@ -124,8 +124,9 @@ opt.solve(max_outer_iter=100,
           RTOL_out=1e-5,
           ATOL_in=1e-2, 
           RTOL_in=1e-2,
-          EPS_pri=1e-3,
-          rho=1.1
+          ATOL_feas=1e-5,
+          rho=1.1,
+          mu=1.0,
           )
 
 

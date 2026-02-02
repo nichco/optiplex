@@ -8,7 +8,7 @@ class Plex():
                  subproblems: List[Callable],
                  x_init: List[np.ndarray],
                 #  constraint: Callable = None,
-                 con: Callable = lambda x: np.zeros(0),
+                 con: Callable = lambda v: np.zeros(0),
                  ):
 
         self.subproblems = subproblems
@@ -17,10 +17,9 @@ class Plex():
         self.n = sum(xi.size for xi in self.x) # dimension
         self.time = None
         self.con = con
-        self.mu = 1.0 # augmented Lagrangian penalty coefficient
         self.y = np.zeros_like(con(self.x)) # Lagrange multipliers
         self.d = len(self.y) # number of constraints
-        self.history = {'x': [self.x.copy()]} # data dictionary
+        self.history = [self.x.copy()] # data dictionary/list
     
 
     def solve(self, 
@@ -31,7 +30,8 @@ class Plex():
               RTOL_in: float=1e-1,
               ATOL_out: float=1e-4,
               RTOL_out: float=1e-4,
-              EPS_pri: float=1e-6,
+              ATOL_feas: float=1e-6,
+              mu = 1.0, # augmented Lagrangian penalty coefficient
               ) -> None:
         
         assert rho > 1
@@ -48,9 +48,8 @@ class Plex():
 
                 for subP in self.subproblems: 
 
-                    self.x = subP(self.x, self.y, self.mu)
-
-                    self.history['x'].append(self.x.copy())
+                    self.x = subP(self.x, self.y, mu)
+                    self.history.append(self.x.copy())
 
                 eps_inner = np.sqrt(self.n) * ATOL_in + RTOL_in * np.linalg.norm(z_old)
                 z_new = np.concatenate([xi.ravel() for xi in self.x])
@@ -74,25 +73,38 @@ class Plex():
             feas = np.linalg.norm(c)
 
             x_new = np.concatenate([xi.ravel() for xi in self.x])
-            r_norm = np.linalg.norm(x_new - x_old)
+            r_norm_outer = np.linalg.norm(x_new - x_old)
 
             # Outer loop convergence tolerance
             eps_outer = np.sqrt(self.n) * ATOL_out + RTOL_out * np.linalg.norm(x_old)
+
+            eps_feas = np.sqrt(self.d) * ATOL_feas
+
+            if feas >= eps_feas:
+                self.y = self.y + mu * c # Update the multipliers
+                mu = rho * mu # Update the penalty coefficient
+
+            print(f"du_itr={k:03d} | "
+                  f"r_o={r_norm_outer:.3e} | "
+                  f"feas={feas:.3e} | "
+                  f"mu={mu:.2f} | "
+                  f"y={np.linalg.norm(self.y):.3e}"
+                  )
             
             # Check outer loop convergence
-            if r_norm < eps_outer and feas < EPS_pri:
+            if r_norm_outer < eps_outer and feas < eps_feas:
                 print('-Dual loop converged!-')
                 break
 
-            if feas >= EPS_pri:
-                self.y = self.y + self.mu * c # Update the multipliers
-                self.mu = rho * self.mu # Update the penalty coefficient
+            # if feas >= eps_feas:
+            #     self.y = self.y + self.mu * c # Update the multipliers
+            #     self.mu = rho * self.mu # Update the penalty coefficient
 
-            print(f"du_itr={k:03d} | "
-                  f"r_o={r_norm:.3e} | "
-                  f"feas={feas:.3e} | "
-                  f"mu={self.mu:.2f}"
-                  )
+            # print(f"du_itr={k:03d} | "
+            #       f"r_o={r_norm_outer:.3e} | "
+            #       f"feas={feas:.3e} | "
+            #       f"mu={self.mu:.2f}"
+            #       )
 
 
         self.time = time.perf_counter() - t1

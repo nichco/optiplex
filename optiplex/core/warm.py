@@ -5,121 +5,104 @@ import time
 
 class Plex():
     def __init__(self, 
-                 blocks: List[Callable],
-                 problem: Callable,
+                 subproblems: List[Callable],
+                 full_problem: Callable,
                  x_init: List[np.ndarray],
-                 constraint: Callable = None):
-        
-        # check for unconstrained problems
-        self.con = False
-        if constraint is not None:
-            self.con = True
+                #  constraint: Callable = None,
+                 con: Callable = lambda x: np.zeros(0),
+                 ):
 
-        self.blocks = blocks
-        self.problem = problem
-        self.x_init = x_init
-        self.num_vars = len(x_init)
-        self.success = False
-        self.solution = None
-        self.num_iter = 0
+        self.subproblems = subproblems
+        self.full_problem = full_problem
+        # self.x = x_init
+        self.x = [np.asarray(xi) for xi in x_init] # cast to numpy arrays
+        self.n = sum(xi.size for xi in self.x) # dimension
         self.time = None
-        self.constraint = constraint
+        self.con = con
         self.mu = 1.0 # augmented Lagrangian penalty coefficient
-
-        if self.con:
-            self.y = np.zeros_like(constraint(x_init)) # Lagrange multipliers
-        else:
-            self.y = None
-
-        self.diffs = []
-        self.constraint_violations = []
+        self.y = np.zeros_like(con(self.x)) # Lagrange multipliers
+        self.d = len(self.y) # number of constraints
+        self.history = [self.x.copy()] # data dictionary/list
+    
 
     def solve(self, 
-              max_iter: int=100, 
-              tol: float=1e-6,
+              max_outer_iter: int=100, # maximum number of outer iterations
+              max_inner_iter: int=1000, # maximum number of inner iterations
               rho: float=1.2, # penalty increase factor
-              ctol: float=1e-4, # consensus constraint tolerance
-              ) -> bool:
+              ATOL_in: float=1e-1,
+              RTOL_in: float=1e-1,
+              ATOL_out: float=1e-4,
+              RTOL_out: float=1e-4,
+              ATOL_feas: float=1e-6,
+              ) -> None:
         
-        # check if rho is greater than 1
-        if rho <= 1: raise ValueError("rho must be greater than 1")
+        assert rho > 1
+        t1 = time.perf_counter()
 
 
-        t1 = time.time()
+        for k in range(max_outer_iter):
 
-        for k in range(max_iter):
+            x_old = np.concatenate([xi.ravel() for xi in self.x])
 
-            print('PLEX ITR: ', k)
+            for j in range(max_inner_iter):
 
-            x_k_minus_1 = self.x_init.copy()
+                z_old = np.concatenate([xi.ravel() for xi in self.x])
 
-            for block in self.blocks:
-                self.x_init = block(self.x_init, self.y, self.mu)
+                for subP in self.subproblems: 
 
+                    self.x = subP(self.x, self.y, self.mu)
+                    self.history.append(self.x.copy())
 
-            if self.con:
-                # Check convergence for constrained problems
-                # Update the multipliers and penalty coefficient
+                eps_inner = np.sqrt(self.n) * ATOL_in + RTOL_in * np.linalg.norm(z_old)
+                z_new = np.concatenate([xi.ravel() for xi in self.x])
+                r_norm_inner = np.linalg.norm(z_new - z_old)
 
-                # evaluate the consensus constraint
-                c = self.constraint(self.x_init)
-
-                # Check convergence
-                if all(np.allclose(new, old, rtol=tol) 
-                    for new, old in zip(self.x_init, x_k_minus_1)) and all(np.abs(c) < ctol):
-                    self.success = True
-                    break
-
-                # printing the convergence status
-                max_diff = max([np.max(np.abs(new - old) / (np.abs(old) + 1e-12)) 
-                        for new, old in zip(self.x_init, x_k_minus_1)])
-                self.diffs.append(max_diff)
-                max_constraint_violation = max(np.abs(c)) if len(c) > 0 else 0.0
-                self.constraint_violations.append(max_constraint_violation)
+                # Print inner iteration data
+                print(f"pr_itr={j:03d} | "
+                      f"r_i={r_norm_inner:.3e} | "
+                      )
                 
-                print('MAX DIFF: ', max_diff)
-                print('LAGRANGE MULTIPLIERS: ', self.y)
-                print('MAX CONSTRAINT VIOLATION: ', max_constraint_violation, 'CTOL: ', ctol)
-                print('PENALTY COEFFICIENT: ', self.mu)
-
-                # prevent overflow
-                if any(np.abs(c) > ctol): # fixed a syntax error here
-
-                    # Update the Lagrange multipliers
-                    self.y = self.y + self.mu * c
-                    
-                    # Update the penalty coefficient
-                    self.mu = rho * self.mu
-                    print('NEW PENALTY COEFFICIENT: ', self.mu)
-
-
-
-            else:
-
-                max_diff = max([np.max(np.abs(new - old) / (np.abs(old) + 1e-12)) 
-                        for new, old in zip(self.x_init, x_k_minus_1)])
-                self.diffs.append(max_diff)
-                
-                print('MAX DIFF: ', max_diff)
-
-                # Check convergence for unconstrained problems
-                if all(np.allclose(new, old, rtol=tol) 
-                    for new, old in zip(self.x_init, x_k_minus_1)):
-                    self.success = True
+                # Check inner loop convergence
+                if r_norm_inner < eps_inner: 
+                    print('-Primal loop converged!-')
                     break
+            
+            # Exit for unconstrained problems
+            if self.d == 0: break
+
+            # Evaluate the constraints
+            c = self.con(self.x)
+            feas = np.linalg.norm(c)
+
+            x_new = np.concatenate([xi.ravel() for xi in self.x])
+            r_norm_outer = np.linalg.norm(x_new - x_old)
+
+            # Outer loop convergence tolerance
+            eps_outer = np.sqrt(self.n) * ATOL_out + RTOL_out * np.linalg.norm(x_old)
+
+            eps_feas = np.sqrt(self.d) * ATOL_feas
+            
+            # Check outer loop convergence
+            if r_norm_outer < eps_outer and feas < eps_feas:
+                print('-Dual loop converged!-')
+                break
+
+            if feas >= eps_feas:
+                self.y = self.y + self.mu * c # Update the multipliers
+                self.mu = rho * self.mu # Update the penalty coefficient
+
+            print(f"du_itr={k:03d} | "
+                  f"r_o={r_norm_outer:.3e} | "
+                  f"feas={feas:.3e} | "
+                  f"mu={self.mu:.2f}"
+                  )
+
+
+        self.time = time.perf_counter() - t1
 
 
 
-        self.num_iter = k + 1
-        self.time = time.time() - t1
-        # self.solution = self.x_init
+        # Warm-start the monolithic problem
+        self.x = self.full_problem(self.x)
 
-
-
-        # solve monolithic problem
-        self.x_init = self.problem(self.x_init, self.y, self.mu)
-
-        self.solution = self.x_init
-
-
-        return self.success
+        return None
