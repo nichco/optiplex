@@ -130,8 +130,6 @@ opt.solve(max_outer_iter=100,
 
 
 print('Solution: ', opt.x)
-print('Success: ', opt.success)
-print('Iterations: ', opt.dual_iterations)
 print('Time (s): ', opt.time)
 
 

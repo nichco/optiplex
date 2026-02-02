@@ -1,7 +1,7 @@
 from typing import List, Callable
 import numpy as np
 import time
-import pandas as pd
+
 
 class Plex():
     def __init__(self, 
@@ -15,13 +15,12 @@ class Plex():
         # self.x = x_init
         self.x = [np.asarray(xi) for xi in x_init] # cast to numpy arrays
         self.n = sum(xi.size for xi in self.x) # dimension
-        self.success = False
-        self.dual_iterations = 1
         self.time = None
         self.con = con
         self.mu = 1.0 # augmented Lagrangian penalty coefficient
         self.y = np.zeros_like(con(self.x)) # Lagrange multipliers
         self.d = len(self.y) # number of constraints
+        self.history = {'x': [self.x.copy()]} # data dictionary
     
 
     def solve(self, 
@@ -33,7 +32,7 @@ class Plex():
               ATOL_out: float=1e-4,
               RTOL_out: float=1e-4,
               EPS_pri: float=1e-6,
-              ) -> bool:
+              ) -> None:
         
         assert rho > 1
         t1 = time.perf_counter()
@@ -44,18 +43,31 @@ class Plex():
             x_old = np.concatenate([xi.ravel() for xi in self.x])
 
             for j in range(max_inner_iter):
-                print('inner iteration: ', j + 1)
 
                 z_old = np.concatenate([xi.ravel() for xi in self.x])
 
                 for subP in self.subproblems: 
+
                     self.x = subP(self.x, self.y, self.mu)
 
-                # Check inner loop convergence
+                    self.history['x'].append(self.x.copy())
+
                 eps_inner = np.sqrt(self.n) * ATOL_in + RTOL_in * np.linalg.norm(z_old)
                 z_new = np.concatenate([xi.ravel() for xi in self.x])
-                if np.linalg.norm(z_new - z_old) < eps_inner: 
+                r_norm_inner = np.linalg.norm(z_new - z_old)
+
+                # Print inner iteration data
+                print(f"pr_itr={j:03d} | "
+                      f"r_i={r_norm_inner:.3e} | "
+                      )
+                
+                # Check inner loop convergence
+                if r_norm_inner < eps_inner: 
+                    print('-Primal loop converged!-')
                     break
+            
+            # Exit for unconstrained problems
+            if self.d == 0: break
 
             # Evaluate the constraints
             c = self.con(self.x)
@@ -69,28 +81,20 @@ class Plex():
             
             # Check outer loop convergence
             if r_norm < eps_outer and feas < EPS_pri:
-                self.success = True
+                print('-Dual loop converged!-')
                 break
 
             if feas >= EPS_pri:
                 self.y = self.y + self.mu * c # Update the multipliers
                 self.mu = rho * self.mu # Update the penalty coefficient
 
+            print(f"du_itr={k:03d} | "
+                  f"r_o={r_norm:.3e} | "
+                  f"feas={feas:.3e} | "
+                  f"mu={self.mu:.2f}"
+                  )
 
-            df = pd.DataFrame({'out_iter': self.dual_iterations,
-                               '||r||': r_norm,
-                               '||c||': feas,
-                               'mu': [self.mu],
-                               '||y||': [np.linalg.norm(self.y)],
-                               'in_iter': j + 1,
-                               })
-
-            print(df.to_string(index=False, float_format='{:.3e}'.format))
-
-        
-        
-        self.dual_iterations = k + 1
 
         self.time = time.perf_counter() - t1
 
-        return self.success
+        return None

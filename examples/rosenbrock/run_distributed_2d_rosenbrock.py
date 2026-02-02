@@ -25,7 +25,7 @@ def subproblem1(v_init, y, mu):
 
     optimizer = mo.SLSQP(jaxprob, solver_options={'maxiter': 100, 'ftol': 1e-7}, turn_off_outputs=True)
     optimizer.solve()
-    optimizer.print_results()
+    # optimizer.print_results()
     ans = optimizer.results['x']
 
     x1_history.append(ans)
@@ -47,7 +47,7 @@ def subproblem2(v_init, y, mu):
 
     optimizer = mo.SLSQP(jaxprob, solver_options={'maxiter': 100, 'ftol': 1e-7}, turn_off_outputs=True)
     optimizer.solve()
-    optimizer.print_results()
+    # optimizer.print_results()
     ans = optimizer.results['x']
 
     x1_history.append(x1)
@@ -56,15 +56,15 @@ def subproblem2(v_init, y, mu):
     return [x1, ans]
 
 
-opt = Plex(blocks=[subproblem1, subproblem2],
+opt = Plex(subproblems=[subproblem1, subproblem2],
            x_init=v_init)
 
-opt.solve(max_iter=300, tol=1e-3)
-
+opt.solve(max_inner_iter=300, 
+          ATOL_in=1e-4, 
+          RTOL_in=1e-4
+          )
 
 print('Solution: ', opt.x)
-print('Success: ', opt.success)
-print('Iterations: ', opt.dual_iterations)
 print('Time (s): ', opt.time)
 
 
@@ -96,5 +96,5 @@ ticks = [-1, 0, 1]
 plt.xticks(ticks)
 plt.yticks(ticks)
 
-plt.savefig('rosenbrock.pdf', bbox_inches='tight')
+# plt.savefig('rosenbrock.pdf', bbox_inches='tight')
 plt.show()
