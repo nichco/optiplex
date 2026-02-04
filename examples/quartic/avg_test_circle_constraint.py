@@ -149,7 +149,7 @@ opt.solve(max_outer_iter=100,
           RTOL_in=1e-2,
           ATOL_feas=1e-5,
           rho=1.1,
-          mu=0.5,
+          mu=1.0,
           )
 
 
