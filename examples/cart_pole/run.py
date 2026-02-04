@@ -1,7 +1,6 @@
 from optiplex import Plex
 import numpy as np
-from examples.cart_pole.sub_problem import functions
-from examples.cart_pole.constraint import constraint
+from examples.cart_pole.problem_definition import functions, constraint
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -24,18 +23,24 @@ for i in range(N): v_init.append(x0)
 for i in range(N): v_init.append(u0)
 
 
-opt = Plex(blocks=functions,
-           constraint=constraint,
+opt = Plex(subproblems=functions,
+           con=constraint,
            x_init=v_init)
 
-opt.solve(max_iter=100, 
-          rho=1.2,
-          tol=1e-7,
-          itol=100,
-          ctol=1e-4)
+
+c = constraint(v_init)
+
+opt.solve(max_outer_iter=100,
+          max_inner_iter=10,
+          ATOL_out=1e-5, 
+          RTOL_out=1e-5,
+          ATOL_in=1e-2, 
+          RTOL_in=1e-2,
+          ATOL_feas=1e-5,
+          rho=1.1,
+          mu=1.0,
+          )
 
 
 
-print('Success: ', opt.success)
-print('Iterations: ', opt.k)
 print('Time (s): ', opt.time)

@@ -35,8 +35,6 @@ def make_functions(i):
                       mu: float = 1, # penalty coefficient
                       ) -> list:
         
-        print(f"function {i}")
-        
         l1 = v_init[0] # dbl check this order!!!!!!!!!
         l2 = v_init[1]
         mp1 = v_init[2]
@@ -68,18 +66,19 @@ def make_functions(i):
             c_l = combo(l_list) # consensus for l
             c_mp = combo(mp_list) # consensus for mp
             c = jnp.concatenate((c_l, c_mp)) # consensus for all global vars
-            
+            # l_hat = (l1 + l2) / 2
+            # mp_hat = (mp1 + mp2) / 2
+
+            # c_l = jnp.array([l_i - l_hat for l_i in l_list])
+            # c_mp = jnp.array([mp_i - mp_hat for mp_i in mp_list])
+            # c = jnp.concatenate((c_l, c_mp))
 
             ui = v[n*4+2:].reshape((1, n)) * uscale
 
             ji = 0.5 * dt * jnp.sum(ui[0, :-1]**2 + ui[0, 1:]**2)
 
-            j = 0
-            for k in range(N):
-                if k == i:
-                    j += ji
-                else:
-                    j += j_list[k]
+            j_list[i] = ji
+            j = sum(j_list)
 
             return 1e-2 * j + y.T @ c + mu * jnp.sum(c**2)
         
@@ -131,7 +130,7 @@ def make_functions(i):
 
         optimizer = mo.SLSQP(jaxprob, solver_options={'maxiter': 700, 'ftol': 1e-7}, turn_off_outputs=True)
         optimizer.solve()
-        optimizer.print_results()
+        # optimizer.print_results()
         ans = optimizer.results['x']
         obj = optimizer.results['fun']
         objective.append(obj)
@@ -154,3 +153,43 @@ def make_functions(i):
 functions = []
 for i in range(N): # make a function for each block
     functions.append(make_functions(i))
+
+
+
+
+
+
+
+
+
+from typing import List
+from optiplex import combo
+
+# pair-wise differences formulation
+def constraint(x_init: List[np.ndarray]) -> jnp.ndarray:
+    
+    l1 = x_init[0] # need to expand for changing N
+    l2 = x_init[1] 
+    mp1 = x_init[2]
+    mp2 = x_init[3]
+
+    c_l = combo([l1, l2]) # need to expand for changing N
+    c_mp = combo([mp1, mp2]) # need to expand for changing N
+    return jnp.concatenate((c_l, c_mp))
+
+# averaging formulation
+# def constraint(x_init: List[np.ndarray]) -> jnp.ndarray:
+    
+#     l1 = x_init[0] # need to expand for changing N
+#     l2 = x_init[1] 
+#     mp1 = x_init[2]
+#     mp2 = x_init[3]
+
+#     l_hat = (l1 + l2) / 2
+#     mp_hat = (mp1 + mp2) / 2
+
+#     # c_l = combo([l1, l2]) # need to expand for changing N
+#     # c_mp = combo([mp1, mp2]) # need to expand for changing N
+#     c_l = jnp.array([l1 - l_hat, l2 - l_hat])
+#     c_mp = jnp.array([mp1 - mp_hat, mp2 - mp_hat])
+#     return jnp.concatenate((c_l, c_mp))
