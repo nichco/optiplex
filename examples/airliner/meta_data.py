@@ -16,27 +16,27 @@ class Data:
     nt: int
 
 
-class NearestKeyDict(dict):
-    """
-    Dictionary that returns the value for the nearest key when exact match not found.
-    """
+# class NearestKeyDict(dict):
+#     """
+#     Dictionary that returns the value for the nearest key when exact match not found.
+#     """
 
-    def __getitem__(self, key):
-        # Try exact match first
-        if key in self:
-            return super().__getitem__(key)
+#     def __getitem__(self, key):
+#         # Try exact match first
+#         if key in self:
+#             return super().__getitem__(key)
 
-        # Find nearest key
-        keys = list(self.keys())
-        if not keys:
-            raise KeyError(f"Dictionary is empty")
+#         # Find nearest key
+#         keys = list(self.keys())
+#         if not keys:
+#             raise KeyError(f"Dictionary is empty")
 
-        nearest_key = min(keys, key=lambda k: abs(k - key))
-        return super().__getitem__(nearest_key)
+#         nearest_key = min(keys, key=lambda k: abs(k - key))
+#         return super().__getitem__(nearest_key)
 
 
-Params: Dict[float, Data] = NearestKeyDict()
-# Params: Dict[float, Data] = Data()
+# Params: Dict[float, Data] = NearestKeyDict()
+Params: Dict[float, Data] = {}
 
 nu_6e6 = 300
 Params[6e6] = Data(eta=np.linspace(0.7, 0.5, nu_6e6),
