@@ -7,6 +7,8 @@ from optiplex import combo
 from model import compute_objective, compute_constraints
 from modopt import JaxProblem, SLSQP, IPOPT
 from meta_data import Params
+import warnings
+warnings.filterwarnings("ignore")
 
 
 def make_sub_problem(i, r, N):
@@ -33,13 +35,10 @@ def make_sub_problem(i, r, N):
             S_i = v[-2]
             fuel_i = v[-1]
 
-            d_i = jnp.concatenate((eta_i, theta_i, tf_i, fuel_i))
-            # d_i order: eta, theta, tf, fuel
-
             AR_list[i] = AR_i
             S_list[i] = S_i
 
-            obj = compute_objective(AR_i, S_i, d_i, Params[r])
+            obj = compute_objective(AR_i, S_i, eta_i, theta_i, tf_i, fuel_i, Params[r])
 
             AR_constraint, S_constraint = combo(AR_list), combo(S_list)
             c = jnp.concatenate((AR_constraint, S_constraint))
@@ -53,11 +52,8 @@ def make_sub_problem(i, r, N):
             AR_i = v[-3]
             S_i = v[-2]
             fuel_i = v[-1]
-
-            d_i = jnp.concatenate((eta_i, theta_i, tf_i, fuel_i))
-            # d_i order: eta, theta, tf, fuel
             
-            return compute_constraints(AR_i, S_i, d_i, Params[r])
+            return compute_constraints(AR_i, S_i, eta_i, theta_i, tf_i, fuel_i, Params[r])
         
 
 
@@ -86,23 +82,17 @@ def make_sub_problem(i, r, N):
         ans = optimizer.results['x']
 
         # update lists with subPi results
-        # order of vars: eta_i, theta_i, tf_i, AR_i, S_i, fuel_i
-            # eta_i = v[:nu]
-            # theta_i = v[nu:-4]
-            # tf_i = v[-4]
-            # AR_i = v[-3]
-            # S_i = v[-2]
-            # fuel_i = v[-1]
-        
-        # AR_list[i] = ans[0]
-        # S_list[i] = ans[1]
-        # d_list[i] = ans[2:]
+        eta_i = ans[:nu]
+        theta_i = ans[nu:-4]
+        tf_i = ans[-4]
+        AR_i = ans[-3]
+        S_i = ans[-2]
+        fuel_i = ans[-1]
+        d_i = np.concatenate((eta_i, theta_i, np.array([tf_i]), np.array([fuel_i])))
 
-        d_i = jnp.concatenate((eta_i, theta_i, tf_i, fuel_i))
-
-        AR_list[i] = ans[0]
-        S_list[i] = ans[1]
-        d_list[i] = ans[2:]
+        AR_list[i] = np.atleast_1d(AR_i)
+        S_list[i] = np.atleast_1d(S_i)
+        d_list[i] = d_i
 
         gc.collect()
         return AR_list + S_list + d_list

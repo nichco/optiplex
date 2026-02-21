@@ -2,7 +2,6 @@ import jax.numpy as jnp
 import jax
 import numpy as np
 from interpax_atm1976 import akima_interp_a, akima_interp_rho, akima_interp_T
-from vanilla_rk4 import jax_rk4
 
 
 
@@ -105,17 +104,12 @@ def f(t, y, args):
 
 
 
-def compute_objective(AR, S, d, data):
+def compute_objective(AR, S, eta, theta, tf, fuel, data):
 
     nu = data.nu
     v0 = data.v0
     nt = data.nt
     payload = 25000
-
-    eta = d[:nu]
-    theta = d[nu:-2]
-    tf = d[-2]
-    fuel = d[-1]
 
     empty = wing_mass_model(AR, S) # compute m0
     m0 = payload + fuel + empty # (kg)
@@ -132,17 +126,12 @@ def compute_objective(AR, S, d, data):
 
 
 
-def compute_constraints(AR, S, d, data):
+def compute_constraints(AR, S, eta, theta, tf, fuel, data):
 
     nu = data.nu
     v0 = data.v0
     nt = data.nt
     payload = 25000
-
-    eta = d[:nu]
-    theta = d[nu:-2]
-    tf = d[-2]
-    fuel = d[-1]
 
     empty = wing_mass_model(AR, S) # compute m0
     m0 = payload + fuel + empty # (kg)
@@ -163,3 +152,52 @@ def compute_constraints(AR, S, d, data):
     con = con.at[2].set(mf_constraint)
 
     return con
+
+
+
+
+
+
+
+
+
+
+
+
+def jax_rk4(f, t0, y0, h, n, args):
+
+    y0 = jnp.atleast_1d(y0)
+    m = len(y0)
+
+    solution = jnp.zeros((n + 1, m))
+    rhs_vals = jnp.zeros((n + 1, m))
+
+    # initial condition
+    solution = solution.at[0].set(y0)
+    rhs_vals = rhs_vals.at[0].set(f(t0, y0, args))
+
+    def step(carry, _):
+        t, Y = carry
+
+        f0 = f(t, Y, args)        # RHS at current step
+        k1 = h * f0
+
+        t_half = t + 0.5 * h
+        t_next = t + h
+
+        k2 = h * f(t_half, Y + 0.5 * k1, args)
+        k3 = h * f(t_half, Y + 0.5 * k2, args)
+        k4 = h * f(t_next, Y + k3, args)
+
+        Y_next = Y + (k1 + 2*k2 + 2*k3 + k4) / 6
+        f_next = f(t_next, Y_next, args)
+
+        return (t_next, Y_next), (Y_next, f_next)
+
+    # run integrator
+    (_, _), (ys, fs) = jax.lax.scan(step, (t0, y0), None, length=n)
+
+    solution = solution.at[1:].set(ys)
+    rhs_vals = rhs_vals.at[1:].set(fs)
+
+    return solution, rhs_vals
