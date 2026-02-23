@@ -101,11 +101,10 @@ def f(t, y, args):
 
 
 
-def compute_objective(AR, S, eta, theta, tf, fuel, data):
+def compute_objective(AR, S, eta, theta, tf, fuel):
 
     nt = 500
-
-    v0 = data.v0
+    v0 = 160
     payload = 25000
 
     empty = wing_mass_model(AR, S) # compute m0
@@ -123,11 +122,10 @@ def compute_objective(AR, S, eta, theta, tf, fuel, data):
 
 
 
-def compute_constraints(AR, S, eta, theta, tf, fuel, data):
+def compute_constraints(AR, S, eta, theta, tf, fuel):
 
     nt = 500
-
-    v0 = data.v0
+    v0 = 160
     payload = 25000
 
     empty = wing_mass_model(AR, S) # compute m0

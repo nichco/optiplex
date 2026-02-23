@@ -6,7 +6,6 @@ import gc
 from optiplex import combo
 from model import compute_objective, compute_constraints
 from modopt import JaxProblem, SLSQP, IPOPT
-from meta_data import Params
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -23,16 +22,19 @@ def make_sub_problem(i, r, N):
 
         nu = 300
         
-        # v_init = [AR_1, ..., AR_N, S_1, ..., S_N, d_1, ..., d_N]
+        AR_list, S_list = [], []
+        for j in range(N):
+            eta_j = v_init[j][:nu]
+            theta_j = v_init[j][nu:-4]
+            tf_j = v_init[j][-4]
+            AR_j = v_init[j][-3]
+            S_j = v_init[j][-2]
+            fuel_j = v_init[j][-1]
 
-        AR_list = [v_init[i] for i in range(N)] # the first N values in v_init are AR global vars
-        S_list = [v_init[i + N] for i in range(N)] # the next N values in v_init are S global vars
-        d_list = v_init[2*N:] # the last values are local variable vectors
+            AR_list.append(AR_j)
+            S_list.append(S_j)
 
-        # print(AR_list)
-        # print(S_list)
-        # print(len(d_list))
-        # exit()
+
 
         def jax_obj(v):
             # order of vars: eta_i, theta_i, tf_i, AR_i, S_i, fuel_i
@@ -46,12 +48,13 @@ def make_sub_problem(i, r, N):
             AR_list[i] = AR_i
             S_list[i] = S_i
 
-            obj = compute_objective(AR_i, S_i, eta_i, theta_i, tf_i, fuel_i, Params[r])
+            obj = compute_objective(AR_i, S_i, eta_i, theta_i, tf_i, fuel_i)
 
             AR_constraint, S_constraint = combo(AR_list), combo(S_list)
-            c = jnp.concatenate((AR_constraint, S_constraint))
-            # return 1e-3 * obj + y.T @ c + mu * jnp.sum(c**2)
-            return 1e-3 * obj
+            c = jnp.concatenate((AR_constraint, S_constraint)) / 1e2
+
+            return 1e-3 * obj + y.T @ c + mu * jnp.sum(c**2)
+            # return 1e-3 * obj
         
         def jax_con(v):
             # order of vars: eta_i, theta_i, tf_i, AR_i, S_i, fuel_i
@@ -62,11 +65,10 @@ def make_sub_problem(i, r, N):
             S_i = v[-2]
             fuel_i = v[-1]
             
-            return compute_constraints(AR_i, S_i, eta_i, theta_i, tf_i, fuel_i, Params[r])
+            return compute_constraints(AR_i, S_i, eta_i, theta_i, tf_i, fuel_i)
         
 
-
-        x0 = np.concatenate((AR_list[i], S_list[i], d_list[i]))
+        x0 = v_init[i]
         # x0 = np.concatenate((np.linspace(0.6, 0.5, nu), 
         #                      np.linspace(np.deg2rad(6), np.deg2rad(6), nu), 
         #                      np.array([16750.0]), 
@@ -102,21 +104,17 @@ def make_sub_problem(i, r, N):
         optimizer.print_results()
         ans = optimizer.results['x']
 
-        # update lists with subPi results
+        # # update lists with subPi results
         eta_i = ans[:nu]
         theta_i = ans[nu:-4]
         tf_i = ans[-4]
         AR_i = ans[-3]
         S_i = ans[-2]
         fuel_i = ans[-1]
-        d_i = np.concatenate((eta_i, theta_i, np.array([tf_i]), np.array([fuel_i])))
-
-        # AR_list[i] = np.atleast_1d(AR_i)
-        # S_list[i] = np.atleast_1d(S_i)
-        # d_list[i] = d_i
+        v_init[i] = np.concatenate((eta_i, theta_i, np.array([tf_i]), np.array([AR_i]), np.array([S_i]), np.array([fuel_i])))
 
         gc.collect()
-        return AR_list + S_list + d_list
+        return v_init
 
 
 
