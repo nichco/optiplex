@@ -47,15 +47,15 @@ opt = Plex(subproblems=subPfuns,
            con=constraint,
            )
 
-opt.solve(max_outer_iter=3,
+opt.solve(max_outer_iter=110,
           max_inner_iter=1,
-          ATOL_out=1e-5, 
-          RTOL_out=1e-5,
+          ATOL_out=1e-3, 
+          RTOL_out=1e-3,
           ATOL_in=1e-2, 
           RTOL_in=1e-2,
           ATOL_feas=1e-3,
-          rho=1.05,
-          mu=0.5
+          rho=1.1,
+          mu=1.0
           )
 
 # print('Solution: ', opt.x)

@@ -11,29 +11,27 @@ warnings.filterwarnings("ignore")
 
 
 
-def make_sub_problem(i, r, N):
+def make_sub_problem(subP, r, N):
 
     def subP_i(v_init: list,
                y: np.ndarray = None, # lagrange multipliers
                mu: float = 1, # penalty coefficient
                ) -> list:
         
-        print('Solving subproblem ', i, ' with range ', r)
+        print('Solving subproblem ', subP, ' with range ', r)
 
         nu = 300
         
         AR_list, S_list = [], []
         for j in range(N):
-            eta_j = v_init[j][:nu]
-            theta_j = v_init[j][nu:-4]
-            tf_j = v_init[j][-4]
             AR_j = v_init[j][-3]
             S_j = v_init[j][-2]
-            fuel_j = v_init[j][-1]
 
             AR_list.append(AR_j)
             S_list.append(S_j)
 
+        print('AR List: ', AR_list)
+        print('S List: ', S_list)
 
 
         def jax_obj(v):
@@ -45,8 +43,8 @@ def make_sub_problem(i, r, N):
             S_i = v[-2]
             fuel_i = v[-1]
 
-            AR_list[i] = AR_i
-            S_list[i] = S_i
+            AR_list[subP] = AR_i
+            S_list[subP] = S_i
 
             obj = compute_objective(AR_i, S_i, eta_i, theta_i, tf_i, fuel_i)
 
@@ -68,7 +66,7 @@ def make_sub_problem(i, r, N):
             return compute_constraints(AR_i, S_i, eta_i, theta_i, tf_i, fuel_i)
         
 
-        x0 = v_init[i]
+        x0 = v_init[subP]
         # x0 = np.concatenate((np.linspace(0.6, 0.5, nu), 
         #                      np.linspace(np.deg2rad(6), np.deg2rad(6), nu), 
         #                      np.array([16750.0]), 
@@ -102,16 +100,19 @@ def make_sub_problem(i, r, N):
         optimizer = IPOPT(jaxprob, solver_options={'max_iter': 300, 'tol': 1e-7}, turn_off_outputs=True)
         optimizer.solve()
         optimizer.print_results()
-        ans = optimizer.results['x']
 
-        # # update lists with subPi results
+        ans = optimizer.results['x'] / x_scaler
+
+        # update lists with subPi results
         eta_i = ans[:nu]
         theta_i = ans[nu:-4]
         tf_i = ans[-4]
         AR_i = ans[-3]
         S_i = ans[-2]
         fuel_i = ans[-1]
-        v_init[i] = np.concatenate((eta_i, theta_i, np.array([tf_i]), np.array([AR_i]), np.array([S_i]), np.array([fuel_i])))
+
+        new_v = v_init.copy()
+        v_init[subP] = np.concatenate((eta_i, theta_i, np.array([tf_i]), np.array([AR_i]), np.array([S_i]), np.array([fuel_i])))
 
         gc.collect()
         return v_init
