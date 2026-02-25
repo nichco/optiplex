@@ -5,11 +5,12 @@ import tracemalloc
 
 # https://www.sfu.ca/~ssurjano/rosen.html
 
-n = 100 # dimension
+n = 1000 # dimension
+beta = 100 # coupling strength
 
 tracemalloc.start()
 
-jax_obj = lambda v: jnp.sum(100 * (v[1:] - v[:-1]**2)**2 + (1 - v[:-1])**2)
+jax_obj = lambda v: jnp.sum(beta * (v[1:] - v[:-1]**2)**2 + (1 - v[:-1])**2)
     
 # guess = np.array([-1.2, 1] * (n // 2))
 # x0 = guess

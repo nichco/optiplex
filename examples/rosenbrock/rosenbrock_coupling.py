@@ -8,8 +8,9 @@ import gc
 import warnings
 warnings.filterwarnings("ignore")
 
-n = 100 # dimension
-N = 2 # number of subproblems
+n = 1000 # dimension
+N = 5 # number of subproblems
+beta = 300 # coupling strength
 
 if n % N: raise ValueError("n must be divisible by N")
 
@@ -24,7 +25,7 @@ def make_sub_problem(subp, N, n):
 
             x = jnp.concatenate(x_init)
 
-            return jnp.sum(100 * (x[1:] - x[:-1]**2)**2 + (1 - x[:-1])**2)
+            return jnp.sum(beta * (x[1:] - x[:-1]**2)**2 + (1 - x[:-1])**2)
         
         v0 = x_init[subp]
         
@@ -74,7 +75,7 @@ opt = Plex(subproblems=subP_functions,
 tracemalloc.start()
 
 # opt.solve(max_iter=500, tol=1e-5, itol=1000,)
-opt.solve(max_inner_iter=100,
+opt.solve(max_inner_iter=600,
           ATOL_in=1e-5, 
           RTOL_in=1e-5,
           )
@@ -85,6 +86,17 @@ print(f"Peak: {peak / 10**6:.2f} MB")
 
 tracemalloc.stop()
 
-print('Solution: ', opt.x)
+# print('Solution: ', opt.x)
 # print('Total time (s): ', opt.time)
 print('Optimization time (s): ', times[-1])
+
+
+dimension = np.array([100, 500, 1000])
+
+monolithic_time_slsqp_beta_100 = np.array([0.40, 24.33, 200.43])
+
+distributed_time_5_subp_slsqp_beta_100 = np.array([4.62, 8.16, 24.61])
+
+distributed_time_5_subp_slsqp_beta_200 = np.array([11.98, 15.76, 40.94])
+
+distributed_time_5_subp_slsqp_beta_300 = np.array([13.95, 24.06, 56.19])
