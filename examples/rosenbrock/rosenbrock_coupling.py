@@ -94,6 +94,8 @@ print('Optimization time (s): ', times[-1])
 dimension = np.array([100, 500, 1000])
 
 monolithic_time_slsqp_beta_100 = np.array([0.40, 24.33, 200.43])
+monolithic_time_slsqp_beta_200 = np.array([0.58, 31.71, 301.34])
+monolithic_time_slsqp_beta_300 = np.array([0.52, 41.66, 344.51])
 
 distributed_time_5_subp_slsqp_beta_100 = np.array([4.62, 8.16, 24.61])
 
