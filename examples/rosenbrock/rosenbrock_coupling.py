@@ -10,7 +10,7 @@ warnings.filterwarnings("ignore")
 
 n = 1000 # dimension
 N = 5 # number of subproblems
-beta = 300 # coupling strength
+beta = 10 # coupling strength
 
 if n % N: raise ValueError("n must be divisible by N")
 
@@ -93,9 +93,13 @@ print('Optimization time (s): ', times[-1])
 
 dimension = np.array([100, 500, 1000])
 
+monolithic_time_slsqp_beta_10 = np.array([0.14, 6.25, 53.60])
 monolithic_time_slsqp_beta_100 = np.array([0.40, 24.33, 200.43])
 monolithic_time_slsqp_beta_200 = np.array([0.58, 31.71, 301.34])
 monolithic_time_slsqp_beta_300 = np.array([0.52, 41.66, 344.51])
+
+
+distributed_time_5_subp_slsqp_beta_10 = np.array([0.66, 1.36, 5.116])
 
 distributed_time_5_subp_slsqp_beta_100 = np.array([4.62, 8.16, 24.61])
 

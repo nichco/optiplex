@@ -6,7 +6,7 @@ import tracemalloc
 # https://www.sfu.ca/~ssurjano/rosen.html
 
 n = 1000 # dimension
-beta = 300 # coupling strength
+beta = 10 # coupling strength
 
 tracemalloc.start()
 
