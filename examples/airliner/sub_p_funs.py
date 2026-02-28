@@ -8,10 +8,10 @@ from model import compute_objective, compute_constraints
 from modopt import JaxProblem, SLSQP, IPOPT
 import warnings
 warnings.filterwarnings("ignore")
+import time
 
 
-
-def make_sub_problem(subP, r, N):
+def make_sub_problem(subP, r, N, data):
 
     def subP_i(v_init: list,
                y: np.ndarray = None, # lagrange multipliers
@@ -97,8 +97,14 @@ def make_sub_problem(subP, r, N):
         xu = np.concatenate((eta_u, theta_u, tf_u, AR_u, S_u, fuel_u))
 
         jaxprob = JaxProblem(x0=x0, jax_obj=jax_obj, jax_con=jax_con, xl=xl, xu=xu, cl=cl, cu=cu, x_scaler=x_scaler, c_scaler=c_scaler)
-        optimizer = IPOPT(jaxprob, solver_options={'max_iter': 300, 'tol': 1e-7}, turn_off_outputs=True)
+        optimizer = IPOPT(jaxprob, solver_options={'max_iter': 500, 'tol': 1e-7}, turn_off_outputs=True)
+
+        t1 = time.perf_counter()
         optimizer.solve()
+        opt_time = time.perf_counter() - t1
+        data.append(opt_time + (data[-1] if len(data)>0 else 0))
+
+
         optimizer.print_results()
 
         ans = optimizer.results['x'] / x_scaler

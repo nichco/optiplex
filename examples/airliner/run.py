@@ -7,12 +7,13 @@ import jax.numpy as jnp
 
 nu = 300
 
-N = 2
+N = 8
 rvals = np.linspace(1e6, 6e6, N) # mission range values
 
 # generate subproblem functions
 subPfuns = []
-for i, r in enumerate(rvals): subPfuns.append(make_sub_problem(i, r, N))
+data = []
+for i, r in enumerate(rvals): subPfuns.append(make_sub_problem(i, r, N, data))
 
 # pair-wise differences formulation
 def constraint(x_init: List[np.ndarray]) -> jnp.ndarray:
@@ -47,16 +48,23 @@ opt = Plex(subproblems=subPfuns,
            con=constraint,
            )
 
-opt.solve(max_outer_iter=110,
-          max_inner_iter=1,
-          ATOL_out=1e-3, 
-          RTOL_out=1e-3,
+opt.solve(max_outer_iter=200,
+          max_inner_iter=2,
+          ATOL_out=1e-4, 
+          RTOL_out=1e-4,
           ATOL_in=1e-2, 
           RTOL_in=1e-2,
-          ATOL_feas=1e-3,
+          ATOL_feas=1e-4,
           rho=1.1,
           mu=1.0
           )
 
 # print('Solution: ', opt.x)
-print('Time (s): ', opt.time)
+print('Total Time (s): ', opt.time)
+print('Optimization time (s): ', data[-1])
+
+
+
+
+num_subPs = np.array([2, 4, 6, 8])
+time_data = np.array([298.4, 534.8, 937.5, 1551.2])
