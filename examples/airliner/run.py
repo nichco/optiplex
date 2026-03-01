@@ -7,7 +7,7 @@ import jax.numpy as jnp
 
 nu = 300
 
-N = 8
+N = 20
 rvals = np.linspace(1e6, 6e6, N) # mission range values
 
 # generate subproblem functions
@@ -66,5 +66,5 @@ print('Optimization time (s): ', data[-1])
 
 
 
-num_subPs = np.array([2, 4, 6, 8])
-time_data = np.array([298.4, 534.8, 937.5, 1551.2])
+num_subPs = np.array([2, 4, 6, 8, 10])
+time_data = np.array([298.4, 534.8, 937.5, 1551.2, 2227.4])
