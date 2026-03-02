@@ -7,12 +7,11 @@ import jax.numpy as jnp
 
 nu = 300
 
-N = 20
+N = 10
 rvals = np.linspace(1e6, 6e6, N) # mission range values
 
 # generate subproblem functions
-subPfuns = []
-data = []
+subPfuns, data = [], [] # data contains optimization times
 for i, r in enumerate(rvals): subPfuns.append(make_sub_problem(i, r, N, data))
 
 # pair-wise differences formulation
@@ -48,23 +47,47 @@ opt = Plex(subproblems=subPfuns,
            con=constraint,
            )
 
-opt.solve(max_outer_iter=200,
-          max_inner_iter=2,
+opt.solve(max_outer_iter=300,
+          max_inner_iter=3,
           ATOL_out=1e-4, 
           RTOL_out=1e-4,
           ATOL_in=1e-2, 
           RTOL_in=1e-2,
           ATOL_feas=1e-4,
-          rho=1.1,
+          rho=1.2,
           mu=1.0
           )
 
-# print('Solution: ', opt.x)
+solution = opt.x
+
+AR_vals, S_vals = [], []
+for i in range(N):
+    xi = solution[i]
+    eta_i = xi[:nu]
+    theta_i = xi[nu:-4]
+    tf_i = xi[-4]
+    AR_i = xi[-3]
+    S_i = xi[-2]
+    fuel_i = xi[-1]
+
+    AR_vals.append(np.atleast_1d(AR_i))
+    S_vals.append(np.atleast_1d(S_i))
+
+print('AR values: ', np.concatenate(AR_vals))
+print('S values: ', np.concatenate(S_vals))
+
 print('Total Time (s): ', opt.time)
 print('Optimization time (s): ', data[-1])
 
 
 
+# old ipopt data
+# num_subPs = np.array([2, 4, 6, 8, 10])
+# time_data = np.array([298.4, 534.8, 937.5, 1551.2, 2227.4])
 
+
+
+
+# new slsqp data
 num_subPs = np.array([2, 4, 6, 8, 10])
-time_data = np.array([298.4, 534.8, 937.5, 1551.2, 2227.4])
+time_data = np.array([99.3, 145.9, 194.8, 284.0, 343.8])

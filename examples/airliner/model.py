@@ -10,34 +10,10 @@ softplus = lambda x, k=30: jnp.log1p(jnp.exp(k * x)) / k
 
 def wing_mass_model(AR, S, sweep=np.deg2rad(35), tc=0.15, n_ult=1.5 * 4, K=0.003, rho_mat=2700):
     MAC = jnp.sqrt(S / AR)
-    return S**0.6 * MAC * tc * rho_mat * K * (AR * n_ult / jnp.cos(sweep))**0.6 * 9.81
+    return S**0.6 * MAC * tc * rho_mat * K * (AR * n_ult / np.cos(sweep))**0.6 * 9.81
 
 
-def korn(CL, tc=0.15, kappa=0.8, sweep=np.deg2rad(35)):
-    csweep = np.cos(sweep)
-    tech = kappa / csweep
-    thick = tc / csweep**2
-    lift = CL / (10 * csweep**3)
-    MDD = tech - thick - lift
-    Mcrit = MDD - (0.1 / 80)**(1/3)
-    return Mcrit
-
-
-def tsfc_model(mach, 
-               temp, 
-               eta,
-               temp_sl=288.15,
-               ):
-
-    tsfc = (temp / temp_sl)**0.5 * (0.4 + 0.45 * mach) # lb fuel / (hr * lbf thrust)
-
-    tsfc *= 0.7 + 0.5*(1.3 - eta)**4 # no longer bang-bang, more like whoosh-whoosh
-
-    return tsfc * 2.832545e-5 # kg fuel / (s * N thrust)
-
-
-def korn(CL, tc=0.15, kappa=0.8, sweep=np.deg2rad(35)):
-    csweep = np.cos(sweep)
+def korn(CL, tc=0.15, kappa=0.8, csweep=np.cos(np.deg2rad(35))):
     tech = kappa / csweep
     thick = tc / csweep**2
     lift = CL / (10 * csweep**3)
@@ -47,6 +23,7 @@ def korn(CL, tc=0.15, kappa=0.8, sweep=np.deg2rad(35)):
 
 # dynamics function
 def f(t, y, args):
+
     nu = 300
 
     h, r, v, gamma, m = y
@@ -58,12 +35,12 @@ def f(t, y, args):
 
     rho = akima_interp_rho(h) # kg/m^3
     sos = akima_interp_a(h) # m/s
-    ambient_temperature = akima_interp_T(h) # K
+    temp = akima_interp_T(h) # K
 
     mach = v / sos
     q = 0.5 * rho * v**2
 
-    CL_alpha = 0.8 * 2 * np.pi
+    CL_alpha = 2 * np.pi
     alpha = theta - gamma
     CL = CL_alpha * alpha
 
@@ -73,7 +50,8 @@ def f(t, y, args):
     L = q * S * CL
 
     e = 1.78 * (1 - 0.045 * AR**0.68) - 0.64
-    CD = 0.02 + (CL**2 / (np.pi * e * AR))
+    # CD = 0.02 + CL**2 / (np.pi * e * AR)
+    CD = 0.025 + CL**2 / (np.pi * e * AR)
     Mcrit = korn(CL)
     CD += 20 * softplus(mach - Mcrit, k=50)**4 # wave drag
 
@@ -83,7 +61,11 @@ def f(t, y, args):
     tmax = tmax_sl * (rho / 1.225)
     T = eta * tmax
 
-    tsfc = tsfc_model(mach, ambient_temperature, eta)
+    # tsfc = tsfc_model(mach, ambient_temperature, eta)
+    temp_sl = 288.15
+    tsfc = (temp / temp_sl)**0.5 * (0.4 + 0.45 * mach) # lb fuel / (hr * lbf thrust)
+    tsfc *= 0.7 + 0.5*(1.3 - eta)**4 # no longer bang-bang, more like whoosh-whoosh
+    tsfc *= 2.832545e-5 # kg fuel / (s * N thrust)
 
     # equations of motion
     h_dot = v * jnp.sin(gamma)
@@ -103,7 +85,7 @@ def f(t, y, args):
 
 def compute_objective(AR, S, eta, theta, tf, fuel):
 
-    nt = 500
+    nt = 300
     v0 = 160
     payload = 25000
 
@@ -124,7 +106,7 @@ def compute_objective(AR, S, eta, theta, tf, fuel):
 
 def compute_constraints(AR, S, eta, theta, tf, fuel):
 
-    nt = 500
+    nt = 300
     v0 = 160
     payload = 25000
 

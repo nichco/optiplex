@@ -22,16 +22,19 @@ def make_sub_problem(subP, r, N, data):
 
         nu = 300
         
-        AR_list, S_list = [], []
-        for j in range(N):
-            AR_j = v_init[j][-3]
-            S_j = v_init[j][-2]
+        # AR_list, S_list = [], []
+        # for j in range(N):
+        #     AR_j = v_init[j][-3]
+        #     S_j = v_init[j][-2]
 
-            AR_list.append(AR_j)
-            S_list.append(S_j)
+        #     AR_list.append(AR_j)
+        #     S_list.append(S_j)
 
-        print('AR List: ', AR_list)
-        print('S List: ', S_list)
+        AR_list = [v_init[j][-3] for j in range(N)]
+        S_list  = [v_init[j][-2] for j in range(N)]
+
+        # print('AR List: ', AR_list)
+        # print('S List: ', S_list)
 
 
         def jax_obj(v):
@@ -83,7 +86,7 @@ def make_sub_problem(subP, r, N, data):
                                    np.array([1 / 4000]) # fuel scale
                                    ))
         
-        c_scaler = np.array([1/3048, 1/r, 1])
+        c_scaler = np.array([1 / 3048, 1 / r, 1])
         cl = cu = np.array([3048, r, 1])
 
         # variable bounds
@@ -97,7 +100,8 @@ def make_sub_problem(subP, r, N, data):
         xu = np.concatenate((eta_u, theta_u, tf_u, AR_u, S_u, fuel_u))
 
         jaxprob = JaxProblem(x0=x0, jax_obj=jax_obj, jax_con=jax_con, xl=xl, xu=xu, cl=cl, cu=cu, x_scaler=x_scaler, c_scaler=c_scaler)
-        optimizer = IPOPT(jaxprob, solver_options={'max_iter': 500, 'tol': 1e-7}, turn_off_outputs=True)
+        # optimizer = IPOPT(jaxprob, solver_options={'max_iter': 500, 'tol': 1e-7}, turn_off_outputs=True)
+        optimizer = SLSQP(jaxprob, solver_options={'maxiter': 300, 'ftol': 1e-7}, turn_off_outputs=True)
 
         t1 = time.perf_counter()
         optimizer.solve()
@@ -117,7 +121,6 @@ def make_sub_problem(subP, r, N, data):
         S_i = ans[-2]
         fuel_i = ans[-1]
 
-        new_v = v_init.copy()
         v_init[subP] = np.concatenate((eta_i, theta_i, np.array([tf_i]), np.array([AR_i]), np.array([S_i]), np.array([fuel_i])))
 
         gc.collect()
