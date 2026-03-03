@@ -1,23 +1,25 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.colors import ListedColormap
 
 # Example data
 functions = [r'$g_0,h_0$', r'$g_1,h_1$', r'$g_2,h_2$', r'$\vdots$', r'$g_N,h_N$']
 variables = [r'$x_0$', r'$x_1$', r'$x_2$', r'$...$', r'$x_N$']
 
 dependency_matrix = np.array([
-    [1, 1, 1, 1, 1],
-    [0, 1, 0, 0, 0],
-    [0, 0, 1, 0, 0],
-    [0, 0, 0, 1, 0],
-    [0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0],
+    [1, 1, 0, 0, 0],
+    [1, 0, 1, 0, 0],
+    [1, 0, 0, 1, 0],
+    [1, 0, 0, 0, 1],
 ])
 
 # fig, ax = plt.subplots()
 
 plt.figure(figsize=(3, 3))
 
-plt.imshow(dependency_matrix, cmap="gray_r", interpolation="nearest")
+cmap = ListedColormap(["#FFFFFF", "#5B6470"])
+plt.imshow(dependency_matrix, cmap=cmap, interpolation="nearest", vmin=0, vmax=1)
 
 # Major ticks
 plt.xticks(np.arange(len(variables)))
@@ -46,12 +48,14 @@ plt.grid(
 # ax.tick_params(which="minor", bottom=False, left=False)
 
 # Remove outer spines for clean matrix look (optional)
-for spine in plt.gca().spines.values():
-    spine.set_visible(False)
+# for spine in plt.gca().spines.values():
+#     spine.set_visible(False)
 
 
 # set equal aspect ratio
 plt.gca().set_aspect('equal', adjustable='box')
 
 plt.tight_layout()
+
+plt.savefig('dependency_matrix_option_a.png', bbox_inches='tight', dpi=600)
 plt.show()
