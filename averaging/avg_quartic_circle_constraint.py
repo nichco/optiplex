@@ -31,14 +31,14 @@ def subproblem1(v_init, y, mu):
         c_2 = combo([x2_1, x2_2])
         c = jnp.concatenate([c_1, c_2])
 
-        return obj + y.T @ c + mu * jnp.sum(c**2)
+        return obj + y.T @ c + 0.5 * mu * jnp.sum(c**2)
     
     def jax_con(v):
         x1_1, x2_1 = v[0], v[1]
         con = x1_1**2 + x2_1**2
         return con.flatten()
     
-    jaxprob = mo.JaxProblem(x0=v0, jax_obj=jax_obj, jax_con=jax_con, cl=0.5**2, cu=np.inf, order=1)
+    jaxprob = mo.JaxProblem(x0=v0, jax_obj=jax_obj, jax_con=jax_con, cl=0.5**2, order=1)
 
     optimizer = mo.SLSQP(jaxprob, solver_options={'maxiter': 100, 'ftol': 1e-7}, turn_off_outputs=True)
     optimizer.solve()
@@ -69,14 +69,14 @@ def subproblem2(v_init, y, mu):
         c_2 = combo([x2_1, x2_2])
         c = jnp.concatenate([c_1, c_2])
 
-        return obj + y.T @ c + mu * jnp.sum(c**2)
+        return obj + y.T @ c + 0.5 * mu * jnp.sum(c**2)
     
     def jax_con(v):
         x1_2, x2_2 = v[0], v[1]
         con = x1_2**2 + x2_2**2
         return con.flatten()
     
-    jaxprob = mo.JaxProblem(x0=v0, jax_obj=jax_obj, jax_con=jax_con, cl=0.5**2, cu=np.inf, order=1)
+    jaxprob = mo.JaxProblem(x0=v0, jax_obj=jax_obj, jax_con=jax_con, cl=0.5**2, order=1)
 
     optimizer = mo.SLSQP(jaxprob, solver_options={'maxiter': 100, 'ftol': 1e-7}, turn_off_outputs=True)
     optimizer.solve()
@@ -113,10 +113,10 @@ opt.solve(max_outer_iter=100,
           max_inner_iter=10,
           ATOL_out=1e-5, 
           RTOL_out=1e-5,
-          ATOL_in=1e-2, 
-          RTOL_in=1e-2,
+          ATOL_in=1e-3, 
+          RTOL_in=1e-3,
           ATOL_feas=1e-5,
-          rho=1.1,
+          rho=1.5,
           mu=1.0,
           )
 
