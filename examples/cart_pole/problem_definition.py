@@ -80,7 +80,7 @@ def make_functions(i):
             j_list[i] = ji
             j = sum(j_list)
 
-            return 1e-2 * j + y.T @ c + mu * jnp.sum(c**2)
+            return 1e-2 * j + y.T @ c + 0.5 * mu * jnp.sum(c**2)
         
         def jax_con(v):
             l = v[0]

@@ -27,18 +27,16 @@ def subproblem1(v_init, y, mu):
     def jax_obj(v):
         x1_1 = v[0]
         x2_1 = v[1]
-        beta = 1.5 # beta in [0, 2)
-        obj = jnp.squeeze(x1_1**2 + x2_1**2 - beta * x1_1 * x2_1)
+        obj = jnp.squeeze(x1_1**2 + x2_1**2 - 1.5 * x1_1 * x2_1)
 
         c_1 = combo([x1_1, x1_2])
         c_2 = combo([x2_1, x2_2])
         c = jnp.concatenate([c_1, c_2])
 
-        return obj + y.T @ c + mu * jnp.sum(c**2)
+        return obj + y.T @ c + 0.5 * mu * jnp.sum(c**2)
     
     def jax_con(v):
-        x1_1 = v[0]
-        x2_1 = v[1]
+        x1_1, x2_1 = v[0], v[1]
         con = x1_1 - 0.5*x2_1
         return con.flatten()
     
@@ -68,18 +66,16 @@ def subproblem2(v_init, y, mu):
     def jax_obj(v):
         x1_2 = v[0]
         x2_2 = v[1]
-        beta = 1.5 # beta in [0, 2)
-        obj = jnp.squeeze(x1_2**2 + x2_2**2 - beta * x1_2 * x2_2)
+        obj = jnp.squeeze(x1_2**2 + x2_2**2 - 1.5 * x1_2 * x2_2)
 
         c_1 = combo([x1_1, x1_2])
         c_2 = combo([x2_1, x2_2])
         c = jnp.concatenate([c_1, c_2])
 
-        return obj + y.T @ c + mu * jnp.sum(c**2)
+        return obj + y.T @ c + 0.5 * mu * jnp.sum(c**2)
     
     def jax_con(v):
-        x1_2 = v[0]
-        x2_2 = v[1]
+        x1_2, x2_2 = v[0], v[1]
         con = x1_2 - 0.5*x2_2
         return con.flatten()
     
@@ -116,19 +112,16 @@ opt = Plex(subproblems=[subproblem1, subproblem2],
            con=con,
            )
 
-opt.mu = 1.0
-
 # opt.solve(max_iter=100, tol=1e-4, ctol=1e-4, itol=1.0, rho=1.05)
 opt.solve(max_outer_iter=100,
           max_inner_iter=10,
           ATOL_out=1e-6, 
           RTOL_out=1e-6,
-          ATOL_in=1e-1, 
-          RTOL_in=1e-1,
+          ATOL_in=1e-2, 
+          RTOL_in=1e-2,
           ATOL_feas=1e-3,
-          rho=1.05
+          rho=1.1
           )
-
 
 print('Solution: ', opt.x)
 print('Time (s): ', opt.time)
@@ -154,20 +147,17 @@ plt.ylabel('y')
 
 plt.plot(x, 2*x, '--', color='black', linewidth=2, alpha=0.5)
 
-plt.fill_between(
-    x,
-    1.5,        # top of plot
-    2*x,        # constraint line
-    color='black',
-    alpha=0.4,
-)
+plt.fill_between(x,
+                 1.5,        # top of plot
+                 2*x,        # constraint line
+                 color='black',
+                 alpha=0.4,
+                 )
 
 ticks = [-1, 0, 1]
 plt.xticks(ticks)
 plt.yticks(ticks)
-
 plt.legend()
-
 plt.gca().set_aspect('equal')
 
 # plt.savefig('augmented_lagrangian_example_2.pdf', bbox_inches='tight')

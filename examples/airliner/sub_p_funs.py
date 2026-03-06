@@ -54,7 +54,7 @@ def make_sub_problem(subP, r, N, data):
             AR_constraint, S_constraint = combo(AR_list), combo(S_list)
             c = jnp.concatenate((AR_constraint, S_constraint)) / 1e2
 
-            return 1e-3 * obj + y.T @ c + mu * jnp.sum(c**2)
+            return 1e-3 * obj + y.T @ c + 0.5 * mu * jnp.sum(c**2)
             # return 1e-3 * obj
         
         def jax_con(v):

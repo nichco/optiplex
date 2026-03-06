@@ -28,18 +28,16 @@ def subproblem1(v_init, y, mu):
     def jax_obj(v):
         x1_1 = v[0]
         x2_1 = v[1]
-        beta = 1.5 # beta in [0, 2)
-        obj = jnp.squeeze(x1_1**2 + x2_1**2 - beta * x1_1 * x2_1)
+        obj = jnp.squeeze(x1_1**2 + x2_1**2 - 1.5 * x1_1 * x2_1)
 
         c_1 = combo([x1_1, x1_2])
         c_2 = combo([x2_1, x2_2])
         c = jnp.concatenate([c_1, c_2])
 
-        return obj + y.T @ c + mu * jnp.sum(c**2)
+        return obj + y.T @ c + 0.5 * mu * jnp.sum(c**2)
     
     def jax_con(v):
-        x1_1 = v[0]
-        x2_1 = v[1]
+        x1_1, x2_1 = v[0], v[1]
         con = x1_1**2 + x2_1**2
         return con.flatten()
     
@@ -69,18 +67,16 @@ def subproblem2(v_init, y, mu):
     def jax_obj(v):
         x1_2 = v[0]
         x2_2 = v[1]
-        beta = 1.5 # beta in [0, 2)
-        obj = jnp.squeeze(x1_2**2 + x2_2**2 - beta * x1_2 * x2_2)
+        obj = jnp.squeeze(x1_2**2 + x2_2**2 - 1.5 * x1_2 * x2_2)
 
         c_1 = combo([x1_1, x1_2])
         c_2 = combo([x2_1, x2_2])
         c = jnp.concatenate([c_1, c_2])
 
-        return obj + y.T @ c + mu * jnp.sum(c**2)
+        return obj + y.T @ c + 0.5 * mu * jnp.sum(c**2)
     
     def jax_con(v):
-        x1_2 = v[0]
-        x2_2 = v[1]
+        x1_2, x2_2 = v[0], v[1]
         con = x1_2**2 + x2_2**2
         return con.flatten()
     
@@ -117,7 +113,6 @@ opt = Plex(subproblems=[subproblem1, subproblem2],
            con=con,
            )
 
-# opt.solve(max_iter=100, tol=1e-5, ctol=1e-3, itol=1e-2, rho=1.1)
 opt.solve(max_outer_iter=100,
           max_inner_iter=10,
           ATOL_out=1e-5, 
@@ -125,10 +120,9 @@ opt.solve(max_outer_iter=100,
           ATOL_in=1e-2, 
           RTOL_in=1e-2,
           ATOL_feas=1e-5,
-          rho=1.1,
+          rho=1.2,
           mu=1.0,
           )
-
 
 print('Solution: ', opt.x)
 print('Time (s): ', opt.time)
@@ -152,7 +146,6 @@ plt.ylim(-1.5, 1.5)
 plt.xlabel('x')
 plt.ylabel('y')
 
-# Draw circular keep-out constraint
 theta = np.linspace(0, 2*np.pi, 100)
 circle_x = 0.5 * np.cos(theta)
 circle_y = 0.5 * np.sin(theta)
@@ -162,9 +155,7 @@ plt.fill(circle_x, circle_y, color='black', alpha=0.3)
 ticks = [-1, 0, 1]
 plt.xticks(ticks)
 plt.yticks(ticks)
-
 plt.legend()
-
 plt.gca().set_aspect('equal')
 
 # plt.savefig('augmented_lagrangian_circle_constraint.pdf', bbox_inches='tight')
