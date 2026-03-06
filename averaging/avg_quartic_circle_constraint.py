@@ -3,7 +3,6 @@ import numpy as np
 import modopt as mo
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
-from optiplex import combo
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -36,9 +35,9 @@ def subproblem1(x, y, mu):
         x1_1, x2_1 = v[0], v[1]
         obj = jnp.squeeze(x1_1**2 + x2_1**2 - 1.5 * x1_1 * x2_1)
 
-        # c_1 = combo([x1_1, x1_2])
-        # c_2 = combo([x2_1, x2_2])
-        # c = jnp.concatenate([c_1, c_2])
+        gv1 = jnp.array([x1_1, x2_1])
+        gv2 = jnp.array([x1_2, x2_2])
+        global_vars = [gv1, gv2]
 
         c = jnp.concatenate([x0_i - z for x0_i in global_vars])
 
@@ -61,7 +60,7 @@ def subproblem1(x, y, mu):
     x1_2_history.append(x1_2)
     x2_2_history.append(x2_2)
 
-    return [ans[0], ans[1], x1_2, x2_2]
+    return [ans[0], ans[1], x1_2, x2_2, z]
 
 
 def subproblem2(x, y, mu):
@@ -73,9 +72,9 @@ def subproblem2(x, y, mu):
         x1_2, x2_2 = v[0], v[1]
         obj = jnp.squeeze(x1_2**2 + x2_2**2 - 1.5 * x1_2 * x2_2)
 
-        # c_1 = combo([x1_1, x1_2])
-        # c_2 = combo([x2_1, x2_2])
-        # c = jnp.concatenate([c_1, c_2])
+        gv1 = jnp.array([x1_1, x2_1])
+        gv2 = jnp.array([x1_2, x2_2])
+        global_vars = [gv1, gv2]
 
         c = jnp.concatenate([x0_i - z for x0_i in global_vars])
 
@@ -98,7 +97,7 @@ def subproblem2(x, y, mu):
     x1_2_history.append(ans[0])
     x2_2_history.append(ans[1])
 
-    return [x1_1, x2_1, ans[0], ans[1]]
+    return [x1_1, x2_1, ans[0], ans[1], z]
 
 
 
@@ -106,11 +105,22 @@ def subproblem2(x, y, mu):
 
 
 
-def explicit_z_update(x, y, z, mu):
-    x1_1, x2_1, x1_2, x2_2 = x[0], x[1], x[2], x[3]
+def explicit_z_update(x, y, mu):
+    x1_1, x2_1, x1_2, x2_2, z = x[0], x[1], x[2], x[3], x[4]
 
+    gv1 = np.array([x1_1, x2_1])
+    gv2 = np.array([x1_2, x2_2])
+    global_vars = [gv1, gv2]
 
-    return [x1_1, x2_1, x1_2, x2_2]
+    x_bar = np.mean(global_vars, axis=0) # compute the average of global variables
+
+    y1 = y[:2]
+    y2 = y[2:]
+    y_bar = np.mean([y1, y2], axis=0) # compute the average of dual variables
+
+    z = x_bar + y_bar / mu # explicit z update
+
+    return [x1_1, x2_1, x1_2, x2_2, z]
 
 
 
@@ -122,13 +132,17 @@ def con(v_init):
     
     x1_1, x2_1, x1_2, x2_2, z = v_init[0], v_init[1], v_init[2], v_init[3], v_init[4]
 
-    return jnp.concatenate([x0_i - z for x0_i in global_vars])
+    gv1 = np.array([x1_1, x2_1])
+    gv2 = np.array([x1_2, x2_2])
+    global_vars = [gv1, gv2]
+
+    return np.concatenate([x0_i - z for x0_i in global_vars])
 
 
-opt = APlex(subproblems=[subproblem1, subproblem2],
-            x_init=v_init,
-            con=con,
-            )
+opt = Plex(subproblems=[subproblem1, subproblem2, explicit_z_update],
+           x_init=v_init,
+           con=con,
+           )
 
 opt.solve(max_outer_iter=100,
           max_inner_iter=10,
