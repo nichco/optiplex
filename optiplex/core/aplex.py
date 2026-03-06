@@ -15,11 +15,15 @@ class APlex():
         # self.x = x_init
         self.x = [np.asarray(xi) for xi in x_init] # cast to numpy arrays
         self.n = sum(xi.size for xi in self.x) # dimension
-        self.time = None
         self.con = con
         self.y = np.zeros_like(con(self.x)) # Lagrange multipliers
         self.d = len(self.y) # number of constraints
         self.history = [self.x.copy()] # data dictionary/list
+
+        self.N = len(subproblems) # number of subproblems
+
+
+        self.z = np.mean(global_vars, axis=0) # global variable (consensus variable)
     
 
     def solve(self, 
@@ -33,9 +37,6 @@ class APlex():
               ATOL_feas: float=1e-6,
               mu = 1.0, # augmented Lagrangian penalty coefficient
               ) -> None:
-        
-        assert rho > 1
-        t1 = time.perf_counter()
 
         for k in range(max_outer_iter):
 
@@ -47,8 +48,13 @@ class APlex():
 
                 for subP in self.subproblems: 
 
-                    self.x = subP(self.x, self.y, mu)
+                    self.x = subP(self.x, self.y, self.z, mu)
                     self.history.append(self.x.copy())
+
+                # explicit z update
+                z = sum(x_0_i + (1 / mu) * self.y_i for x_0_i in self.global_vars) / self.N
+
+                # z = 1 / N * np.sum()
 
                 eps_inner = np.sqrt(self.n) * ATOL_in + RTOL_in * np.linalg.norm(z_old)
                 z_new = np.concatenate([xi.ravel() for xi in self.x])
@@ -63,9 +69,6 @@ class APlex():
                 if r_norm_inner <= eps_inner: 
                     print('-Primal loop converged!-')
                     break
-            
-            # Exit for unconstrained problems
-            if self.d == 0: break
 
             # Evaluate the constraints
             c = self.con(self.x)
@@ -93,8 +96,5 @@ class APlex():
             if r_norm_outer <= eps_outer and feas <= eps_feas:
                 print('-Dual loop converged!-')
                 break
-
-
-        self.time = time.perf_counter() - t1
 
         return None

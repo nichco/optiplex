@@ -1,4 +1,4 @@
-from optiplex import APlex
+from optiplex import Plex
 import numpy as np
 import modopt as mo
 import jax.numpy as jnp
@@ -7,19 +7,28 @@ from optiplex import combo
 import warnings
 warnings.filterwarnings("ignore")
 
-v_init = [-0.5, 1.0, -0.5, 1.0]
+# initial values
+x1_1_init = -0.5
+x2_1_init = 1.0
+x1_2_init = -0.5
+x2_2_init = 1.0
 
+# initialize z as the avergae of global variables
+z_init = np.array([x1_1_init + x1_2_init / 2, x2_1_init + x2_2_init / 2])
+
+# v_init = [x1_1_init, x2_1_init, x1_2_init, x2_2_init]
+v_init = [x1_1_init, x2_1_init, x1_2_init, x2_2_init, z_init]
+
+# lists for plotting
 x1_1_history = [v_init[0]]
 x2_1_history = [v_init[1]]
 x1_2_history = [v_init[2]]
 x2_2_history = [v_init[3]]
+z_history = [v_init[4]]
 
 
-def subproblem1(v_init, y, mu):
-    x1_1 = v_init[0]
-    x2_1 = v_init[1]
-    x1_2 = v_init[2]
-    x2_2 = v_init[3]
+def subproblem1(x, y, mu):
+    x1_1, x2_1, x1_2, x2_2, z = x[0], x[1], x[2], x[3], x[4]
 
     v0 = np.concatenate([np.atleast_1d(x1_1), np.atleast_1d(x2_1)])
 
@@ -27,9 +36,11 @@ def subproblem1(v_init, y, mu):
         x1_1, x2_1 = v[0], v[1]
         obj = jnp.squeeze(x1_1**2 + x2_1**2 - 1.5 * x1_1 * x2_1)
 
-        c_1 = combo([x1_1, x1_2])
-        c_2 = combo([x2_1, x2_2])
-        c = jnp.concatenate([c_1, c_2])
+        # c_1 = combo([x1_1, x1_2])
+        # c_2 = combo([x2_1, x2_2])
+        # c = jnp.concatenate([c_1, c_2])
+
+        c = jnp.concatenate([x0_i - z for x0_i in global_vars])
 
         return obj + y.T @ c + 0.5 * mu * jnp.sum(c**2)
     
@@ -53,11 +64,8 @@ def subproblem1(v_init, y, mu):
     return [ans[0], ans[1], x1_2, x2_2]
 
 
-def subproblem2(v_init, y, mu):
-    x1_1 = v_init[0]
-    x2_1 = v_init[1]
-    x1_2 = v_init[2]
-    x2_2 = v_init[3]
+def subproblem2(x, y, mu):
+    x1_1, x2_1, x1_2, x2_2, z = x[0], x[1], x[2], x[3], x[4]
 
     v0 = np.concatenate([np.atleast_1d(x1_2), np.atleast_1d(x2_2)])
 
@@ -65,9 +73,11 @@ def subproblem2(v_init, y, mu):
         x1_2, x2_2 = v[0], v[1]
         obj = jnp.squeeze(x1_2**2 + x2_2**2 - 1.5 * x1_2 * x2_2)
 
-        c_1 = combo([x1_1, x1_2])
-        c_2 = combo([x2_1, x2_2])
-        c = jnp.concatenate([c_1, c_2])
+        # c_1 = combo([x1_1, x1_2])
+        # c_2 = combo([x2_1, x2_2])
+        # c = jnp.concatenate([c_1, c_2])
+
+        c = jnp.concatenate([x0_i - z for x0_i in global_vars])
 
         return obj + y.T @ c + 0.5 * mu * jnp.sum(c**2)
     
@@ -92,16 +102,27 @@ def subproblem2(v_init, y, mu):
 
 
 
+
+
+
+
+def explicit_z_update(x, y, z, mu):
+    x1_1, x2_1, x1_2, x2_2 = x[0], x[1], x[2], x[3]
+
+
+    return [x1_1, x2_1, x1_2, x2_2]
+
+
+
+
+
+
+
 def con(v_init):
     
-    x1_1 = v_init[0]
-    x2_1 = v_init[1]
-    x1_2 = v_init[2]
-    x2_2 = v_init[3]
+    x1_1, x2_1, x1_2, x2_2, z = v_init[0], v_init[1], v_init[2], v_init[3], v_init[4]
 
-    c_1 = combo([x1_1, x1_2])
-    c_2 = combo([x2_1, x2_2])
-    return np.concatenate([c_1, c_2])
+    return jnp.concatenate([x0_i - z for x0_i in global_vars])
 
 
 opt = APlex(subproblems=[subproblem1, subproblem2],
