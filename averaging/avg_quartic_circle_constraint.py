@@ -37,9 +37,7 @@ def subproblem1(x, y, mu):
 
         gv1 = jnp.array([x1_1, x2_1])
         gv2 = jnp.array([x1_2, x2_2])
-        global_vars = [gv1, gv2]
-
-        c = jnp.concatenate([x0_i - z for x0_i in global_vars])
+        c = jnp.concatenate([gv1 - z, gv2 - z])
 
         return obj + y.T @ c + 0.5 * mu * jnp.sum(c**2)
     
@@ -74,9 +72,7 @@ def subproblem2(x, y, mu):
 
         gv1 = jnp.array([x1_1, x2_1])
         gv2 = jnp.array([x1_2, x2_2])
-        global_vars = [gv1, gv2]
-
-        c = jnp.concatenate([x0_i - z for x0_i in global_vars])
+        c = jnp.concatenate([gv1 - z, gv2 - z])
 
         return obj + y.T @ c + 0.5 * mu * jnp.sum(c**2)
     
@@ -110,9 +106,7 @@ def explicit_z_update(x, y, mu):
 
     gv1 = np.array([x1_1, x2_1])
     gv2 = np.array([x1_2, x2_2])
-    global_vars = [gv1, gv2]
-
-    x_bar = np.mean(global_vars, axis=0) # compute the average of global variables
+    x_bar = (gv1 + gv2) / 2 # compute the average of global variables
 
     y1 = y[:2]
     y2 = y[2:]
@@ -125,18 +119,14 @@ def explicit_z_update(x, y, mu):
 
 
 
-
-
-
 def con(v_init):
     
     x1_1, x2_1, x1_2, x2_2, z = v_init[0], v_init[1], v_init[2], v_init[3], v_init[4]
 
-    gv1 = np.array([x1_1, x2_1])
-    gv2 = np.array([x1_2, x2_2])
-    global_vars = [gv1, gv2]
+    gv1 = jnp.array([x1_1, x2_1])
+    gv2 = jnp.array([x1_2, x2_2])
 
-    return np.concatenate([x0_i - z for x0_i in global_vars])
+    return jnp.concatenate([gv1 - z, gv2 - z])
 
 
 opt = Plex(subproblems=[subproblem1, subproblem2, explicit_z_update],
