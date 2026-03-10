@@ -5,22 +5,30 @@ import numpy as np
 
 def eig_clip(H, eps=1e-6):
 
-    e, v = np.linalg.eig(H)
+    H = (H + H.T) / 2 # force symmetry
+
+    e, v = np.linalg.eigh(H)
     
     e = np.clip(e, a_min=eps, a_max=None)
 
     H = v.dot(np.diag(e)).dot(v.T)
+
+    H = (H + H.T) / 2 # force symmetry
     
     return H
 
 
 def eig_flip(H):
 
-    e, v = np.linalg.eig(H)
+    H = (H + H.T) / 2 # force symmetry
+
+    e, v = np.linalg.eigh(H)
 
     e = np.abs(e)
 
     H = v.dot(np.diag(e)).dot(v.T)
+
+    H = (H + H.T) / 2 # force symmetry
 
     return H
 
@@ -38,18 +46,9 @@ def add_diag_a(H, eps=1e-6):
 
     H = H_minus_diag + np.diag(new_diag)
 
+    H = (H + H.T) / 2 # force symmetry
+
     return H
-
-
-def add_diag_b():
-    # https://nhigham.com/2021/02/16/diagonally-perturbing-a-symmetric-matrix-to-make-it-positive-definite/
-    pass
-
-
-def nearest():
-    # https://nhigham.com/2021/01/26/what-is-the-nearest-positive-semidefinite-matrix/
-    pass
-
 
 
 
