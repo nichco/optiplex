@@ -4,6 +4,9 @@ from sub_p_funs import make_sub_problem
 from typing import List
 from optiplex import combo
 import jax.numpy as jnp
+import tracemalloc
+
+tracemalloc.start()
 
 nu = 300
 
@@ -47,8 +50,8 @@ opt = Plex(subproblems=subPfuns,
            con=constraint,
            )
 
-opt.solve(max_outer_iter=300,
-          max_inner_iter=3,
+opt.solve(max_outer_iter=1,#300,
+          max_inner_iter=1,#3,
           ATOL_out=1e-4, 
           RTOL_out=1e-4,
           ATOL_in=1e-2, 
@@ -57,6 +60,11 @@ opt.solve(max_outer_iter=300,
           rho=1.2,
           mu=1.0
           )
+
+
+current, peak = tracemalloc.get_traced_memory()
+print(f"Peak memory usage: {peak / 10**6} MB")
+tracemalloc.stop()
 
 solution = opt.x
 
@@ -91,3 +99,6 @@ print('Optimization time (s): ', data[-1])
 # new slsqp data
 num_subPs = np.array([2, 4, 6, 8, 10])
 time_data = np.array([99.3, 145.9, 194.8, 284.0, 343.8])
+
+
+memory = np.array([100.3, 129.6, 173.5, 204.2, 235.0])
