@@ -8,6 +8,7 @@ from optiplex import Plex
 import warnings
 warnings.filterwarnings("ignore")
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 # aero setup
@@ -64,10 +65,13 @@ twist0 = np.ones(N) * np.deg2rad(5)
 x_init = [twist0, thickness0]
 
 # populate args 
-lift_distribution_init = lifting_line.compute_lift_distribution(twist0, rho_atm, v_inf)
-obj_init = lifting_line.compute_drag(twist0)
-CL_init = lifting_line.compute_lift_coefficient(twist0)
-lift_init = CL_init * q * lifting_line.S
+# lift_distribution_init = lifting_line.compute_lift_distribution(twist0, rho_atm, v_inf)
+# obj_init = lifting_line.compute_drag(twist0)
+# CL_init = lifting_line.compute_lift_coefficient(twist0)
+# lift_init = CL_init * q * lifting_line.S
+
+# run the aero model once to populate args
+obj_init, lift_distribution_init, lift_init = aero_model(twist0)
 
 args = [lift_distribution_init, obj_init, lift_init]
 
@@ -84,16 +88,17 @@ def global_constraints(x):
     F = jnp.zeros((num_nodes, 6))
     F = F.at[:, 2].set(lift_distribution * load_factor * safety_factor)
 
-    cs = CSTube(radius=r, thickness=thickness)
-    beam = Beam(mesh=mesh, E=E, G=G, rho=rho_mat,
-                A=cs.area, J=cs.J, Iy=cs.Iy, Iz=cs.Iz, F=F, 
-                fixed_nodes=fixed_nodes)
-    u = beam.solve()
-    u = jnp.linalg.norm(u[:, :3], axis=1)
-    right_tip_disp, left_tip_disp = u[-1], u[0]
+    # cs = CSTube(radius=r, thickness=thickness)
+    # beam = Beam(mesh=mesh, E=E, G=G, rho=rho_mat,
+    #             A=cs.area, J=cs.J, Iy=cs.Iy, Iz=cs.Iz, F=F, 
+    #             fixed_nodes=fixed_nodes)
+    # u = beam.solve()
+    # u = jnp.linalg.norm(u[:, :3], axis=1)
+    # right_tip_disp, left_tip_disp = u[-1], u[0]
 
-    mass = beam.mass + m0
-    weight = mass * 9.81
+    # mass = beam.mass + m0
+    # weight = mass * 9.81
+    right_tip_disp, left_tip_disp, weight = structures_model(F, thickness)
 
     lift = args[2]
 
@@ -223,7 +228,6 @@ solution = opt.x
 twist = solution[0]
 thickness = solution[1]
 
-import matplotlib.pyplot as plt
 
 plt.plot(lifting_line.y, twist, label='Twist distribution')
 plt.show()
