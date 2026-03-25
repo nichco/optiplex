@@ -20,6 +20,15 @@ rho_atm = 1.225
 q = 0.5 * rho_atm * v_inf**2
 lifting_line = LiftingLine(N, b, c_root, c_tip)
 
+def aero_model(twist):
+
+    CD = lifting_line.compute_drag(twist)
+    lift_distribution = lifting_line.compute_lift_distribution(twist, rho_atm, v_inf)
+    CL = lifting_line.compute_lift_coefficient(twist)
+    lift = CL * q * lifting_line.S
+    
+    return CD, lift_distribution, lift
+
 # structures setup
 num_nodes   = 31
 mesh        = np.zeros((num_nodes, 3))
@@ -33,6 +42,21 @@ m0 = 1e3
 load_factor = 5
 safety_factor = 3
 tip_disp_target = 0.01
+
+def structures_model(F, thickness):
+
+    cs = CSTube(radius=r, thickness=thickness)
+    beam = Beam(mesh=mesh, E=E, G=G, rho=rho_mat,
+                A=cs.area, J=cs.J, Iy=cs.Iy, Iz=cs.Iz, F=F, 
+                fixed_nodes=fixed_nodes)
+    u = beam.solve()
+    u = jnp.linalg.norm(u[:, :3], axis=1)
+    right_tip_disp, left_tip_disp = u[-1], u[0]
+
+    mass = beam.mass + m0
+    weight = mass * 9.81
+
+    return right_tip_disp, left_tip_disp, weight
 
 
 thickness0 = np.ones(num_nodes - 1) * 0.002
@@ -48,13 +72,13 @@ lift_init = CL_init * q * lifting_line.S
 args = [lift_distribution_init, obj_init, lift_init]
 
 
+
 def global_constraints(x):
 
     twist = x[0]
     thickness = x[1]
     # slack = x[2]
 
-    # lift_distribution = lifting_line.compute_lift_distribution(twist, rho_atm, v_inf)
     lift_distribution = args[0]
 
     F = jnp.zeros((num_nodes, 6))
@@ -71,8 +95,6 @@ def global_constraints(x):
     mass = beam.mass + m0
     weight = mass * 9.81
 
-    # CL = lifting_line.compute_lift_coefficient(twist)
-    # lift = CL * q * lifting_line.S
     lift = args[2]
 
     con = jnp.zeros(3)
@@ -144,7 +166,6 @@ def struct_subproblem(x, y, mu):
 
         c = global_constraints(x)
 
-        # obj = lifting_line.compute_drag(twist) * 1e3
         obj = args[1]
 
         return 1e3 * obj + y.T @ c + 0.5 * mu * jnp.sum(c**2)
