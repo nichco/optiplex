@@ -9,6 +9,7 @@ class Plex():
                  x_init: List[np.ndarray],
                 #  constraint: Callable = None,
                  con: Callable = lambda v: np.zeros(0),
+                #  args = None,
                  ):
 
         self.subproblems = subproblems
@@ -20,6 +21,7 @@ class Plex():
         self.y = np.zeros_like(con(self.x)) # Lagrange multipliers
         self.d = len(self.y) # number of constraints
         self.history = [self.x.copy()] # data dictionary/list
+        # self.args = args
     
 
     def solve(self, 
