@@ -9,7 +9,7 @@ class Plex():
                  x_init: List[np.ndarray],
                 #  constraint: Callable = None,
                  con: Callable = lambda v: np.zeros(0),
-                #  args = None,
+                 data = None,
                  ):
 
         self.subproblems = subproblems
@@ -18,10 +18,14 @@ class Plex():
         self.n = sum(xi.size for xi in self.x) # dimension
         self.time = None
         self.con = con
-        self.y = np.zeros_like(con(self.x)) # Lagrange multipliers
+        # self.y = np.zeros_like(con(self.x)) # Lagrange multipliers
+        if data is not None:
+            self.y = np.zeros_like(con(self.x, data)) # Lagrange multipliers
+        else:
+            self.y = np.zeros_like(con(self.x)) # Lagrange multipliers
         self.d = len(self.y) # number of constraints
         self.history = [self.x.copy()] # data dictionary/list
-        # self.args = args
+        self.data = data # optional subproblem data
     
 
     def solve(self, 
@@ -48,8 +52,12 @@ class Plex():
                 z_old = np.concatenate([xi.ravel() for xi in self.x])
 
                 for subP in self.subproblems: 
-
-                    self.x = subP(self.x, self.y, mu)
+                    
+                    if self.data is not None:
+                        self.x, self.data = subP(self.x, self.y, mu, self.data)
+                    else:
+                        self.x = subP(self.x, self.y, mu)
+                    # self.x = subP(self.x, self.y, mu)
                     self.history.append(self.x.copy())
 
                 eps_inner = np.sqrt(self.n) * ATOL_in + RTOL_in * np.linalg.norm(z_old)
@@ -70,7 +78,12 @@ class Plex():
             if self.d == 0: break
 
             # Evaluate the constraints
-            c = self.con(self.x)
+            if self.data is not None:
+                c = self.con(self.x, self.data)
+                print('Constraint values: ', c) # testing
+            else:
+                c = self.con(self.x)
+            # c = self.con(self.x)
             feas = np.linalg.norm(c)
 
             x_new = np.concatenate([xi.ravel() for xi in self.x])

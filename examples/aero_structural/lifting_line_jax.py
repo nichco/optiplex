@@ -47,20 +47,17 @@ class LiftingLine:
 
         return jnp.linalg.solve(A, b)
 
-    def compute_drag(self, x):
-        coef = self.solve_lifting_line_model(x)
+    def compute_drag(self, coef):
 
         s = 0.0
         for n in range(self.N):
             s += (n+1)*coef[n]**2
         return jnp.pi*self.AR*s
 
-    def compute_lift_coefficient(self, x):
-        coef = self.solve_lifting_line_model(x)
+    def compute_lift_coefficient(self, coef):
         return jnp.pi*self.AR*coef[0]
 
-    def compute_lift_distribution(self, x, rho, v_inf):
-        coef = self.solve_lifting_line_model(x)
+    def compute_lift_distribution(self, coef, rho, v_inf):
 
         Gamma = jnp.zeros(self.N)
         for n in range(self.N):
@@ -70,24 +67,24 @@ class LiftingLine:
 
         return L_prime
     
-    def compute_lift_forces(self, x, rho, v_inf):
-        coef = self.solve_lifting_line_model(x)
+    # def compute_lift_forces(self, x, rho, v_inf):
+    #     coef = self.solve_lifting_line_model(x)
 
-        Gamma = jnp.zeros(self.N)
-        for n in range(self.N):
-            Gamma = Gamma + 2.0 * self.b * coef[n] * jnp.sin((n + 1) * self.theta)
+    #     Gamma = jnp.zeros(self.N)
+    #     for n in range(self.N):
+    #         Gamma = Gamma + 2.0 * self.b * coef[n] * jnp.sin((n + 1) * self.theta)
 
-        L_prime = rho * v_inf * Gamma
+    #     L_prime = rho * v_inf * Gamma
 
-        theta_boundaries = jnp.linspace(0, jnp.pi, self.N + 1)
-        y_boundaries = 0.5 * self.b * jnp.cos(theta_boundaries)
+    #     theta_boundaries = jnp.linspace(0, jnp.pi, self.N + 1)
+    #     y_boundaries = 0.5 * self.b * jnp.cos(theta_boundaries)
 
-        # Panel widths — positive by construction since we take the absolute value
-        delta_y = jnp.abs(jnp.diff(y_boundaries))
+    #     # Panel widths — positive by construction since we take the absolute value
+    #     delta_y = jnp.abs(jnp.diff(y_boundaries))
 
-        F = L_prime * delta_y
+    #     F = L_prime * delta_y
 
-        return F
+    #     return F
 
     def plot_result(self, x):
         coef = self.solve_lifting_line_model(x)
@@ -159,7 +156,7 @@ if __name__ == "__main__":
 
     coef = lifting_line.solve_lifting_line_model(x)
 
-    CD = lifting_line.compute_drag(x)
+    CD = lifting_line.compute_drag(coef)
     print('CD: ', CD)
 
     size = 100
@@ -170,24 +167,8 @@ if __name__ == "__main__":
     for n in range(N):
         Gamma = Gamma + 2*b*coef[n]*jnp.sin((n+1)*theta)
 
-    lift_distribution = lifting_line.compute_lift_distribution(x, rho=1.225, v_inf=100.0)
-    lift_forces = lifting_line.compute_lift_forces(x, rho=1.225, v_inf=100.0)
-
-    # fig, ax = plt.subplots(1, 3, figsize=(12, 4))
-    # ax[0].plot(lifting_line.y, x, linewidth=2)
-    # ax[0].set_title('Twist distribution')
-    # ax[1].plot(y, Gamma, linewidth=2)
-    # ax[1].set_title('Gamma distribution')
-    # ax[2].plot(lifting_line.y, lift_distribution, linewidth=2)
-    # ax[2].set_title('Lift distribution')
-
-    # ax[2].plot(lifting_line.y, lift_forces, linewidth=2, linestyle='dashed')
-
-    # # Example: gradient of drag w.r.t. twist
-    # dCD_dx = jax.grad(lifting_line.compute_drag)(x)
-    # print('dCD/dx: ', dCD_dx)
-
-    # plt.show()
+    lift_distribution = lifting_line.compute_lift_distribution(coef, rho=1.225, v_inf=100.0)
+    # lift_forces = lifting_line.compute_lift_forces(coef, rho=1.225, v_inf=100.0)
 
     lifting_line.plot_result(x)
     plt.show()
