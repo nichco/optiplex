@@ -84,9 +84,10 @@ def con(x, data):
     loads = data['Loads']
     CD = data['CD']
     lift = data['Lift']
-    right_tip_disp = data['right_tip_disp']
-    left_tip_disp = data['left_tip_disp']
-    weight = data['Weight']
+    # right_tip_disp = data['right_tip_disp']
+    # left_tip_disp = data['left_tip_disp']
+    # weight = data['Weight']
+    right_tip_disp, left_tip_disp, weight = structures_model(loads, x[1])
 
     con = jnp.zeros(3)
     con = con.at[0].set((left_tip_disp - tip_disp_target) * 1e2)  # equality constraint for now
@@ -221,9 +222,9 @@ opt.solve(max_outer_iter=100,
           RTOL_out=1e-4,
           ATOL_in=1e-2, 
           RTOL_in=1e-2,
-          ATOL_feas=1e-3,
+          ATOL_feas=1e-4,
           rho=1.2,
-          mu=50.0,
+          mu=10.0,
           )
 
 solution = opt.x
