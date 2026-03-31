@@ -92,7 +92,6 @@ def con(x):
 
     # unpack the data dict
     f_real = data['f_real']
-    CD = data['CD']
     lift = data['Lift']
     right_tip_disp = data['right_tip_disp']
     left_tip_disp = data['left_tip_disp']
@@ -108,9 +107,7 @@ def con(x):
     right_disp_con = (right_tip_disp - tip_disp_target) * disp_scale
     left_disp_con = (left_tip_disp - tip_disp_target) * disp_scale
 
-    con = jnp.concatenate([f_con, jnp.array([right_disp_con, left_disp_con, l_equals_w])])
-
-    return con
+    return jnp.concatenate([f_con, jnp.array([right_disp_con, left_disp_con, l_equals_w])])
 
 
 def aero_subproblem(x, y, mu):
@@ -128,11 +125,9 @@ def aero_subproblem(x, y, mu):
     weight = data['Weight']
 
     def jax_obj(v):
-        
-        twist = v
 
         # run the aero model
-        CD, f_real, lift = aero_model(twist)
+        CD, f_real, lift = aero_model(v)
         
         # compute the global constraints
         f_con = (f_copy - f_real) * f_scale
@@ -156,8 +151,6 @@ def aero_subproblem(x, y, mu):
     data['f_real'] = f_real
     data['CD'] = CD
     data['Lift'] = lift
-
-    print('CD: ', CD)
 
     return [twist_solution, thickness, f_copy]
 
@@ -229,8 +222,8 @@ opt.solve(max_outer_iter=100,
           max_inner_iter=10,
           ATOL_out=1e-5, 
           RTOL_out=1e-5,
-          ATOL_in=1e-2, 
-          RTOL_in=1e-2,
+          ATOL_in=1e-3, 
+          RTOL_in=1e-3,
           ATOL_feas=1e-5,
           rho=1.2,
           mu=10.0,
@@ -243,17 +236,10 @@ thickness = solution[1]
 f_copy = solution[2]
 
 
-plt.plot(lifting_line.y, twist)
-plt.show()
-
-plt.plot(thickness)
-plt.show()
-
-
-f_real = data['f_real']
-plt.plot(lifting_line.y, f_copy, label='f copy')
-plt.plot(lifting_line.y, f_real, label='f real')
-plt.legend()
+fig, (ax1, ax2) = plt.subplots(1, 2)
+ax1.plot(lifting_line.y, twist)
+ax2.plot(thickness)
+plt.tight_layout()
 plt.show()
 
 
@@ -265,3 +251,15 @@ print('Lift: ', lift)
 print('Weight: ', weight)
 print('Right tip displacement: ', right_tip_disp)
 print('Left tip displacement: ', left_tip_disp)
+
+
+solution = np.load('examples/aero_structural/solution.npz')
+x_star = np.concatenate([solution['twist'], solution['thickness']])
+
+history_vecs = [np.concatenate(h[:2]) for h in opt.history]
+error = [np.linalg.norm(x - x_star) / np.linalg.norm(x_star) for x in history_vecs]
+
+plt.semilogy(error)
+plt.xlabel('Iteration')
+plt.ylabel('Relative error')
+plt.show()
