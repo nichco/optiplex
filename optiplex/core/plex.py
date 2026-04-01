@@ -20,6 +20,9 @@ class Plex():
         self.y = np.zeros_like(con(self.x)) # Lagrange multipliers
         self.d = len(self.y) # number of constraints
         self.history = [self.x.copy()] # data dictionary/list
+        self.mu_history = []
+        self.x_time = [0.0] # time history for each x update
+        self.m_time = [0.0] # time history for each multiplier update
     
 
     def solve(self, 
@@ -37,6 +40,8 @@ class Plex():
         assert rho > 1
         t1 = time.perf_counter()
 
+        self.mu_history.append(mu)
+
         for k in range(max_outer_iter):
 
             x_old = np.concatenate([xi.ravel() for xi in self.x])
@@ -49,6 +54,7 @@ class Plex():
 
                     self.x = subP(self.x, self.y, mu)
                     self.history.append(self.x.copy())
+                    self.x_time.append(time.perf_counter() - t1)
 
                 eps_inner = np.sqrt(self.n) * ATOL_in + RTOL_in * np.linalg.norm(z_old)
                 z_new = np.concatenate([xi.ravel() for xi in self.x])
@@ -81,6 +87,8 @@ class Plex():
             if feas > eps_feas:
                 self.y = self.y + mu * c # Update the multipliers
                 mu = rho * mu # Update the penalty coefficient
+                self.mu_history.append(mu)
+                self.m_time.append(time.perf_counter() - t1)
 
             print(f"du_itr={k:03d} | "
                   f"r_o={r_norm_outer:.3e} | "
