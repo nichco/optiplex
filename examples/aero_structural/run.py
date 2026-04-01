@@ -16,17 +16,16 @@ N = 31
 b = 10.0
 c_root = 1.0
 c_tip = 0.65
-v_inf = 60
-rho_atm = 1.225
-q = 0.5 * rho_atm * v_inf**2
 lifting_line = LiftingLine(N, b, c_root, c_tip)
 
-def aero_model(twist):
+def aero_model(twist, rho_atm=1.225, v_inf=60):
 
-    CD = lifting_line.compute_drag(twist)
-    lift_distribution = lifting_line.compute_lift_distribution(twist, rho_atm, v_inf)
-    CL = lifting_line.compute_lift_coefficient(twist)
-    lift = CL * q * lifting_line.S
+    coef = lifting_line.solve_lifting_line_model(twist)
+    CD = lifting_line.compute_drag(coef)
+    lift_distribution = lifting_line.compute_lift_distribution(coef, rho_atm, v_inf)
+    CL = lifting_line.compute_lift_coefficient(coef)
+
+    lift = 0.5 * rho_atm * v_inf**2 * CL * lifting_line.S
     
     return CD, lift_distribution, lift
 
@@ -36,18 +35,18 @@ mesh        = np.zeros((num_nodes, 3))
 mesh[:, 1]  = lifting_line.y
 fixed_nodes = [num_nodes // 2] # the center node is fixed in all DOFs
 r = 0.2 * (lifting_line.chord[:-1] + lifting_line.chord[1:]) / 4 # radius of the tube as a function of chord
-E = 69e9
-G = 26e9
-rho_mat = 3000
 m0 = 1e3
 load_factor = 5
 safety_factor = 3
 tip_disp_target = 0.01
 
-def structures_model(F, thickness):
+def structures_model(loads, thickness):
+
+    F = jnp.zeros((num_nodes, 6))
+    F = F.at[:, 2].set(loads * load_factor * safety_factor)
 
     cs = CSTube(radius=r, thickness=thickness)
-    beam = Beam(mesh=mesh, E=E, G=G, rho=rho_mat,
+    beam = Beam(mesh=mesh, E=69e9, G=26e9, rho=3000,
                 A=cs.area, J=cs.J, Iy=cs.Iy, Iz=cs.Iz, F=F, 
                 fixed_nodes=fixed_nodes)
     u = beam.solve()
@@ -60,52 +59,38 @@ def structures_model(F, thickness):
     return right_tip_disp, left_tip_disp, weight
 
 
+# scalers for constraint functions
+lw_scale = 1e-3
+f_scale = 1#e-1
+disp_scale = 1#e2
+
 thickness0 = np.ones(num_nodes - 1) * 0.002
 twist0 = np.ones(N) * np.deg2rad(5)
 x_init = [twist0, thickness0]
 
-# populate args 
-# lift_distribution_init = lifting_line.compute_lift_distribution(twist0, rho_atm, v_inf)
-# obj_init = lifting_line.compute_drag(twist0)
-# CL_init = lifting_line.compute_lift_coefficient(twist0)
-# lift_init = CL_init * q * lifting_line.S
-
 # run the aero model once to populate args
-obj_init, lift_distribution_init, lift_init = aero_model(twist0)
+CD_init, f_init, lift_init = aero_model(twist0)
 
-args = [lift_distribution_init, obj_init, lift_init]
+data = {'f_real': f_init,
+        'CD': CD_init,
+        'Lift': lift_init,
+        }
 
 
 
-def global_constraints(x):
+def con(x):
 
     twist = x[0]
     thickness = x[1]
-    # slack = x[2]
 
-    lift_distribution = args[0]
+    CD, f, lift = aero_model(twist)
 
-    F = jnp.zeros((num_nodes, 6))
-    F = F.at[:, 2].set(lift_distribution * load_factor * safety_factor)
-
-    # cs = CSTube(radius=r, thickness=thickness)
-    # beam = Beam(mesh=mesh, E=E, G=G, rho=rho_mat,
-    #             A=cs.area, J=cs.J, Iy=cs.Iy, Iz=cs.Iz, F=F, 
-    #             fixed_nodes=fixed_nodes)
-    # u = beam.solve()
-    # u = jnp.linalg.norm(u[:, :3], axis=1)
-    # right_tip_disp, left_tip_disp = u[-1], u[0]
-
-    # mass = beam.mass + m0
-    # weight = mass * 9.81
-    right_tip_disp, left_tip_disp, weight = structures_model(F, thickness)
-
-    lift = args[2]
+    right_tip_disp, left_tip_disp, weight = structures_model(f, thickness)
 
     con = jnp.zeros(3)
-    con = con.at[0].set((left_tip_disp - tip_disp_target) * 1e1)  # equality constraint for now
-    con = con.at[1].set((right_tip_disp - tip_disp_target) * 1e1) # equality constraint for now
-    con = con.at[2].set((lift - weight) * 1e-2)
+    con = con.at[0].set((left_tip_disp - tip_disp_target) * disp_scale)  # equality constraint for now
+    con = con.at[1].set((right_tip_disp - tip_disp_target) * disp_scale) # equality constraint for now
+    con = con.at[2].set((lift - weight) * lw_scale)
 
     return con
 
@@ -116,45 +101,36 @@ def aero_subproblem(x, y, mu):
 
     twist = x[0]
     thickness = x[1]
-    # slack = x[2]
 
     def jax_obj(v):
         
         twist = v
         x[0] = twist
 
-        obj = lifting_line.compute_drag(twist)
-        lift_distribution = lifting_line.compute_lift_distribution(twist, rho_atm, v_inf)
-        CL = lifting_line.compute_lift_coefficient(twist)
-        lift = CL * q * lifting_line.S
-        args[0] = lift_distribution
-        args[1] = obj
-        args[2] = lift
+        CD, f, lift = aero_model(twist)
 
-        c = global_constraints(x)
+        right_tip_disp, left_tip_disp, weight = structures_model(f, thickness)
 
-        return 1e3 * obj + y.T @ c + 0.5 * mu * jnp.sum(c**2)
-    
-    x0 = twist
+        c = jnp.zeros(3)
+        c = c.at[0].set((left_tip_disp - tip_disp_target) * disp_scale)  # equality constraint for now
+        c = c.at[1].set((right_tip_disp - tip_disp_target) * disp_scale) # equality constraint for now
+        c = c.at[2].set((lift - weight) * lw_scale)
 
-    jaxprob = mo.JaxProblem(x0=x0, jax_obj=jax_obj)
-    optimizer = mo.SLSQP(jaxprob, solver_options={'maxiter': 200, 'ftol': 1e-7}, turn_off_outputs=True)
+        return 1e3 * CD + y.T @ c + 0.5 * mu * jnp.sum(c**2)
+
+    jaxprob = mo.JaxProblem(x0=twist, jax_obj=jax_obj, x_scaler=10)
+    optimizer = mo.SLSQP(jaxprob, solver_options={'maxiter': 300, 'ftol': 1e-7}, turn_off_outputs=True)
     optimizer.solve()
     # optimizer.print_results()
-    twist_solution = optimizer.results['x']
+    twist_solution = optimizer.results['x'] / 10
 
-    x[0] = twist_solution
+    # update args in the data dict
+    CD, f, lift = aero_model(twist_solution)
+    data['CD'] = CD
+    data['Lift'] = lift
+    data['f_real'] = f
 
-    # update args
-    lift_distribution = lifting_line.compute_lift_distribution(twist_solution, rho_atm, v_inf)
-    obj = lifting_line.compute_drag(twist_solution)
-    CL = lifting_line.compute_lift_coefficient(twist_solution)
-    lift = CL * q * lifting_line.S
-    args[0] = lift_distribution
-    args[1] = obj
-    args[2] = lift
-
-    return x
+    return [twist_solution, thickness]
 
 def struct_subproblem(x, y, mu):
 
@@ -162,60 +138,44 @@ def struct_subproblem(x, y, mu):
 
     twist = x[0]
     thickness = x[1]
-    # slack = x[2]
+    
+    CD = data['CD']
+    lift = data['Lift']
+    f = data['f_real']
 
     def jax_obj(v):
 
         thickness = v
         x[1] = thickness
 
-        c = global_constraints(x)
+        right_tip_disp, left_tip_disp, weight = structures_model(f, thickness)
 
-        obj = args[1]
+        c = jnp.zeros(3)
+        c = c.at[0].set((left_tip_disp - tip_disp_target) * disp_scale)  # equality constraint for now
+        c = c.at[1].set((right_tip_disp - tip_disp_target) * disp_scale) # equality constraint for now
+        c = c.at[2].set((lift - weight) * lw_scale)
 
-        return 1e3 * obj + y.T @ c + 0.5 * mu * jnp.sum(c**2)
-    
-    xl = np.ones(num_nodes - 1) * 0.001     # min gauge
-    xu = np.ones(num_nodes - 1) * np.inf    # thickness upper
-    x_scaler = np.ones(num_nodes - 1) * 100 # thickness scaler
+        return 1e3 * CD + y.T @ c + 0.5 * mu * jnp.sum(c**2)
 
-    x0 = thickness
-
-    jaxprob = mo.JaxProblem(x0=x0, jax_obj=jax_obj, xl=xl, xu=xu, x_scaler=x_scaler)
-    optimizer = mo.SLSQP(jaxprob, solver_options={'maxiter': 200, 'ftol': 1e-7}, turn_off_outputs=True)
+    jaxprob = mo.JaxProblem(x0=thickness, jax_obj=jax_obj, xl=0.001, xu=np.inf, x_scaler=100)
+    optimizer = mo.SLSQP(jaxprob, solver_options={'maxiter': 300, 'ftol': 1e-7}, turn_off_outputs=True)
     optimizer.solve()
     # optimizer.print_results()
-    thickness_solution = optimizer.results['x'] / x_scaler
+    thickness_solution = optimizer.results['x'] / 100
 
-    x[1] = thickness_solution
-
-    return x
-
-# def slack_update(x, y, mu):
-#     print('Updating slack variables...')
-
-#     con = global_constraints(x)
-#     ineq_con = con[:2]
-#     sigma = y[:2] # Lagrange multipliers for the inequality constraints
-
-#     new_slack_variables = jnp.maximum(np.zeros((2)), -ineq_con - sigma / mu)
-#     print('New slack variables: ', new_slack_variables)
-
-#     x[2] = new_slack_variables
-
-#     return x
+    return [twist, thickness_solution]
 
 
 
 opt = Plex(subproblems=[aero_subproblem, struct_subproblem],
            x_init=x_init,
-           con=global_constraints,
+           con=con,
            )
 
 opt.solve(max_outer_iter=100,
-          max_inner_iter=3,
-          ATOL_out=1e-4, 
-          RTOL_out=1e-4,
+          max_inner_iter=10,
+          ATOL_out=1e-5, 
+          RTOL_out=1e-5,
           ATOL_in=1e-2, 
           RTOL_in=1e-2,
           ATOL_feas=1e-5,
@@ -229,8 +189,39 @@ twist = solution[0]
 thickness = solution[1]
 
 
-plt.plot(lifting_line.y, twist, label='Twist distribution')
+fig, (ax1, ax2) = plt.subplots(1, 2)
+ax1.plot(lifting_line.y, twist)
+ax2.plot(thickness)
+plt.tight_layout()
 plt.show()
 
-plt.plot(thickness)
+
+
+
+solution = np.load('examples/aero_structural/solution.npz')
+x_star = np.concatenate([solution['twist'], solution['thickness']])
+
+history_vecs = [np.concatenate(h[:2]) for h in opt.history]
+error = [np.linalg.norm((x - x_star) / x_star) for x in history_vecs]
+
+# plt.semilogy(error)
+# plt.xlabel('Iteration')
+# plt.ylabel('Relative error')
+# plt.show()
+
+plt.semilogy(opt.x_time, error)
+plt.xlabel('Time (s)')
+plt.ylabel('Relative error')
+plt.show()
+
+plt.semilogy(opt.m_time, opt.mu_history)
+plt.xlabel('Time (s)')
+plt.ylabel('Penalty parameter')
+plt.show()
+
+plt.plot(solution['twist'], label='Reference twist')
+plt.plot(twist, label='Plex twist')
+plt.legend()
+plt.xlabel('Spanwise location')
+plt.ylabel('Twist (rad)')
 plt.show()

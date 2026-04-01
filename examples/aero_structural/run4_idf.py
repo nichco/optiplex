@@ -60,8 +60,11 @@ def structures_model(loads, thickness):
 
 
 # scalers for constraint functions
+# lw_scale = 1e-3
+# f_scale = 1e-1
+# disp_scale = 1e2
 lw_scale = 1e-3
-f_scale = 1e-1
+f_scale = 1e-2
 disp_scale = 1e2
 
 thickness0 = np.ones(num_nodes - 1) * 0.002
@@ -99,7 +102,6 @@ def con(x):
     f_con = (f_copy - f_real) * f_scale
 
     # lift equals weight constraint
-    # l_equals_w = ((lift / weight) - 1) * lw_scale
     l_equals_w = (lift - weight) * lw_scale
 
     # displacement constraints
@@ -130,7 +132,6 @@ def aero_subproblem(x, y, mu):
         
         # compute the global constraints
         f_con = (f_copy - f_real) * f_scale
-        # l_equals_w = ((lift / weight) - 1) * lw_scale
         l_equals_w = (lift - weight) * lw_scale
         right_disp_con = (right_tip_disp - tip_disp_target) * disp_scale
         left_disp_con = (left_tip_disp - tip_disp_target) * disp_scale
@@ -178,7 +179,6 @@ def struct_subproblem(x, y, mu):
 
         # compute the global constraints
         f_con = (f_copy - f_real) * f_scale
-        # l_equals_w = ((lift / weight) - 1) * lw_scale
         l_equals_w = (lift - weight) * lw_scale
         right_disp_con = (right_tip_disp - tip_disp_target) * disp_scale
         left_disp_con = (left_tip_disp - tip_disp_target) * disp_scale
@@ -260,10 +260,10 @@ x_star = np.concatenate([solution['twist'], solution['thickness']])
 history_vecs = [np.concatenate(h[:2]) for h in opt.history]
 error = [np.linalg.norm((x - x_star) / x_star) for x in history_vecs]
 
-plt.semilogy(error)
-plt.xlabel('Iteration')
-plt.ylabel('Relative error')
-plt.show()
+# plt.semilogy(error)
+# plt.xlabel('Iteration')
+# plt.ylabel('Relative error')
+# plt.show()
 
 plt.semilogy(opt.x_time, error)
 plt.xlabel('Time (s)')
@@ -284,4 +284,4 @@ plt.show()
 
 
 # save error history and mu history and x_time and mu_time
-np.savez('examples/aero_structural/history3.npz', error=error, mu_history=opt.mu_history, x_time=opt.x_time, m_time=opt.m_time)
+np.savez('examples/aero_structural/history.npz', error=error, mu_history=opt.mu_history, x_time=opt.x_time, m_time=opt.m_time)
