@@ -62,7 +62,7 @@ def structures_model(loads, thickness):
 # scalers for constraint functions
 lw_scale = 1e-3
 f_scale = 1#e-1
-disp_scale = 1#e2
+disp_scale = 1e1#e2
 
 thickness0 = np.ones(num_nodes - 1) * 0.002
 twist0 = np.ones(N) * np.deg2rad(5)
@@ -71,10 +71,7 @@ x_init = [twist0, thickness0]
 # run the aero model once to populate args
 CD_init, f_init, lift_init = aero_model(twist0)
 
-data = {'f_real': f_init,
-        'CD': CD_init,
-        'Lift': lift_init,
-        }
+data = {'f_real': f_init, 'CD': CD_init, 'Lift': lift_init}
 
 
 
