@@ -61,8 +61,8 @@ def structures_model(loads, thickness):
 
 # scalers for constraint functions
 lw_scale = 1e-3
-f_scale = 1#e-1
-disp_scale = 1e1#e2
+f_scale = 1
+disp_scale = 1e1
 
 thickness0 = np.ones(num_nodes - 1) * 0.002
 twist0 = np.ones(N) * np.deg2rad(5)
@@ -211,7 +211,7 @@ plt.xlabel('Time (s)')
 plt.ylabel('Relative error')
 plt.show()
 
-plt.semilogy(opt.m_time, opt.mu_history)
+plt.semilogy(opt.x_time, opt.mu_history)
 plt.xlabel('Time (s)')
 plt.ylabel('Penalty parameter')
 plt.show()

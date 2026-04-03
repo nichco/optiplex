@@ -270,7 +270,7 @@ plt.xlabel('Time (s)')
 plt.ylabel('Relative error')
 plt.show()
 
-plt.semilogy(opt.m_time, opt.mu_history)
+plt.semilogy(opt.x_time, opt.mu_history)
 plt.xlabel('Time (s)')
 plt.ylabel('Penalty parameter')
 plt.show()
@@ -284,4 +284,4 @@ plt.show()
 
 
 # save error history and mu history and x_time and mu_time
-np.savez('examples/aero_structural/history.npz', error=error, mu_history=opt.mu_history, x_time=opt.x_time, m_time=opt.m_time)
+# np.savez('examples/aero_structural/history_idf_a.npz', error=error, mu_history=opt.mu_history, x_time=opt.x_time)
