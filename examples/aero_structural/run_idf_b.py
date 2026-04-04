@@ -63,8 +63,13 @@ def structures_model(loads, thickness):
 # lw_scale = 1e-3
 # f_scale = 1e-1
 # disp_scale = 1e2
+
+# lw_scale = 1e-3
+# f_scale = 1e0#1e-2
+# disp_scale = 1e2
+
 lw_scale = 1e-3
-f_scale = 1e0#1e-2
+f_scale = 1e-1
 disp_scale = 1e2
 
 thickness0 = np.ones(num_nodes - 1) * 0.002
@@ -99,18 +104,18 @@ def con(x):
     weight = data['Weight']
 
     # consensus constraint
-    f_con = (f_copy - f_real) * f_scale
+    # f_con = (f_copy - f_real) * f_scale
+    f_con = ((f_copy / f_real) - 1) * f_scale
 
     # lift equals weight constraint
-    # l_equals_w = (lift - weight) * lw_scale
+    l_equals_w = (lift - weight) * lw_scale
 
     # # displacement constraints
     # right_disp_con = (right_tip_disp - tip_disp_target) * disp_scale
     # left_disp_con = (left_tip_disp - tip_disp_target) * disp_scale
 
     # return jnp.concatenate([f_con, jnp.array([right_disp_con, left_disp_con, l_equals_w])])
-    # return jnp.concatenate([f_con, jnp.array([l_equals_w])])
-    return f_con
+    return jnp.concatenate([f_con, jnp.array([l_equals_w])])
 
 
 def aero_subproblem(x, y, mu):
@@ -133,38 +138,22 @@ def aero_subproblem(x, y, mu):
         CD, f_real, lift = aero_model(v)
         
         # compute the global constraints
-        f_con = (f_copy - f_real) * f_scale
-        # l_equals_w = (lift - weight) * lw_scale
+        # f_con = (f_copy - f_real) * f_scale
+        f_con = ((f_copy / f_real) - 1) * f_scale
+        l_equals_w = (lift - weight) * lw_scale
         # right_disp_con = (right_tip_disp - tip_disp_target) * disp_scale
         # left_disp_con = (left_tip_disp - tip_disp_target) * disp_scale
         # c = jnp.concatenate([f_con, jnp.array([right_disp_con, left_disp_con, l_equals_w])])
-        # c = jnp.concatenate([f_con, jnp.array([l_equals_w])])
-        c = f_con
+        c = jnp.concatenate([f_con, jnp.array([l_equals_w])])
 
         return 1e3 * CD + y.T @ c + 0.5 * mu * jnp.sum(c**2)
     
-    # def jax_con(v):
-
-    #     _, _, lift = aero_model(v)
-
-    #     lw_con = (lift - weight) * lw_scale
-
-    #     return lw_con.flatten()
-
-    def jax_con(v):
-
-        _, _, lift = aero_model(v)
-
-        lw_con = (lift - weight) * lw_scale
-
-        return lw_con.flatten()
-    
     x_scaler = np.ones(N) * 10 # twist scaler
 
-    jaxprob = mo.JaxProblem(x0=v0, jax_obj=jax_obj, jax_con=jax_con, cl=0, cu=0, x_scaler=x_scaler)
+    jaxprob = mo.JaxProblem(x0=v0, jax_obj=jax_obj, x_scaler=x_scaler)
     optimizer = mo.SLSQP(jaxprob, solver_options={'maxiter': 300, 'ftol': 1e-8}, turn_off_outputs=True)
     optimizer.solve()
-    optimizer.print_results()
+    # optimizer.print_results()
     twist_solution = optimizer.results['x'] / x_scaler
 
     # update the data dict
@@ -198,13 +187,13 @@ def struct_subproblem(x, y, mu):
         right_tip_disp, left_tip_disp, weight = structures_model(f_copy, t)
 
         # compute the global constraints
-        f_con = (f_copy - f_real) * f_scale
-        # l_equals_w = (lift - weight) * lw_scale
+        # f_con = (f_copy - f_real) * f_scale
+        f_con = ((f_copy / f_real) - 1) * f_scale
+        l_equals_w = (lift - weight) * lw_scale
         # right_disp_con = (right_tip_disp - tip_disp_target) * disp_scale
         # left_disp_con = (left_tip_disp - tip_disp_target) * disp_scale
         # c = jnp.concatenate([f_con, jnp.array([right_disp_con, left_disp_con, l_equals_w])])
-        # c = jnp.concatenate([f_con, jnp.array([l_equals_w])])
-        c = f_con
+        c = jnp.concatenate([f_con, jnp.array([l_equals_w])])
 
         return 1e3 * CD + y.T @ c + 0.5 * mu * jnp.sum(c**2)
     
@@ -218,9 +207,7 @@ def struct_subproblem(x, y, mu):
         right_disp_con = (right_tip_disp - tip_disp_target) * disp_scale
         left_disp_con = (left_tip_disp - tip_disp_target) * disp_scale
 
-        lw_con = (lift - weight) * lw_scale
-
-        return jnp.array([right_disp_con, left_disp_con, lw_con])
+        return jnp.array([right_disp_con, left_disp_con])
 
     
     tl = np.ones(num_nodes - 1) * 0.001     # min gauge
@@ -236,7 +223,7 @@ def struct_subproblem(x, y, mu):
     jaxprob = mo.JaxProblem(x0=v0, jax_obj=jax_obj, jax_con=jax_con, cl=0, cu=0, xl=xl, xu=xu, x_scaler=x_scaler)
     optimizer = mo.SLSQP(jaxprob, solver_options={'maxiter': 300, 'ftol': 1e-8}, turn_off_outputs=True)
     optimizer.solve()
-    optimizer.print_results()
+    # optimizer.print_results()
     sol = optimizer.results['x'] / x_scaler
     thickness_solution = sol[:num_nodes - 1]
     load_solution = sol[num_nodes - 1:]
@@ -258,12 +245,12 @@ opt = Plex(subproblems=[aero_subproblem, struct_subproblem],
 
 opt.solve(max_outer_iter=300,
           max_inner_iter=10,
-          ATOL_out=1e-5, 
+          ATOL_out=1e-4, 
           RTOL_out=1e-5,
           ATOL_in=1e-3, 
           RTOL_in=1e-3,
-          ATOL_feas=1e-5,
-          rho=1.2,
+          ATOL_feas=1e-4,
+          rho=1.1,
           mu=1.0,
           )
 
@@ -318,6 +305,16 @@ plt.legend()
 plt.xlabel('Spanwise location')
 plt.ylabel('Twist (rad)')
 plt.show()
+
+# plot f_copy and f_real at the last iteration
+f_real = data['f_real']
+plt.plot(f_copy, label='f_copy')
+plt.plot(f_real, label='f_real')
+plt.legend()
+plt.xlabel('Spanwise location')
+plt.ylabel('Load (N)')
+plt.show()
+
 
 
 # save error history and mu history and x_time and mu_time
