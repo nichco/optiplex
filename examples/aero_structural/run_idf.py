@@ -60,12 +60,12 @@ def structures_model(loads, thickness):
 
 
 # scalers for constraint functions
-# lw_scale = 1e-3
-# f_scale = 1e-1
-# disp_scale = 1e2
-lw_scale = 1e-3
+lw_scale = 1e-4
 f_scale = 1e-2
 disp_scale = 1e2
+# lw_scale = 1e-4
+# f_scale = 1e-2
+# disp_scale = 1e1
 
 thickness0 = np.ones(num_nodes - 1) * 0.002
 twist0 = np.ones(N) * np.deg2rad(5)
@@ -282,6 +282,13 @@ plt.xlabel('Spanwise location')
 plt.ylabel('Twist (rad)')
 plt.show()
 
+f_real = data['f_real']
+plt.plot(f_copy, label='f_copy')
+plt.plot(f_real, label='f_real')
+plt.legend()
+plt.xlabel('Spanwise location')
+plt.ylabel('Load (N)')
+plt.show()
 
 # save error history and mu history and x_time and mu_time
-# np.savez('examples/aero_structural/history_idf_a.npz', error=error, mu_history=opt.mu_history, x_time=opt.x_time)
+# np.savez('examples/aero_structural/history_idf.npz', error=error, mu_history=opt.mu_history, x_time=opt.x_time)
