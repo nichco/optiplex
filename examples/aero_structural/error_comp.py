@@ -45,32 +45,37 @@ time_pen_1e4 = data_pen_1e4['x_time']
 
 plt.figure(figsize=(4,3))
 
-plt.semilogy(time, error, label='AL-BCD', linewidth=1.5)
+# plt.semilogy(time, error, label='AL-BCD', linewidth=1.5, marker='o', markersize=4, markevery=12)
+plt.semilogy(time, error, label='AL-BCD', linewidth=2)
 
 # plt.semilogy(time_pen_1e2, error_pen_1e2, label='Penalty (1e2)', linewidth=1.5)
 
-plt.semilogy(time_pen_5e2, error_pen_5e2, label='Penalty (5e2)', linewidth=1.5)
+# plt.semilogy(time_pen_5e2, error_pen_5e2, label='Penalty (5e2)', linewidth=1.5)
 
-plt.semilogy(time_pen_9e2, error_pen_9e2, label='Penalty (9e2)', linewidth=1.5)
+# plt.semilogy(time_pen_9e2, error_pen_9e2, label='Penalty (9e2)', linewidth=1.5, marker='v', markersize=4, markevery=30)
+plt.semilogy(time_pen_9e2, error_pen_9e2, label='Penalty (9e2)', linewidth=2)
 
-plt.semilogy(time_pen_1e3, error_pen_1e3, label='Penalty (1e3)', linewidth=1.5)
+# plt.semilogy(time_pen_1e3, error_pen_1e3, label='Penalty (1e3)', linewidth=1.5, marker='s', markersize=4, markevery=30)
+plt.semilogy(time_pen_1e3, error_pen_1e3, label='Penalty (1e3)', linewidth=2)
 
-plt.semilogy(time_pen_2e3, error_pen_2e3, label='Penalty (2e3)', linewidth=1.5)
+# plt.semilogy(time_pen_2e3, error_pen_2e3, label='Penalty (2e3)', linewidth=1.5, marker='^', markersize=4, markevery=30)
+plt.semilogy(time_pen_2e3, error_pen_2e3, label='Penalty (2e3)', linewidth=2)
 
-plt.semilogy(time_pen_3e3, error_pen_3e3, label='Penalty (3e3)', linewidth=1.5)
+# plt.semilogy(time_pen_3e3, error_pen_3e3, label='Penalty (3e3)', linewidth=1.5, marker='d', markersize=4, markevery=30)
+plt.semilogy(time_pen_3e3, error_pen_3e3, label='Penalty (3e3)', linewidth=2)
 
-plt.semilogy(time_pen_4e3, error_pen_4e3, label='Penalty (4e3)', linewidth=1.5)
+# plt.semilogy(time_pen_4e3, error_pen_4e3, label='Penalty (4e3)', linewidth=1.5, marker='*', markersize=4, markevery=30)
+plt.semilogy(time_pen_4e3, error_pen_4e3, label='Penalty (4e3)', linewidth=2)
 
 # plt.semilogy(time_pen_5e3, error_pen_5e3, label='Penalty (5e3)', linewidth=1.5)
+# plt.semilogy(time_pen_5e3, error_pen_5e3, label='Penalty (5e3)', linewidth=2)
 
 # plt.semilogy(time_pen_1e4, error_pen_1e4, label='Penalty (1e4)', linewidth=1.5)
 
 
-# plt.xscale('log')
-
 plt.xlabel('Wall Time (s)')
 plt.ylabel('Error')
-plt.legend()
+plt.legend(loc='lower right', fontsize='small')
 
 plt.savefig('simple_error_comp.pdf', bbox_inches='tight')
 plt.show()
