@@ -342,7 +342,7 @@ payload_weight_N = payload_weight_lbf*lbf_to_N
 cruise_range_m = cruise_range_nmi*nmi_to_m
 num_nodes = 2 # cruise plus 1 perturbation for stability analysis
 dalpha_stab = 0.1 # for stability analysis
-cruise_mach = 0.8#0.7
+cruise_mach = 0.7
 # cruise_mach = 0.75
 cruise_h = 30000 # altitude in feet
 cruise_h_km = cruise_h*0.3048/1000
@@ -1050,65 +1050,66 @@ for dv_name, dv_info in design_variables.items():
     dv_info.variable.add_name(dv_name)
 # endregion
 
-# region ============================ constraints ============================
+# # region ============================ constraints ============================
 
-# ==== trim constraints ====
-# cruise_trim.set_as_constraint(equals=0., scaler=1.e-6)
-cruise_trim.set_as_constraint(equals=0., scaler=1.e-5)
-cruise_trim.add_name('cruise_trim')
+# # ==== trim constraints ====
+# # cruise_trim.set_as_constraint(equals=0., scaler=1.e-6)
+# cruise_trim.set_as_constraint(equals=0., scaler=1.e-5)
+# cruise_trim.add_name('cruise_trim')
 
-CM_cg_cruise_nominal.set_as_constraint(equals=0., scaler=1.e1)
-CM_cg_cruise_nominal.add_name('cruise_cg_CM_nominal_trim_constraint')
+# CM_cg_cruise_nominal.set_as_constraint(equals=0., scaler=1.e1)
+# CM_cg_cruise_nominal.add_name('cruise_cg_CM_nominal_trim_constraint')
 
-# static margin constraints
-# static_margin.set_as_constraint(lower=0.05, upper=0.5, scaler=1.e1)
-static_margin.set_as_constraint(lower=0.1, upper=0.5, scaler=1.e1)
+# # static margin constraints
+# # static_margin.set_as_constraint(lower=0.05, upper=0.5, scaler=1.e1)
+# static_margin.set_as_constraint(lower=0.1, upper=0.5, scaler=1.e1)
 
-# max stress constraints
-beam_max_stress_S1_SF.set_as_constraint(upper=324e6, scaler=1.e-9)
-beam_max_stress_S1_SF.add_name('S1_max_stress')
+# # max stress constraints
+# beam_max_stress_S1_SF.set_as_constraint(upper=324e6, scaler=1.e-9)
+# beam_max_stress_S1_SF.add_name('S1_max_stress')
 
-# geometric non-interference constraints
-oversized_payload_sdf_values.set_as_constraint(upper=0., scaler=1.)
-oversized_payload_sdf_values.add_name('oversized_payload_non_interference_constraint')
-# endregion
+# # geometric non-interference constraints
+# oversized_payload_sdf_values.set_as_constraint(upper=0., scaler=1.)
+# oversized_payload_sdf_values.add_name('oversized_payload_non_interference_constraint')
+# # endregion
 
-# ============================ objective ============================
-fuel_burn.set_as_objective(scaler=1e-5)
-fuel_burn.add_name('fuel_burn_objective')
+# # ============================ objective ============================
+# fuel_burn.set_as_objective(scaler=1e-5)
+# fuel_burn.add_name('fuel_burn_objective')
 
 
 # ============================ augmented Lagrangian objective ============================
-slack = csdl.Variable(value=0.) # CHK DIMENSION
-slack.set_as_design_variable(scaler=1.)
+n_cruise_trim = 1
+n_CM_cg_cruise_nominal = 1
+n_static_margin = 1
+n_beam_max_stress_S1_SF = 1
+n_oversized_payload_sdf_values = len(oversized_payload_discretization_parametric_coordinates)
 
-y = csdl.Variable(value=np.zeros(5)) # CHK DIMENSION
+nc = n_cruise_trim + n_CM_cg_cruise_nominal + n_static_margin + n_beam_max_stress_S1_SF + n_oversized_payload_sdf_values
 
-c = csdl.Variable(value=np.zeros(5))
+y = csdl.Variable(value=np.zeros(nc))
+
+slack = csdl.Variable(value=np.zeros(n_oversized_payload_sdf_values))
+slack.set_as_design_variable(lower=0, scaler=1.)
+
+c = csdl.Variable(value=np.zeros(nc))
 c = c.set(csdl.slice[0], cruise_trim * 1e-5)
 c = c.set(csdl.slice[1], CM_cg_cruise_nominal * 1e1)
 c = c.set(csdl.slice[2], (static_margin - 0.1) * 1e1)
 c = c.set(csdl.slice[3], (beam_max_stress_S1_SF - 324e6) * 1e-9)
-c = c.set(csdl.slice[4], oversized_payload_sdf_values + slack)
+c = c.set(csdl.slice[4:], oversized_payload_sdf_values + slack)
 
-mu = csdl.Variable(value=10.)
+mu = csdl.Variable(value=50.)
 augmented_lagrangian = 1e-5 * fuel_burn + csdl.inner(y, c) + 0.5 * mu * csdl.sum(c**2)
 augmented_lagrangian.add_name('augmented_lagrangian')
 augmented_lagrangian.set_as_objective()
 
-al_var_dict = {'y': y, 'mu': mu, 'slack': slack}
+al_var_dict = {'y': y, 'mu': mu, 'slack': slack, 'c': c}
 
 
-
-
-
-
-
-
-
-# csdl.save_optimization_variables()
-
-additional_outputs : list[csdl.Variable] = []
+additional_inputs : list[csdl.Variable] = [y, mu, slack]
+additional_outputs : list[csdl.Variable] = [c]
+# additional_outputs : list[csdl.Variable] = []
 # additional_outputs += [func.coefficients for func in geometry.functions.values()]
 # additional_outputs += [func.coefficients for func in oversized_payload_geometry.functions.values()]
 # additional_outputs += [fuel_burn, static_margin, CM_cg_cruise_nominal, cruise_trim, TOGW, Wf, L_D, CL, CDw, L, Di, Df, Dw, L_cruise, D_cruise, non_sectional_CDw, section_spans, section_chords, section_sweeps, section_t_c]
@@ -1116,6 +1117,7 @@ additional_outputs : list[csdl.Variable] = []
 
 fname = f'aero_structural_opt_SLSQP_1_missions'
 sim = csdl.experimental.JaxSimulator(recorder,
+                                     additional_inputs=additional_inputs,
                                      additional_outputs=additional_outputs,
                                     #  save_on_update=True, 
                                      filename=fname, 

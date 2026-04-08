@@ -3,29 +3,29 @@ import warnings
 warnings.filterwarnings("ignore")
 import numpy as np
 import matplotlib.pyplot as plt
+import cstate
 from subproblem_1 import subproblem_1
 from subproblem_2 import subproblem_2
-from global_con import global_con
+from model_1 import sim, design_variables, al_var_dict
 
-from model_1 import sim, design_variables
-
-# initial DV values
-pitch = sim[design_variables['pitch'].variable.value]
-half_ttop = sim[design_variables['half_ttop'].variable.value]
-half_tweb = sim[design_variables['half_tweb'].variable.value]
-wing_twist_coefficients = sim[design_variables['wing_twist_coefficients'].variable.value]
-center_wing_half_span = sim[design_variables['center_wing_half_span'].variable.value]
-transition_half_span = sim[design_variables['transition_half_span'].variable.value]
-wing_half_span = sim[design_variables['wing_half_span'].variable.value]
-center_wing_chord_stretch_coefficients = sim[design_variables['center_wing_chord_stretch_coefficients'].variable.value]
-wing_root_chord = sim[design_variables['wing_root_chord'].variable.value]
-wing_tip_chord = sim[design_variables['wing_tip_chord'].variable.value]
-wing_sweep = sim[design_variables['wing_sweep'].variable.value]
-transition_sweep = sim[design_variables['transition_sweep'].variable.value]
-oversized_payload_translation_x = sim[design_variables['oversized_payload_translation_x'].variable.value]
-oversized_payload_translation_z = sim[design_variables['oversized_payload_translation_z'].variable.value]
-oversized_payload_rotation = sim[design_variables['oversized_payload_rotation'].variable.value]
-cruise_trim_elevator_deflection = sim[design_variables['cruise_trim_elevator_deflection'].variable.value]
+# set the initial DV values from the SP1 sim
+pitch = sim[design_variables['pitch'].variable]
+half_ttop = sim[design_variables['half_ttop'].variable]
+half_tweb = sim[design_variables['half_tweb'].variable]
+wing_twist_coefficients = sim[design_variables['wing_twist_coefficients'].variable]
+center_wing_half_span = sim[design_variables['center_wing_half_span'].variable]
+transition_half_span = sim[design_variables['transition_half_span'].variable]
+wing_half_span = sim[design_variables['wing_half_span'].variable]
+center_wing_chord_stretch_coefficients = sim[design_variables['center_wing_chord_stretch_coefficients'].variable]
+wing_root_chord = sim[design_variables['wing_root_chord'].variable]
+wing_tip_chord = sim[design_variables['wing_tip_chord'].variable]
+wing_sweep = sim[design_variables['wing_sweep'].variable]
+transition_sweep = sim[design_variables['transition_sweep'].variable]
+oversized_payload_translation_x = sim[design_variables['oversized_payload_translation_x'].variable]
+oversized_payload_translation_z = sim[design_variables['oversized_payload_translation_z'].variable]
+oversized_payload_rotation = sim[design_variables['oversized_payload_rotation'].variable]
+cruise_trim_elevator_deflection = sim[design_variables['cruise_trim_elevator_deflection'].variable]
+slack = sim[al_var_dict['slack']]
 
 x_init = [pitch, half_ttop, 
           half_tweb, 
@@ -41,9 +41,14 @@ x_init = [pitch, half_ttop,
           oversized_payload_translation_x, 
           oversized_payload_translation_z, 
           oversized_payload_rotation, 
-          cruise_trim_elevator_deflection]
+          cruise_trim_elevator_deflection,
+          slack]
 
 
+# the global_con function returns the latest constraint values from the most recent subproblem
+def global_con(x):
+    print('global constraints: ', cstate.cstate)
+    return cstate.cstate
 
 
 opt = Plex(subproblems=[subproblem_1, subproblem_2],
