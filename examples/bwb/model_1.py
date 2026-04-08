@@ -1077,6 +1077,12 @@ oversized_payload_sdf_values.add_name('oversized_payload_non_interference_constr
 fuel_burn.set_as_objective(scaler=1e-5)
 fuel_burn.add_name('fuel_burn_objective')
 
+
+# mu = csdl.Variable(value=10.)
+# augmented_lagrangian = 1e-5 * fuel_burn + csdl.inner(y, c) + 0.5 * mu * csdl.sum(c**2)
+# augmented_lagrangian.add_name('augmented_lagrangian')
+# augmented_lagrangian.set_as_objective()
+
 csdl.save_optimization_variables()
 
 additional_outputs : list[csdl.Variable] = []
