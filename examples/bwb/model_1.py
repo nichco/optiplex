@@ -1078,9 +1078,11 @@ fuel_burn.set_as_objective(scaler=1e-5)
 fuel_burn.add_name('fuel_burn_objective')
 
 
-
+# ============================ augmented Lagrangian objective ============================
 slack = csdl.Variable(value=0.) # CHK DIMENSION
 slack.set_as_design_variable(scaler=1.)
+
+y = csdl.Variable(value=np.zeros(5)) # CHK DIMENSION
 
 c = csdl.Variable(value=np.zeros(5))
 c = c.set(csdl.slice[0], cruise_trim * 1e-5)
@@ -1094,7 +1096,17 @@ augmented_lagrangian = 1e-5 * fuel_burn + csdl.inner(y, c) + 0.5 * mu * csdl.sum
 augmented_lagrangian.add_name('augmented_lagrangian')
 augmented_lagrangian.set_as_objective()
 
-csdl.save_optimization_variables()
+al_var_dict = {'y': y, 'mu': mu, 'slack': slack}
+
+
+
+
+
+
+
+
+
+# csdl.save_optimization_variables()
 
 additional_outputs : list[csdl.Variable] = []
 # additional_outputs += [func.coefficients for func in geometry.functions.values()]
