@@ -1021,29 +1021,67 @@ class DVInfo:
     upper: float
     scaler: float = 1.0
 
+
+# all DV's for development
 design_variables : dict[str, DVInfo]= {
-    'pitch': DVInfo(variable=pitch, lower=-5, upper=5.),
-    'half_ttop': DVInfo(variable=half_ttop, lower=0.001, upper=0.1, scaler=1.e2),
-    'half_tweb': DVInfo(variable=half_tweb, lower=0.001, upper=0.1, scaler=1.e2),
-    # 'center_wing_twist_dv': DVInfo(variable=center_wing_twist_dv, lower=-5, upper=5),
-    'wing_twist_coefficients': DVInfo(variable=wing_twist_coefficients, lower=-10, upper=5),
-    'center_wing_half_span': DVInfo(variable=center_wing_half_span, lower=3, upper=8),
-    'transition_half_span': DVInfo(variable=transition_half_span, lower=3, upper=8),
-    'wing_half_span': DVInfo(variable=wing_half_span, lower=8, upper=22),
-    # 'center_wing_chord_stretch_coefficients': DVInfo(variable=center_wing_chord_stretch_coefficients, lower=-center_wing_chords_computed.value*0.3, upper=center_wing_chords_computed.value*0.3, scaler=1.e-1),
-    'center_wing_chord_stretch_coefficients': DVInfo(variable=center_wing_chord_stretch_coefficients, lower=-center_wing_chords_computed.value*0.3, upper=center_wing_chords_computed.value*0.3),
-    'wing_root_chord': DVInfo(variable=wing_root_chord, lower=0.5*wing_root_chord_computed.value, upper=2.*wing_root_chord_computed.value),
-    'wing_tip_chord': DVInfo(variable=wing_tip_chord, lower=0.5*wing_tip_chord_computed.value, upper=2.*wing_tip_chord_computed.value),
-    # 'wing_sweep': DVInfo(variable=wing_sweep, lower=15, upper=50, scaler=1.e-1),
-    'wing_sweep': DVInfo(variable=wing_sweep, lower=0., upper=80., scaler=1.e-1),
-    # 'transition_sweep' : DVInfo(variable=transition_sweep, lower=0., upper=80., scaler=1.e-1),
-    'transition_sweep' : DVInfo(variable=transition_sweep, lower=-60., upper=80., scaler=1.e-1),
-    'oversized_payload_translation_x': DVInfo(variable=oversized_payload_translation_x, lower=-20, upper=20),
-    'oversized_payload_translation_z': DVInfo(variable=oversized_payload_translation_z, lower=-20, upper=20),
-    'oversized_payload_rotation': DVInfo(variable=oversized_payload_rotation, lower=-10, upper=10),
-    'cruise_trim_elevator_deflection': DVInfo(variable=cruise_trim_elevator_deflection, lower=-15., upper=45., scaler=1.e-1),
-    # 'cruise_trim_elevator_deflection': DVInfo(variable=cruise_trim_elevator_deflection, lower=-15., upper=45., scaler=1.),
+    'pitch': DVInfo(variable=pitch, lower=-5, upper=5.),                                                                      # SP1
+    'half_ttop': DVInfo(variable=half_ttop, lower=0.001, upper=0.1, scaler=1.e2),                                             # SP2
+    'half_tweb': DVInfo(variable=half_tweb, lower=0.001, upper=0.1, scaler=1.e2),                                             # SP2
+    'wing_twist_coefficients': DVInfo(variable=wing_twist_coefficients, lower=-10, upper=5),                                  # SP1
+    'center_wing_half_span': DVInfo(variable=center_wing_half_span, lower=3, upper=8),                                        # SP1
+    'transition_half_span': DVInfo(variable=transition_half_span, lower=3, upper=8),                                          # SP1
+    'wing_half_span': DVInfo(variable=wing_half_span, lower=8, upper=22),                                                     # SP1
+    'center_wing_chord_stretch_coefficients': DVInfo(variable=center_wing_chord_stretch_coefficients, lower=-center_wing_chords_computed.value*0.3, upper=center_wing_chords_computed.value*0.3), # SP1
+    'wing_root_chord': DVInfo(variable=wing_root_chord, lower=0.5*wing_root_chord_computed.value, upper=2.*wing_root_chord_computed.value),                                                       # SP1
+    'wing_tip_chord': DVInfo(variable=wing_tip_chord, lower=0.5*wing_tip_chord_computed.value, upper=2.*wing_tip_chord_computed.value),                                                           # SP1
+    'wing_sweep': DVInfo(variable=wing_sweep, lower=0., upper=80., scaler=1.e-1),                                             # SP1
+    'transition_sweep' : DVInfo(variable=transition_sweep, lower=-60., upper=80., scaler=1.e-1),                              # SP1
+    'oversized_payload_translation_x': DVInfo(variable=oversized_payload_translation_x, lower=-20, upper=20),                 # SP2
+    'oversized_payload_translation_z': DVInfo(variable=oversized_payload_translation_z, lower=-20, upper=20),                 # SP2
+    'oversized_payload_rotation': DVInfo(variable=oversized_payload_rotation, lower=-10, upper=10),                           # SP2
+    'cruise_trim_elevator_deflection': DVInfo(variable=cruise_trim_elevator_deflection, lower=-15., upper=45., scaler=1.e-1), # SP1
 }
+"""
+# DV's for SP1
+design_variables : dict[str, DVInfo]= {
+    'pitch': DVInfo(variable=pitch, lower=-5, upper=5.),                                                                      # SP1
+    # 'half_ttop': DVInfo(variable=half_ttop, lower=0.001, upper=0.1, scaler=1.e2),                                             # SP2
+    # 'half_tweb': DVInfo(variable=half_tweb, lower=0.001, upper=0.1, scaler=1.e2),                                             # SP2
+    'wing_twist_coefficients': DVInfo(variable=wing_twist_coefficients, lower=-10, upper=5),                                  # SP1
+    'center_wing_half_span': DVInfo(variable=center_wing_half_span, lower=3, upper=8),                                        # SP1
+    'transition_half_span': DVInfo(variable=transition_half_span, lower=3, upper=8),                                          # SP1
+    'wing_half_span': DVInfo(variable=wing_half_span, lower=8, upper=22),                                                     # SP1
+    'center_wing_chord_stretch_coefficients': DVInfo(variable=center_wing_chord_stretch_coefficients, lower=-center_wing_chords_computed.value*0.3, upper=center_wing_chords_computed.value*0.3), # SP1
+    'wing_root_chord': DVInfo(variable=wing_root_chord, lower=0.5*wing_root_chord_computed.value, upper=2.*wing_root_chord_computed.value),                                                       # SP1
+    'wing_tip_chord': DVInfo(variable=wing_tip_chord, lower=0.5*wing_tip_chord_computed.value, upper=2.*wing_tip_chord_computed.value),                                                           # SP1
+    'wing_sweep': DVInfo(variable=wing_sweep, lower=0., upper=80., scaler=1.e-1),                                             # SP1
+    'transition_sweep' : DVInfo(variable=transition_sweep, lower=-60., upper=80., scaler=1.e-1),                              # SP1
+    # 'oversized_payload_translation_x': DVInfo(variable=oversized_payload_translation_x, lower=-20, upper=20),                 # SP2
+    # 'oversized_payload_translation_z': DVInfo(variable=oversized_payload_translation_z, lower=-20, upper=20),                 # SP2
+    # 'oversized_payload_rotation': DVInfo(variable=oversized_payload_rotation, lower=-10, upper=10),                           # SP2
+    'cruise_trim_elevator_deflection': DVInfo(variable=cruise_trim_elevator_deflection, lower=-15., upper=45., scaler=1.e-1), # SP1
+}
+
+# DV's for SP2
+design_variables : dict[str, DVInfo]= {
+    # 'pitch': DVInfo(variable=pitch, lower=-5, upper=5.),                                                                      # SP1
+    'half_ttop': DVInfo(variable=half_ttop, lower=0.001, upper=0.1, scaler=1.e2),                                             # SP2
+    'half_tweb': DVInfo(variable=half_tweb, lower=0.001, upper=0.1, scaler=1.e2),                                             # SP2
+    # 'wing_twist_coefficients': DVInfo(variable=wing_twist_coefficients, lower=-10, upper=5),                                  # SP1
+    # 'center_wing_half_span': DVInfo(variable=center_wing_half_span, lower=3, upper=8),                                        # SP1
+    # 'transition_half_span': DVInfo(variable=transition_half_span, lower=3, upper=8),                                          # SP1
+    # 'wing_half_span': DVInfo(variable=wing_half_span, lower=8, upper=22),                                                     # SP1
+    # 'center_wing_chord_stretch_coefficients': DVInfo(variable=center_wing_chord_stretch_coefficients, lower=-center_wing_chords_computed.value*0.3, upper=center_wing_chords_computed.value*0.3), # SP1
+    # 'wing_root_chord': DVInfo(variable=wing_root_chord, lower=0.5*wing_root_chord_computed.value, upper=2.*wing_root_chord_computed.value),                                                       # SP1
+    # 'wing_tip_chord': DVInfo(variable=wing_tip_chord, lower=0.5*wing_tip_chord_computed.value, upper=2.*wing_tip_chord_computed.value),                                                           # SP1
+    # 'wing_sweep': DVInfo(variable=wing_sweep, lower=0., upper=80., scaler=1.e-1),                                             # SP1
+    # 'transition_sweep' : DVInfo(variable=transition_sweep, lower=-60., upper=80., scaler=1.e-1),                              # SP1
+    'oversized_payload_translation_x': DVInfo(variable=oversized_payload_translation_x, lower=-20, upper=20),                 # SP2
+    'oversized_payload_translation_z': DVInfo(variable=oversized_payload_translation_z, lower=-20, upper=20),                 # SP2
+    'oversized_payload_rotation': DVInfo(variable=oversized_payload_rotation, lower=-10, upper=10),                           # SP2
+    # 'cruise_trim_elevator_deflection': DVInfo(variable=cruise_trim_elevator_deflection, lower=-15., upper=45., scaler=1.e-1), # SP1
+}
+"""
 
 for dv_name, dv_info in design_variables.items():
     dv_info.variable.set_as_design_variable(lower=dv_info.lower, upper=dv_info.upper, scaler=dv_info.scaler)
@@ -1107,7 +1145,34 @@ augmented_lagrangian.set_as_objective()
 al_var_dict = {'y': y, 'mu': mu, 'slack': slack, 'c': c}
 
 
-additional_inputs : list[csdl.Variable] = [y, mu, slack]
+# additional_inputs : list[csdl.Variable] = [y, mu, slack]
+
+# additional inputs for SP1
+additional_inputs : list[csdl.Variable] = [y, 
+                                           mu, 
+                                           slack, 
+                                           half_ttop, 
+                                           half_tweb, 
+                                           oversized_payload_translation_x, 
+                                           oversized_payload_translation_z, 
+                                           oversized_payload_rotation]
+
+# # additional inputs for SP2
+# additional_inputs : list[csdl.Variable] = [y, 
+#                                            mu, 
+#                                            slack, 
+#                                            pitch,
+#                                            wing_twist_coefficients,
+#                                            center_wing_half_span,
+#                                            transition_half_span,
+#                                            wing_half_span,
+#                                            center_wing_chord_stretch_coefficients,
+#                                            wing_root_chord,
+#                                            wing_tip_chord,
+#                                            wing_sweep,
+#                                            transition_sweep,
+#                                            cruise_trim_elevator_deflection]
+
 additional_outputs : list[csdl.Variable] = [c]
 # additional_outputs : list[csdl.Variable] = []
 # additional_outputs += [func.coefficients for func in geometry.functions.values()]
