@@ -1,15 +1,16 @@
 from optiplex import Plex
-import warnings
-warnings.filterwarnings("ignore")
+# import warnings
+# warnings.filterwarnings("ignore")
 import numpy as np
-import matplotlib.pyplot as plt
+import pickle
 import cstate
 from subproblem_1 import subproblem_1
 from subproblem_2 import subproblem_2
-from model_1 import sim, design_variables, al_var_dict
 
-# load x_init from npz file
-x_init = np.load('examples/bwb/x_init.npz')['x_init']
+# load x_init from the pickle file
+with open('examples/bwb/x_init.pkl', "rb") as f:
+    x_init = pickle.load(f)
+    x_init = x_init[:-1] # remove the slack and geonic for now
 
 # # set the initial DV values from the SP1 sim
 # pitch = sim[design_variables['pitch'].variable]
@@ -48,7 +49,9 @@ x_init = np.load('examples/bwb/x_init.npz')['x_init']
 #           slack]
 
 # # save x_init for later use
-# np.savez('examples/bwb/x_init.npz', x_init=x_init)
+# # np.savez('examples/bwb/x_init.npz', x_init=x_init)
+# with open('examples/bwb/x_init.pkl', "wb") as f:
+#     pickle.dump(x_init, f)
 # exit()
 
 
@@ -64,7 +67,7 @@ opt = Plex(subproblems=[subproblem_1, subproblem_2],
            )
 
 opt.solve(max_outer_iter=3,
-          max_inner_iter=2,
+          max_inner_iter=1,
           ATOL_out=1e-3, 
           RTOL_out=1e-3,
           ATOL_in=1e-2, 

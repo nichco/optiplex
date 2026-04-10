@@ -1,15 +1,7 @@
-# Importing all packages 
-from pathlib import Path
-
 import numpy as np
 import csdl_alpha as csdl
 import lsdo_function_spaces as lfs
 import bsm3
-import scipy.sparse.linalg as spla
-
-from modopt import CSDLAlphaProblem
-from modopt import PySLSQP #, SNOPT
-
 import lsdo_geo
 from VortexAD import PanelMethod
 from VortexAD import find_cell_adjacency, TE_detection
@@ -17,11 +9,8 @@ from VortexAD import plot_pressure_distribution
 import sys
 import os
 import meshio
-
 import aframe as af
 from aeroelastic_coupling_utils import NodalMap
-
-import time
 from dataclasses import dataclass
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -32,21 +21,17 @@ if script_dir not in sys.path:
 if repo_root not in sys.path:
     sys.path.insert(0, repo_root)
 
-# from geometry_functions import setup_geometry, compute_volume, project_centerbody_volume_points
-from geometry_functions import compute_volume, project_centerbody_volume_points
+from geometry_functions import compute_volume
 from geometry_functions import project_transition_volume_points
 from geometry_functions_newer import initial_refit, setup_and_evaluate_geometry_parameterization
-import time
 import pickle
-from datetime import datetime
-
-from additional_solvers import compute_static_margin, estimate_CDw, estimate_sectional_CDw, estimate_Cf, estimate_fuel_volume
-from additional_solvers import estimate_fuel_burn_w_reserve, estimate_fuel_burn, atmos_model, takeoff, landing
+from additional_solvers import compute_static_margin, estimate_CDw, estimate_sectional_CDw, estimate_Cf
+from additional_solvers import estimate_fuel_burn, atmos_model
 
 lfs.num_workers=1
 save_meshes = True
-shutdown_inline = True
 
+print('Building model 2 simulator...')
 
 recorder = csdl.Recorder(inline=True, debug=True)
 recorder.start()
@@ -585,7 +570,7 @@ oversized_payload_center_of_mass = (oversized_payload_u0_end + oversized_payload
 
 # endregion
 
-recorder.inline = not shutdown_inline
+recorder.inline = False
 
 # region ============================ aero solver setup ============================
 panel_mesh = geometry.evaluate(projected_panel_mesh, plot=False)
@@ -1021,7 +1006,7 @@ class DVInfo:
     upper: float
     scaler: float = 1.0
 
-
+"""
 # all DV's for development
 design_variables : dict[str, DVInfo]= {
     'pitch': DVInfo(variable=pitch, lower=-5, upper=5.),                                                                      # SP1
@@ -1036,11 +1021,12 @@ design_variables : dict[str, DVInfo]= {
     'wing_tip_chord': DVInfo(variable=wing_tip_chord, lower=0.5*wing_tip_chord_computed.value, upper=2.*wing_tip_chord_computed.value),                                                           # SP1
     'wing_sweep': DVInfo(variable=wing_sweep, lower=0., upper=80., scaler=1.e-1),                                             # SP1
     'transition_sweep' : DVInfo(variable=transition_sweep, lower=-60., upper=80., scaler=1.e-1),                              # SP1
-    'oversized_payload_translation_x': DVInfo(variable=oversized_payload_translation_x, lower=-20, upper=20),                 # SP2
-    'oversized_payload_translation_z': DVInfo(variable=oversized_payload_translation_z, lower=-20, upper=20),                 # SP2
-    'oversized_payload_rotation': DVInfo(variable=oversized_payload_rotation, lower=-10, upper=10),                           # SP2
+    'oversized_payload_translation_x': DVInfo(variable=oversized_payload_translation_x, lower=-10, upper=10),                 # SP2
+    'oversized_payload_translation_z': DVInfo(variable=oversized_payload_translation_z, lower=-10, upper=10),                 # SP2
+    'oversized_payload_rotation': DVInfo(variable=oversized_payload_rotation, lower=-6, upper=6),                           # SP2
     'cruise_trim_elevator_deflection': DVInfo(variable=cruise_trim_elevator_deflection, lower=-15., upper=45., scaler=1.e-1), # SP1
 }
+"""
 """
 # DV's for SP1
 design_variables : dict[str, DVInfo]= {
@@ -1056,11 +1042,12 @@ design_variables : dict[str, DVInfo]= {
     'wing_tip_chord': DVInfo(variable=wing_tip_chord, lower=0.5*wing_tip_chord_computed.value, upper=2.*wing_tip_chord_computed.value),                                                           # SP1
     'wing_sweep': DVInfo(variable=wing_sweep, lower=0., upper=80., scaler=1.e-1),                                             # SP1
     'transition_sweep' : DVInfo(variable=transition_sweep, lower=-60., upper=80., scaler=1.e-1),                              # SP1
-    # 'oversized_payload_translation_x': DVInfo(variable=oversized_payload_translation_x, lower=-20, upper=20),                 # SP2
-    # 'oversized_payload_translation_z': DVInfo(variable=oversized_payload_translation_z, lower=-20, upper=20),                 # SP2
-    # 'oversized_payload_rotation': DVInfo(variable=oversized_payload_rotation, lower=-10, upper=10),                           # SP2
+    # 'oversized_payload_translation_x': DVInfo(variable=oversized_payload_translation_x, lower=-10, upper=10),                 # SP2
+    # 'oversized_payload_translation_z': DVInfo(variable=oversized_payload_translation_z, lower=-10, upper=10),                 # SP2
+    # 'oversized_payload_rotation': DVInfo(variable=oversized_payload_rotation, lower=-6, upper=6),                           # SP2
     'cruise_trim_elevator_deflection': DVInfo(variable=cruise_trim_elevator_deflection, lower=-15., upper=45., scaler=1.e-1), # SP1
 }
+"""
 
 # DV's for SP2
 design_variables : dict[str, DVInfo]= {
@@ -1076,12 +1063,12 @@ design_variables : dict[str, DVInfo]= {
     # 'wing_tip_chord': DVInfo(variable=wing_tip_chord, lower=0.5*wing_tip_chord_computed.value, upper=2.*wing_tip_chord_computed.value),                                                           # SP1
     # 'wing_sweep': DVInfo(variable=wing_sweep, lower=0., upper=80., scaler=1.e-1),                                             # SP1
     # 'transition_sweep' : DVInfo(variable=transition_sweep, lower=-60., upper=80., scaler=1.e-1),                              # SP1
-    'oversized_payload_translation_x': DVInfo(variable=oversized_payload_translation_x, lower=-20, upper=20),                 # SP2
-    'oversized_payload_translation_z': DVInfo(variable=oversized_payload_translation_z, lower=-20, upper=20),                 # SP2
-    'oversized_payload_rotation': DVInfo(variable=oversized_payload_rotation, lower=-10, upper=10),                           # SP2
+    'oversized_payload_translation_x': DVInfo(variable=oversized_payload_translation_x, lower=-10, upper=10),                 # SP2
+    'oversized_payload_translation_z': DVInfo(variable=oversized_payload_translation_z, lower=-10, upper=10),                 # SP2
+    'oversized_payload_rotation': DVInfo(variable=oversized_payload_rotation, lower=-6, upper=6),                           # SP2
     # 'cruise_trim_elevator_deflection': DVInfo(variable=cruise_trim_elevator_deflection, lower=-15., upper=45., scaler=1.e-1), # SP1
 }
-"""
+
 
 for dv_name, dv_info in design_variables.items():
     dv_info.variable.set_as_design_variable(lower=dv_info.lower, upper=dv_info.upper, scaler=dv_info.scaler)
@@ -1117,72 +1104,68 @@ for dv_name, dv_info in design_variables.items():
 
 
 # ============================ augmented Lagrangian objective ============================
-n_cruise_trim = 1
-n_CM_cg_cruise_nominal = 1
-n_static_margin = 1
-n_beam_max_stress_S1_SF = 1
-n_oversized_payload_sdf_values = len(oversized_payload_discretization_parametric_coordinates)
+y = csdl.Variable(value=np.zeros(4))
 
-nc = n_cruise_trim + n_CM_cg_cruise_nominal + n_static_margin + n_beam_max_stress_S1_SF + n_oversized_payload_sdf_values
-
-y = csdl.Variable(value=np.zeros(nc))
-
-slack = csdl.Variable(value=np.zeros(n_oversized_payload_sdf_values))
-slack.set_as_design_variable(lower=0, scaler=1.)
-
-c = csdl.Variable(value=np.zeros(nc))
+c = csdl.Variable(value=np.zeros(4))
 c = c.set(csdl.slice[0], cruise_trim * 1e-5)
 c = c.set(csdl.slice[1], CM_cg_cruise_nominal * 1e1)
 c = c.set(csdl.slice[2], (static_margin - 0.1) * 1e1)
 c = c.set(csdl.slice[3], (beam_max_stress_S1_SF - 324e6) * 1e-9)
-c = c.set(csdl.slice[4:], oversized_payload_sdf_values + slack)
 
 mu = csdl.Variable(value=50.)
 augmented_lagrangian = 1e-5 * fuel_burn + csdl.inner(y, c) + 0.5 * mu * csdl.sum(c**2)
 augmented_lagrangian.add_name('augmented_lagrangian')
 augmented_lagrangian.set_as_objective()
 
-al_var_dict = {'y': y, 'mu': mu, 'slack': slack, 'c': c}
 
-
-# additional_inputs : list[csdl.Variable] = [y, mu, slack]
+# additional_inputs_dict = {'y': y, 'mu': mu}
+additional_outputs_dict = {'c': c}
+additional_outputs = list(additional_outputs_dict.values())
+# additional_inputs = list(additional_inputs_dict.values())
+# additional_outputs = list(additional_outputs_dict.values())
 
 # additional inputs for SP1
-additional_inputs : list[csdl.Variable] = [y, 
-                                           mu, 
-                                           slack, 
-                                           half_ttop, 
-                                           half_tweb, 
-                                           oversized_payload_translation_x, 
-                                           oversized_payload_translation_z, 
-                                           oversized_payload_rotation]
+additional_inputs_dict_SP1 = {
+    'y': y,
+    'mu': mu,
+    'half_ttop': half_ttop,
+    'half_tweb': half_tweb,
+    'oversized_payload_translation_x': oversized_payload_translation_x,
+    'oversized_payload_translation_z': oversized_payload_translation_z,
+    'oversized_payload_rotation': oversized_payload_rotation,
+}
+additional_inputs_SP1 = list(additional_inputs_dict_SP1.values())
 
-# # additional inputs for SP2
-# additional_inputs : list[csdl.Variable] = [y, 
-#                                            mu, 
-#                                            slack, 
-#                                            pitch,
-#                                            wing_twist_coefficients,
-#                                            center_wing_half_span,
-#                                            transition_half_span,
-#                                            wing_half_span,
-#                                            center_wing_chord_stretch_coefficients,
-#                                            wing_root_chord,
-#                                            wing_tip_chord,
-#                                            wing_sweep,
-#                                            transition_sweep,
-#                                            cruise_trim_elevator_deflection]
+# additional inputs for SP2
+additional_inputs_dict_SP2 = {
+    'y': y,
+    'mu': mu,
+    'pitch': pitch,
+    'wing_twist_coefficients': wing_twist_coefficients,
+    'center_wing_half_span': center_wing_half_span,
+    'transition_half_span': transition_half_span,
+    'wing_half_span': wing_half_span,
+    'center_wing_chord_stretch_coefficients': center_wing_chord_stretch_coefficients,
+    'wing_root_chord': wing_root_chord,
+    'wing_tip_chord': wing_tip_chord,
+    'wing_sweep': wing_sweep,
+    'transition_sweep': transition_sweep,
+    'cruise_trim_elevator_deflection': cruise_trim_elevator_deflection
+}
+additional_inputs_SP2 = list(additional_inputs_dict_SP2.values())
 
-additional_outputs : list[csdl.Variable] = [c]
+
+# additional_outputs : list[csdl.Variable] = [c]
 # additional_outputs : list[csdl.Variable] = []
 # additional_outputs += [func.coefficients for func in geometry.functions.values()]
 # additional_outputs += [func.coefficients for func in oversized_payload_geometry.functions.values()]
 # additional_outputs += [fuel_burn, static_margin, CM_cg_cruise_nominal, cruise_trim, TOGW, Wf, L_D, CL, CDw, L, Di, Df, Dw, L_cruise, D_cruise, non_sectional_CDw, section_spans, section_chords, section_sweeps, section_t_c]
 # additional_outputs += [CDw_for_each_strip, mach_violation, Mcr, MDD, tech_component, thickness_component, lift_component]
 
+print('Model 2 checkpoint')
 fname = f'aero_structural_opt_SLSQP_1_missions'
-sim = csdl.experimental.JaxSimulator(recorder,
-                                     additional_inputs=additional_inputs,
+sim_2 = csdl.experimental.JaxSimulator(recorder,
+                                     additional_inputs=additional_inputs_SP2, # !!!!! CHANGE FOR SP1 OR SP2 !!!!!
                                      additional_outputs=additional_outputs,
                                     #  save_on_update=True, 
                                      filename=fname, 

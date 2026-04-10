@@ -1,9 +1,12 @@
-from model_2 import sim, design_variables, al_var_dict
+from build_model_2 import build_model_2
 from modopt import CSDLAlphaProblem
 from modopt import PySLSQP
 import cstate
+# import warnings
+# warnings.filterwarnings("ignore")
 
 def subproblem_2(x, y, mu):
+    sim_2, design_variables, additional_inputs_dict_SP2, additional_outputs_dict = build_model_2()
 
     # extract initial values from x
     pitch = x[0]
@@ -22,58 +25,61 @@ def subproblem_2(x, y, mu):
     oversized_payload_translation_z = x[13]
     oversized_payload_rotation = x[14]
     cruise_trim_elevator_deflection = x[15]
-    slack = x[16]
 
     # assign values to the sim variables
-    sim[design_variables['pitch'].variable] = pitch
-    sim[design_variables['half_ttop'].variable] = half_ttop
-    sim[design_variables['half_tweb'].variable] = half_tweb
-    sim[design_variables['wing_twist_coefficients'].variable] = wing_twist_coefficients
-    sim[design_variables['center_wing_half_span'].variable] = center_wing_half_span
-    sim[design_variables['transition_half_span'].variable] = transition_half_span
-    sim[design_variables['wing_half_span'].variable] = wing_half_span
-    sim[design_variables['center_wing_chord_stretch_coefficients'].variable] = center_wing_chord_stretch_coefficients
-    sim[design_variables['wing_root_chord'].variable] = wing_root_chord
-    sim[design_variables['wing_tip_chord'].variable] = wing_tip_chord
-    sim[design_variables['wing_sweep'].variable] = wing_sweep
-    sim[design_variables['transition_sweep'].variable] = transition_sweep
-    sim[design_variables['oversized_payload_translation_x'].variable] = oversized_payload_translation_x
-    sim[design_variables['oversized_payload_translation_z'].variable] = oversized_payload_translation_z
-    sim[design_variables['oversized_payload_rotation'].variable] = oversized_payload_rotation
-    sim[design_variables['cruise_trim_elevator_deflection'].variable] = cruise_trim_elevator_deflection
+    sim_2[additional_inputs_dict_SP2['pitch']] = pitch
+    sim_2[design_variables['half_ttop'].variable] = half_ttop
+    sim_2[design_variables['half_tweb'].variable] = half_tweb
+    sim_2[additional_inputs_dict_SP2['wing_twist_coefficients']] = wing_twist_coefficients
+    sim_2[additional_inputs_dict_SP2['center_wing_half_span']] = center_wing_half_span
+    sim_2[additional_inputs_dict_SP2['transition_half_span']] = transition_half_span
+    sim_2[additional_inputs_dict_SP2['wing_half_span']] = wing_half_span
+    sim_2[additional_inputs_dict_SP2['center_wing_chord_stretch_coefficients']] = center_wing_chord_stretch_coefficients
+    sim_2[additional_inputs_dict_SP2['wing_root_chord']] = wing_root_chord
+    sim_2[additional_inputs_dict_SP2['wing_tip_chord']] = wing_tip_chord
+    sim_2[additional_inputs_dict_SP2['wing_sweep']] = wing_sweep
+    sim_2[additional_inputs_dict_SP2['transition_sweep']] = transition_sweep
+    sim_2[design_variables['oversized_payload_translation_x'].variable] = oversized_payload_translation_x
+    sim_2[design_variables['oversized_payload_translation_z'].variable] = oversized_payload_translation_z
+    sim_2[design_variables['oversized_payload_rotation'].variable] = oversized_payload_rotation
+    sim_2[additional_inputs_dict_SP2['cruise_trim_elevator_deflection']] = cruise_trim_elevator_deflection
 
     # assign y and mu and slack values to the sim
-    sim[al_var_dict['y']] = y
-    sim[al_var_dict['mu']] = mu
-    sim[al_var_dict['slack']] = slack
+    sim_2[additional_inputs_dict_SP2['y']] = y
+    sim_2[additional_inputs_dict_SP2['mu']] = mu
 
+    print('Checkpoint SP2!')
 
-    prob = CSDLAlphaProblem(simulator=sim)
-    optimizer = PySLSQP(prob, solver_options={'maxiter':400, 'acc':1e-4}, readable_outputs=['x'])
+    prob = CSDLAlphaProblem(simulator=sim_2)
+    optimizer = PySLSQP(prob, solver_options={'maxiter':2, 'acc':1e-4}, readable_outputs=['x'])
     optimizer.solve()
-    optimizer.print_results()
     # success = optimizer.results['success']
     # solution = optimizer.results['x']
 
-    cstate.cstate = sim[al_var_dict['c']]
+    sim_2.run() # might be necessary to run the sim to update the cstate values after optimization
 
-    solution = [sim[design_variables['pitch'].variable],
-                sim[design_variables['half_ttop'].variable],
-                sim[design_variables['half_tweb'].variable],
-                sim[design_variables['wing_twist_coefficients'].variable],
-                sim[design_variables['center_wing_half_span'].variable],
-                sim[design_variables['transition_half_span'].variable],
-                sim[design_variables['wing_half_span'].variable],
-                sim[design_variables['center_wing_chord_stretch_coefficients'].variable],
-                sim[design_variables['wing_root_chord'].variable],
-                sim[design_variables['wing_tip_chord'].variable],
-                sim[design_variables['wing_sweep'].variable],
-                sim[design_variables['transition_sweep'].variable],
-                sim[design_variables['oversized_payload_translation_x'].variable],
-                sim[design_variables['oversized_payload_translation_z'].variable],
-                sim[design_variables['oversized_payload_rotation'].variable],
-                sim[design_variables['cruise_trim_elevator_deflection'].variable],
-                sim[al_var_dict['slack']]]
+    cstate.cstate = sim_2[additional_outputs_dict['c']]
+    print('SP2 sim cstate: ', sim_2[additional_outputs_dict['c']])
+    print('SP2 var cstate: ', cstate.cstate)
+
+    solution = [
+                sim_2[additional_inputs_dict_SP2['pitch']],
+                sim_2[design_variables['half_ttop'].variable],
+                sim_2[design_variables['half_tweb'].variable],
+                sim_2[additional_inputs_dict_SP2['wing_twist_coefficients']],
+                sim_2[additional_inputs_dict_SP2['center_wing_half_span']],
+                sim_2[additional_inputs_dict_SP2['transition_half_span']],
+                sim_2[additional_inputs_dict_SP2['wing_half_span']],
+                sim_2[additional_inputs_dict_SP2['center_wing_chord_stretch_coefficients']],
+                sim_2[additional_inputs_dict_SP2['wing_root_chord']],
+                sim_2[additional_inputs_dict_SP2['wing_tip_chord']],
+                sim_2[additional_inputs_dict_SP2['wing_sweep']],
+                sim_2[additional_inputs_dict_SP2['transition_sweep']],
+                sim_2[design_variables['oversized_payload_translation_x'].variable],
+                sim_2[design_variables['oversized_payload_translation_z'].variable],
+                sim_2[design_variables['oversized_payload_rotation'].variable],
+                sim_2[additional_inputs_dict_SP2['cruise_trim_elevator_deflection']],
+                ]
     
     print('SP2 solution: ', solution)
 
