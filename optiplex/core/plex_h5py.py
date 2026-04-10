@@ -10,6 +10,7 @@ class Plex():
                 #  constraint: Callable = None,
                  con: Callable = lambda v: np.zeros(0),
                  path: str = "checkpoint.h5",
+                 solution: np.ndarray = None,
                  ):
 
         self.subproblems = subproblems
@@ -25,6 +26,7 @@ class Plex():
         self.x_time = [0.0] # time history for each x update
         # self.m_time = [0.0] # time history for each multiplier update
         self.checkpoint_path = path
+        self.solution = solution
     
 
     def solve(self, 
