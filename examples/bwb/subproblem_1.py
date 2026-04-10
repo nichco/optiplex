@@ -2,8 +2,8 @@ from build_model_1 import build_model_1
 from modopt import CSDLAlphaProblem
 from modopt import PySLSQP
 import cstate
-# import warnings
-# warnings.filterwarnings("ignore")
+import warnings
+warnings.filterwarnings("ignore")
 
 def subproblem_1(x, y, mu):
     sim_1, design_variables, additional_inputs_dict_SP1, additional_outputs_dict = build_model_1()
@@ -51,7 +51,7 @@ def subproblem_1(x, y, mu):
     print('Checkpoint SP1!')
 
     prob = CSDLAlphaProblem(simulator=sim_1)
-    optimizer = PySLSQP(prob, solver_options={'maxiter':2, 'acc':1e-4}, readable_outputs=['x'])
+    optimizer = PySLSQP(prob, solver_options={'maxiter':300, 'acc':1e-4}, readable_outputs=['x'])
     optimizer.solve()
     # success = optimizer.results['success']
     # solution = optimizer.results['x']

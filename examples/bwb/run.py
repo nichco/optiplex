@@ -1,6 +1,6 @@
 from optiplex import Plex
-# import warnings
-# warnings.filterwarnings("ignore")
+import warnings
+warnings.filterwarnings("ignore")
 import numpy as np
 import pickle
 import cstate
@@ -49,7 +49,6 @@ with open('examples/bwb/x_init.pkl', "rb") as f:
 #           slack]
 
 # # save x_init for later use
-# # np.savez('examples/bwb/x_init.npz', x_init=x_init)
 # with open('examples/bwb/x_init.pkl', "wb") as f:
 #     pickle.dump(x_init, f)
 # exit()
