@@ -65,8 +65,8 @@ opt = Plex(subproblems=[subproblem_1, subproblem_2],
            con=global_con,
            )
 
-opt.solve(max_outer_iter=3,
-          max_inner_iter=1,
+opt.solve(max_outer_iter=30,
+          max_inner_iter=2,
           ATOL_out=1e-3, 
           RTOL_out=1e-3,
           ATOL_in=1e-2, 
@@ -78,7 +78,9 @@ opt.solve(max_outer_iter=3,
 
 solution = opt.x
 
-
+# save opt.history to a pickle file
+with open('examples/bwb/history.pkl', "wb") as f:
+    pickle.dump(opt.history, f)
 
 # monolithic_solution = np.load('examples/bwb/solution.npz')
 # x_star = np.concatenate([monolithic_solution['twist'], monolithic_solution['thickness']])
