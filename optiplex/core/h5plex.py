@@ -46,6 +46,9 @@ class Plex():
 
         self.mu_history.append(mu)
 
+        with h5py.File(self.checkpoint_path, "w") as f:
+            pass # clear the file from previous runs by opening in write mode and immediately closing
+
         itr = 0 # iteration counter for checkpointing in the h5py file
 
         for k in range(max_outer_iter):
@@ -63,8 +66,15 @@ class Plex():
                     self.mu_history.append(mu)
                     self.x_time.append(time.perf_counter() - t1)
 
+
+                    x_star = self.solution
+                    x_vec = np.concatenate([xi.ravel() for xi in self.x])
+                    error = np.linalg.norm((x_vec - x_star) / x_star)
+
                     with h5py.File(self.checkpoint_path, "a") as f:  # "a" = append mode
-                        f.create_dataset(str(itr), data=np.concatenate([xi.ravel() for xi in self.x]))
+                        iteration_group = f.create_group(str(itr))
+                        iteration_group.create_dataset("x", data=x_vec)
+                        iteration_group.create_dataset("error", data=error)
                     itr += 1 # iteration counter for checkpointing in the h5py file
 
                 eps_inner = np.sqrt(self.n) * ATOL_in + RTOL_in * np.linalg.norm(z_old)

@@ -4,6 +4,7 @@ from modopt import PySLSQP
 import cstate
 import warnings
 warnings.filterwarnings("ignore")
+import gc
 
 def subproblem_2(x, y, mu):
     sim_2, design_variables, additional_inputs_dict_SP2, additional_outputs_dict = build_model_2()
@@ -48,10 +49,10 @@ def subproblem_2(x, y, mu):
     sim_2[additional_inputs_dict_SP2['y']] = y
     sim_2[additional_inputs_dict_SP2['mu']] = mu
 
-    print('Checkpoint SP2!')
+    # print('Checkpoint SP2!')
 
     prob = CSDLAlphaProblem(simulator=sim_2)
-    optimizer = PySLSQP(prob, solver_options={'maxiter':300, 'acc':1e-4}, readable_outputs=['x'])
+    optimizer = PySLSQP(prob, solver_options={'maxiter':300, 'acc':1e-5}, readable_outputs=['x'])
     optimizer.solve()
     # success = optimizer.results['success']
     # solution = optimizer.results['x']
@@ -59,8 +60,7 @@ def subproblem_2(x, y, mu):
     sim_2.run() # might be necessary to run the sim to update the cstate values after optimization
 
     cstate.cstate = sim_2[additional_outputs_dict['c']]
-    print('SP2 sim cstate: ', sim_2[additional_outputs_dict['c']])
-    print('SP2 var cstate: ', cstate.cstate)
+    print('SP2 cstate: ', sim_2[additional_outputs_dict['c']])
 
     solution = [
                 sim_2[additional_inputs_dict_SP2['pitch']],
@@ -82,5 +82,7 @@ def subproblem_2(x, y, mu):
                 ]
     
     print('SP2 solution: ', solution)
+
+    gc.collect()
 
     return solution

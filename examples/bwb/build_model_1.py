@@ -2,7 +2,7 @@ def build_model_1():
     import numpy as np
     import csdl_alpha as csdl
     import lsdo_function_spaces as lfs
-    import bsm3
+    # import bsm3
     import lsdo_geo
     from VortexAD import PanelMethod
     from VortexAD import find_cell_adjacency, TE_detection
@@ -32,7 +32,7 @@ def build_model_1():
     lfs.num_workers=1
     save_meshes = True
 
-    print('Building model 1 simulator...')
+    # print('Building model 1 simulator...')
 
     recorder = csdl.Recorder(inline=True, debug=True)
     recorder.start()
@@ -177,7 +177,7 @@ def build_model_1():
     for cell_type in cell_types: combined_cells += cells_dict[cell_type].tolist()
 
     if save_meshes:
-        print('projecting panel centers')
+        # print('projecting panel centers')
         panel_centers = np.zeros((len(combined_cells), 3))
         for i, cell in enumerate(combined_cells):
             panel_centers[i] = np.mean(points_orig[cell], axis=0)
@@ -192,7 +192,7 @@ def build_model_1():
                                     )
         with open('mesh_projections/panel_centers.pkl', 'wb') as f:
             pickle.dump(panel_centers, f)
-        print('done projecting panel centers')
+        # print('done projecting panel centers')
 
 
     # load the projected panel centers from a file
@@ -328,7 +328,7 @@ def build_model_1():
     cruise_range_m = cruise_range_nmi*nmi_to_m
     num_nodes = 2 # cruise plus 1 perturbation for stability analysis
     dalpha_stab = 0.1 # for stability analysis
-    cruise_mach = 0.7
+    cruise_mach = 0.8
     # cruise_mach = 0.75
     cruise_h = 30000 # altitude in feet
     cruise_h_km = cruise_h*0.3048/1000
@@ -538,7 +538,7 @@ def build_model_1():
     # volume = csdl.sum(volume_components)
     # print(volume.value)
 
-
+    """
     # region geometric non-interference constraints setup
     projection_model = bsm3.FunctionSetProjectionModel(
         function_set=geometry,
@@ -563,6 +563,7 @@ def build_model_1():
 
     sdf_op = bsm3.FunctionSetClosestDistanceOperation(model=projection_model)
     oversized_payload_sdf_values = sdf_op.evaluate(coefficients=geometry_coefficients_stacked, points=oversized_payload_discretization)
+    """
 
     oversized_payload_u0_end = oversized_payload.evaluate([(0, np.array([[0.5, 0.5]]))]).flatten()
     oversized_payload_u1_end = oversized_payload.evaluate([(1, np.array([[0.5, 0.5]]))]).flatten()
@@ -827,6 +828,7 @@ def build_model_1():
     L.add_name('L')
     L.save()
     Di = outputs['Di']
+    Di = Di + 10 * csdl.softplus(-Di) # should really be Di = csdl.softplus(Di) or Di = abs(Di)
     Di.add_name('Di')
     Di.save()
     M = outputs['M'][:,1]
@@ -1136,23 +1138,23 @@ def build_model_1():
     }
     additional_inputs_SP1 = list(additional_inputs_dict_SP1.values())
 
-    # additional inputs for SP2
-    additional_inputs_dict_SP2 = {
-        'y': y,
-        'mu': mu,
-        'pitch': pitch,
-        'wing_twist_coefficients': wing_twist_coefficients,
-        'center_wing_half_span': center_wing_half_span,
-        'transition_half_span': transition_half_span,
-        'wing_half_span': wing_half_span,
-        'center_wing_chord_stretch_coefficients': center_wing_chord_stretch_coefficients,
-        'wing_root_chord': wing_root_chord,
-        'wing_tip_chord': wing_tip_chord,
-        'wing_sweep': wing_sweep,
-        'transition_sweep': transition_sweep,
-        'cruise_trim_elevator_deflection': cruise_trim_elevator_deflection
-    }
-    additional_inputs_SP2 = list(additional_inputs_dict_SP2.values())
+    # # additional inputs for SP2
+    # additional_inputs_dict_SP2 = {
+    #     'y': y,
+    #     'mu': mu,
+    #     'pitch': pitch,
+    #     'wing_twist_coefficients': wing_twist_coefficients,
+    #     'center_wing_half_span': center_wing_half_span,
+    #     'transition_half_span': transition_half_span,
+    #     'wing_half_span': wing_half_span,
+    #     'center_wing_chord_stretch_coefficients': center_wing_chord_stretch_coefficients,
+    #     'wing_root_chord': wing_root_chord,
+    #     'wing_tip_chord': wing_tip_chord,
+    #     'wing_sweep': wing_sweep,
+    #     'transition_sweep': transition_sweep,
+    #     'cruise_trim_elevator_deflection': cruise_trim_elevator_deflection
+    # }
+    # additional_inputs_SP2 = list(additional_inputs_dict_SP2.values())
 
 
     # additional_outputs : list[csdl.Variable] = [c]
@@ -1162,7 +1164,7 @@ def build_model_1():
     # additional_outputs += [fuel_burn, static_margin, CM_cg_cruise_nominal, cruise_trim, TOGW, Wf, L_D, CL, CDw, L, Di, Df, Dw, L_cruise, D_cruise, non_sectional_CDw, section_spans, section_chords, section_sweeps, section_t_c]
     # additional_outputs += [CDw_for_each_strip, mach_violation, Mcr, MDD, tech_component, thickness_component, lift_component]
 
-    print('Model 1 checkpoint')
+    # print('Model 1 checkpoint')
     fname = f'aero_structural_opt_SLSQP_1_missions'
     sim_1 = csdl.experimental.JaxSimulator(recorder,
                                         additional_inputs=additional_inputs_SP1, # !!!!! CHANGE FOR SP1 OR SP2 !!!!!
