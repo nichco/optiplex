@@ -54,11 +54,39 @@ with open('examples/bwb/x_init.pkl', "rb") as f:
 
 
 # the solution from the monolithic problem
-solution = np.array([5.000000000000000000e+00, 3.171801070007730927e-01, 4.258407738921992092e-01, 2.148450654742703136e+00, 5.298824025117689906e+00, 5.009175638636133243e+00, 3.578328778488450101e+00, 2.304196056839215245e+00, 1.317684182368547008e+00,
-                      5.678887534024594785e-01, 1.349987368368475438e-01, 3.739531082775680026e-01, 5.124605762018374921e-01, 6.018793069388612693e-01, 1.636566884380767695e+00, 1.159719490516270657e+00, 8.966148236070672350e-01, 9.236627815410372033e-01,
-                        3.580846560119934630e-01, 2.268567878619339728e-01, 1.000000000000000056e-01, -1.997815673298932504e+00, -1.522672421686179334e+00, 3.000000000000000000e+00, 3.000000000000000000e+00, 1.810991781698371383e+01, 7.039180575579780941e-01,
-                          -2.899443452376383235e+00, -2.352346192065830621e+00, -2.664635319363378052e+00, 5.084006503034280477e+00, 1.630155573193770913e+00, 4.002663340699021965e+00, 2.904719345075986059e+00, 1.000000000000000000e+01, 0.000000000000000000e+00,
-                            6.404653491181701619e-15, 5.139628064721836198e-01])
+pitch = np.array([5.0])
+half_ttop = 1e-2 * np.array([3.471430464523918569e-01, 4.710321324047168634e-01, 2.346720892339240194e+00, 5.141665869436192970e+00, 4.671710754773619634e+00, 3.308906469280518792e+00, 2.260935542357682682e+00, 1.267027675320232083e+00, 5.310302445802553839e-01, 1.205186623337621693e-01])
+half_tweb = 1e-2 * np.array([3.929994704531686867e-01, 5.541758863744186137e-01, 6.039841197772257697e-01, 1.381458071395717635e+00, 1.123180483752061587e+00, 8.978255449258085719e-01, 7.057174470185272330e-01, 3.472195393658423224e-01, 1.716305123422086076e-01, 1.000000000000000056e-01,])
+wing_twist_coefficients = np.array([-1.864996758674682065e+00, -1.887563731814386303e+00])
+center_wing_half_span = np.array([3.000000000000000444e+00])
+transition_half_span = np.array([3.000000000000000444e+00])
+wing_half_span = np.array([1.771681807724542068e+01])
+center_wing_chord_stretch_coefficients = np.array([-5.574281883182186093e-01, -4.053422828244272580e+00, -3.341042257413223471e+00, -3.548134619452329108e+00])
+wing_root_chord = np.array([5.114889837458465927e+00])
+wing_tip_chord = np.array([1.694647233448457246e+00])
+wing_sweep = np.array([3.966501558870209276e+01])
+transition_sweep = np.array([3.143469885871966518e+01])
+oversized_payload_translation_x = np.array([9.999999999999998224e+00])
+oversized_payload_translation_z = np.array([0.000000000000000000e+00])
+oversized_payload_rotation = np.array([-3.514884289414112108e-14])
+cruise_trim_elevator_deflection = np.array([5.084434597044037440])
+
+solution = np.concatenate([pitch,
+                           half_ttop,
+                           half_tweb,
+                           wing_twist_coefficients,
+                           center_wing_half_span,
+                           transition_half_span,
+                           wing_half_span,
+                           center_wing_chord_stretch_coefficients,
+                           wing_root_chord,
+                           wing_tip_chord,
+                           wing_sweep,
+                           transition_sweep,
+                           oversized_payload_translation_x,
+                           oversized_payload_translation_z,
+                           oversized_payload_rotation,
+                           cruise_trim_elevator_deflection])
 
 # the global_con function returns the latest constraint values from the most recent subproblem
 def global_con(x):

@@ -68,13 +68,15 @@ class Plex():
 
 
                     x_star = self.solution
+                    denominator = np.where(np.abs(x_star) > 1e-12, x_star, 1.0) # prevent divide-by-zero errors
                     x_vec = np.concatenate([xi.ravel() for xi in self.x])
-                    error = np.linalg.norm((x_vec - x_star) / x_star)
+                    error = np.linalg.norm((x_vec - x_star) / denominator)
 
                     with h5py.File(self.checkpoint_path, "a") as f:  # "a" = append mode
                         iteration_group = f.create_group(str(itr))
                         iteration_group.create_dataset("x", data=x_vec)
                         iteration_group.create_dataset("error", data=error)
+                        iteration_group.create_dataset("mu", data=mu)
                     itr += 1 # iteration counter for checkpointing in the h5py file
 
                 eps_inner = np.sqrt(self.n) * ATOL_in + RTOL_in * np.linalg.norm(z_old)

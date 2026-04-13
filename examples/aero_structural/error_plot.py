@@ -10,8 +10,8 @@ mu = data['mu_history']
 fig, ax1 = plt.subplots(figsize=(4, 3))
 
 color_error = 'tab:blue'
-ax1.set_xlabel('Wall Time (s)')
-ax1.set_ylabel('Error (%)', color=color_error)
+ax1.set_xlabel('Wall time (s)')
+ax1.set_ylabel('Error', color=color_error)
 ax1.semilogy(time, error, color=color_error, label='Error', linewidth=2)
 ax1.tick_params(axis='y', labelcolor=color_error)
 
