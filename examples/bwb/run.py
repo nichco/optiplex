@@ -106,15 +106,30 @@ opt = H5Plex(subproblems=[subproblem_1, subproblem_2],
              solution=solution,
              )
 
+# original running version:
+# opt.solve(max_outer_iter=300,
+#           max_inner_iter=2,
+#           ATOL_out=1e-4, 
+#           RTOL_out=1e-4,
+#           ATOL_in=1e-2, 
+#           RTOL_in=1e-2,
+#           ATOL_feas=1e-3,
+#           rho=1.2,
+#           mu=50.0,
+#           )
+
+# new version:
+opt.y = np.ones(4)
+
 opt.solve(max_outer_iter=300,
-          max_inner_iter=2,
+          max_inner_iter=1,
           ATOL_out=1e-4, 
           RTOL_out=1e-4,
           ATOL_in=1e-2, 
           RTOL_in=1e-2,
           ATOL_feas=1e-3,
           rho=1.2,
-          mu=50.0,
+          mu=200.0,
           )
 
 solution = opt.x

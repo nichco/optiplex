@@ -3,7 +3,7 @@ import h5py
 import matplotlib.pyplot as plt
 
 
-path = 'examples/bwb/checkpoint_copy_4.h5'
+path = 'examples/bwb/checkpoint_copy_6.h5'
 
 with h5py.File(path, 'r') as f:
 	iteration_ids = sorted((int(key) for key in f.keys()))

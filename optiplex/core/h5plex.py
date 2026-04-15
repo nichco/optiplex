@@ -9,7 +9,7 @@ class Plex():
                  x_init: List[np.ndarray],
                 #  constraint: Callable = None,
                  con: Callable = lambda v: np.zeros(0),
-                 path: str = "checkpoint.h5",
+                 path: str = "checkpoint2.h5",
                  solution: np.ndarray = None,
                  ):
 
