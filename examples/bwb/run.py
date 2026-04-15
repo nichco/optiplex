@@ -102,7 +102,7 @@ def global_con(x):
 opt = H5Plex(subproblems=[subproblem_1, subproblem_2],
              x_init=x_init,
              con=global_con,
-             path="examples/bwb/checkpoint.h5",
+             path="examples/bwb/checkpoint2.h5",
              solution=solution,
              )
 
@@ -114,7 +114,7 @@ opt.solve(max_outer_iter=300,
           RTOL_in=1e-2,
           ATOL_feas=1e-3,
           rho=1.2,
-          mu=10.0,
+          mu=50.0,
           )
 
 solution = opt.x

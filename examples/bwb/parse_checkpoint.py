@@ -3,7 +3,7 @@ import h5py
 import matplotlib.pyplot as plt
 
 
-path = 'examples/bwb/checkpoint_copy_2.h5'
+path = 'examples/bwb/checkpoint_copy_4.h5'
 
 with h5py.File(path, 'r') as f:
 	iteration_ids = sorted((int(key) for key in f.keys()))
@@ -58,14 +58,21 @@ denominator = np.where(np.abs(x_star) > 1e-12, x_star, 1.0) # prevent divide-by-
 error = [np.linalg.norm((x_history[i] - x_star) / denominator) for i in range(len(x_history))]
 
 # print(error)
-# print(x_star)
-# print('final x vector:', x_history[-1])
+
+# increase numpy printing line width so that the full x_star vector is printed on one line
+np.set_printoptions(linewidth=400, precision=4, suppress=True)
+
+print(x_star)
+print(x_history[-1])
+# print(x_history[-1] - x_history[-2])
 
 
 # fig, ax1 = plt.subplots(figsize=(4, 3))
 plt.figure(figsize=(4, 3))
 
-plt.plot(error)
-plt.xlabel('Wall time (s)')
+plt.plot(error, linewidth=2)
+plt.xlabel('Iteration')
 plt.ylabel('Error')
+
+plt.savefig('bwb_convergence.png', bbox_inches='tight', transparent=True, dpi=600)
 plt.show()
