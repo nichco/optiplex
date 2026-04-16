@@ -1,4 +1,4 @@
-def build_model_2():
+def build_model_2(x_init, y_mult, mu_pen):
     import numpy as np
     import csdl_alpha as csdl
     import lsdo_function_spaces as lfs
@@ -1107,7 +1107,7 @@ def build_model_2():
 
 
     # ============================ augmented Lagrangian objective ============================
-    y = csdl.Variable(value=np.zeros(4))
+    yy = csdl.Variable(value=y_mult)
 
     c = csdl.Variable(value=np.zeros(4))
     c = c.set(csdl.slice[0], cruise_trim * 1e-5)
@@ -1115,8 +1115,8 @@ def build_model_2():
     c = c.set(csdl.slice[2], (static_margin - 0.1) * 1e1)
     c = c.set(csdl.slice[3], (beam_max_stress_S1_SF - 324e6) * 1e-9)
 
-    mu = csdl.Variable(value=50.)
-    augmented_lagrangian = 1e-5 * fuel_burn + csdl.inner(y, c) + 0.5 * mu * csdl.sum(c**2)
+    mu = csdl.Variable(value=mu_pen)
+    augmented_lagrangian = 1e-5 * fuel_burn + csdl.inner(yy, c) + 0.5 * mu * csdl.sum(c**2)
     augmented_lagrangian.add_name('augmented_lagrangian')
     augmented_lagrangian.set_as_objective()
 
@@ -1141,7 +1141,7 @@ def build_model_2():
 
     # additional inputs for SP2
     additional_inputs_dict_SP2 = {
-        'y': y,
+        'y': yy,
         'mu': mu,
         'pitch': pitch,
         'wing_twist_coefficients': wing_twist_coefficients,
@@ -1164,6 +1164,27 @@ def build_model_2():
     # additional_outputs += [func.coefficients for func in oversized_payload_geometry.functions.values()]
     # additional_outputs += [fuel_burn, static_margin, CM_cg_cruise_nominal, cruise_trim, TOGW, Wf, L_D, CL, CDw, L, Di, Df, Dw, L_cruise, D_cruise, non_sectional_CDw, section_spans, section_chords, section_sweeps, section_t_c]
     # additional_outputs += [CDw_for_each_strip, mach_violation, Mcr, MDD, tech_component, thickness_component, lift_component]
+
+    # set variable values with x_init
+    pitch.value = x_init[0]
+    half_ttop.value = x_init[1]
+    half_tweb.value = x_init[2]
+    wing_twist_coefficients.value = x_init[3]
+    center_wing_half_span.value = x_init[4]
+    transition_half_span.value = x_init[5]
+    wing_half_span.value = x_init[6]
+    center_wing_chord_stretch_coefficients.value = x_init[7]
+    wing_root_chord.value = x_init[8]
+    wing_tip_chord.value = x_init[9]
+    wing_sweep.value = x_init[10]
+    transition_sweep.value = x_init[11]
+    oversized_payload_translation_x.value = x_init[12]
+    oversized_payload_translation_z.value = x_init[13]
+    oversized_payload_rotation.value = x_init[14]
+    cruise_trim_elevator_deflection.value = x_init[15]
+
+    yy.value = y_mult
+    mu.value = mu_pen
 
     # print('Model 2 checkpoint')
     fname = f'aero_structural_opt_SLSQP_1_missions'

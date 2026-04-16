@@ -12,6 +12,7 @@ with open('examples/bwb/x_init.pkl', "rb") as f:
     x_init = pickle.load(f)
     x_init = x_init[:-1] # remove the slack and geonic for now
 
+
 # # set the initial DV values from the SP1 sim
 # pitch = sim[design_variables['pitch'].variable]
 # half_ttop = sim[design_variables['half_ttop'].variable]
@@ -102,7 +103,7 @@ def global_con(x):
 opt = H5Plex(subproblems=[subproblem_1, subproblem_2],
              x_init=x_init,
              con=global_con,
-             path="examples/bwb/checkpoint2.h5",
+             path="examples/bwb/checkpoint.h5",
              solution=solution,
              )
 
@@ -129,7 +130,7 @@ opt.solve(max_outer_iter=300,
           RTOL_in=1e-2,
           ATOL_feas=1e-3,
           rho=1.2,
-          mu=200.0,
+          mu=100.0,
           )
 
 solution = opt.x
