@@ -7,6 +7,7 @@ warnings.filterwarnings("ignore")
 import gc
 
 def subproblem_2(x, y, mu):
+    print('SP2 x: ', x)
     sim_2, design_variables_2, additional_inputs_dict_SP2, additional_outputs_dict = build_model_2(x, y, mu)
 
     # extract initial values from x
@@ -57,7 +58,7 @@ def subproblem_2(x, y, mu):
     # success = optimizer.results['success']
     # solution = optimizer.results['x']
 
-    # sim_2.run() # might be necessary to run the sim to update the cstate values after optimization
+    sim_2.run() # might be necessary to run the sim to update the cstate values after optimization
 
     cstate.cstate = sim_2[additional_outputs_dict['c']]
     print('SP2 cstate: ', sim_2[additional_outputs_dict['c']])
