@@ -3,13 +3,14 @@ import h5py
 import matplotlib.pyplot as plt
 
 
-path = 'examples/bwb/checkpoint_new_4.h5'
+path = 'examples/bwb/checkpoint_new_5.h5'
 
 with h5py.File(path, 'r') as f:
 	iteration_ids = sorted((int(key) for key in f.keys()))
 
 	x_history = [f[str(iteration_id)]['x'][()] for iteration_id in iteration_ids]
 	error_history = [f[str(iteration_id)]['error'][()] for iteration_id in iteration_ids]
+	mu_history = [f[str(iteration_id)]['mu'][()] for iteration_id in iteration_ids]
 
 
 x_history = x_history[2:]
@@ -79,4 +80,8 @@ plt.show()
 
 plt.semilogy(x_history)
 
+plt.show()
+
+
+plt.plot(mu_history)
 plt.show()
