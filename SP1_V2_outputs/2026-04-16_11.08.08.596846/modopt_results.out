@@ -1,0 +1,39 @@
+
+	Solution from PySLSQP:
+	----------------------------------------------------------------------------------------------------
+	Problem                       : SP1_V2
+	Solver                        : pyslsqp
+	Success                       : True
+	Message                       : Optimization terminated successfully
+	Status                        : 0
+	Objective                     : 1.0108661502934841
+	Optimality                    : -8.55425331747206e-06
+	Feasibility                   : 0.0
+	Gradient norm                 : 0.1207043054210869
+	Major iterations              : 16
+	Total function evals          : 28
+	Total gradient evals          : 15
+	Total time                    : 2619.185691356659
+	Function eval. time           : 1504.6181110001635
+	Derivative eval. time         : 1114.5509984001983
+	Optimizer time                : 0.001007900107651949
+	Processing time               : 0.01569049945101142
+	Visualization time            : 0.0
+	Summary saved in              : SP1_V2_outputs/2026-04-16_11.08.08.596846/slsqp_summary.out
+	Total callbacks               : 43
+	Reused callbacks              : 0
+	obj callbacks                 : 28
+	grad callbacks                : 15
+	hess callbacks                : 0
+	con callbacks                 : 0
+	jac callbacks                 : 0
+	Optimal variables             : [ 5.         -8.87089932 -7.79551298  4.9270523   4.24386162  8.
+  9.00025673  5.64514317  6.41795852  5.47606906 11.98427002  1.97176712
+  1.82259053  1.60273652  0.32064446]
+	Optimal obj. gradient         : [-0.08070132 -0.01443634 -0.00621728 -0.02158645 -0.0223621   0.02186022
+ -0.00379774  0.0011165   0.00150718 -0.00293548 -0.04068226 -0.00501896
+  0.00635957 -0.01392748  0.066518  ]
+	Optimal constraints           : []
+	Optimal multipliers (constr.) : []
+	Optimal Jacobian              : []
+	----------------------------------------------------------------------------------------------------

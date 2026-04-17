@@ -103,7 +103,7 @@ def global_con(x):
 opt = H5Plex(subproblems=[subproblem_1, subproblem_2],
              x_init=x_init,
              con=global_con,
-             path="examples/bwb/checkpoint.h5",
+             path="examples/bwb/checkpoint2.h5",
              solution=solution,
              )
 
@@ -120,17 +120,27 @@ opt = H5Plex(subproblems=[subproblem_1, subproblem_2],
 #           )
 
 # new version:
-opt.y = np.ones(4)
+# opt.y = np.ones(4) # i might not need this anymore, now that i fixed the csdl error.
 
+# opt.solve(max_outer_iter=300,
+#           max_inner_iter=2,
+#           ATOL_out=1e-4, 
+#           RTOL_out=1e-4,
+#           ATOL_in=1e-2, 
+#           RTOL_in=1e-2,
+#           ATOL_feas=1e-3,
+#           rho=1.2,
+#           mu=100.0,
+#           )
 opt.solve(max_outer_iter=300,
           max_inner_iter=2,
-          ATOL_out=1e-4, 
-          RTOL_out=1e-4,
+          ATOL_out=1e-5, 
+          RTOL_out=1e-5,
           ATOL_in=1e-2, 
           RTOL_in=1e-2,
           ATOL_feas=1e-3,
           rho=1.2,
-          mu=100.0,
+          mu=60.0,
           )
 
 solution = opt.x
