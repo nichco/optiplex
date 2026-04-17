@@ -6,11 +6,38 @@ import pickle
 import cstate
 from subproblem_1 import subproblem_1
 from subproblem_2 import subproblem_2
+import h5py
 
-# load x_init from the pickle file
-with open('examples/bwb/x_init.pkl', "rb") as f:
-    x_init = pickle.load(f)
-    x_init = x_init[:-1] # remove the slack and geonic for now
+# # load x_init from the pickle file
+# with open('examples/bwb/x_init.pkl', "rb") as f:
+#     x_init = pickle.load(f)
+#     x_init = x_init[:-1] # remove the slack and geonic for now
+
+
+with h5py.File('examples/bwb/checkpoint.h5', 'r') as f:
+    latest_iteration = sorted((int(key) for key in f.keys()))[-1]
+    x = f[str(latest_iteration)]['x'][()]
+
+x_init = [x[0:1],
+          x[1:11],
+          x[11:21],
+          x[21:23],
+          x[23:24],
+          x[24:25],
+          x[25:26],
+          x[26:30],
+          x[30:31],
+          x[31:32],
+          x[32:33],
+          x[33:34],
+          x[34:35],
+          x[35:36],
+          x[36:37],
+          x[37:38]]
+
+# print(x_init)
+# exit()
+
 
 
 # # set the initial DV values from the SP1 sim
@@ -103,7 +130,7 @@ def global_con(x):
 opt = H5Plex(subproblems=[subproblem_1, subproblem_2],
              x_init=x_init,
              con=global_con,
-             path="examples/bwb/checkpoint2.h5",
+             path="examples/bwb/checkpoint.h5",
              solution=solution,
              )
 

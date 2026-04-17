@@ -46,10 +46,18 @@ class Plex():
 
         self.mu_history.append(mu)
 
-        with h5py.File(self.checkpoint_path, "w") as f:
-            pass # clear the file from previous runs by opening in write mode and immediately closing
+        # with h5py.File(self.checkpoint_path, "w") as f:
+        #     pass # clear the file from previous runs by opening in write mode and immediately closing
 
         itr = 0 # iteration counter for checkpointing in the h5py file
+        # open the h5 file and extract the latest itration number to continue from if the file already exists and has data
+        try:
+            with h5py.File(self.checkpoint_path, 'r') as f:
+                if len(f.keys()) > 0:
+                    latest_iteration = sorted((int(key) for key in f.keys()))[-1]
+                    itr = latest_iteration + 1
+        except FileNotFoundError:
+            pass # if the file doesn't exist, we'll create it during the first checkpoint save
 
         for k in range(max_outer_iter):
 
