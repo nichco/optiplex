@@ -74,23 +74,42 @@ solution = np.concatenate([pitch,
 
 
 
+# ###############################################################################################################################
+# x_init = [pitch,
+#           half_ttop,
+#           half_tweb,
+#           wing_twist_coefficients,
+#           center_wing_half_span,
+#           transition_half_span,
+#           wing_half_span,
+#           center_wing_chord_stretch_coefficients,
+#           wing_root_chord,
+#           wing_tip_chord,
+#           wing_sweep,
+#           transition_sweep,
+#           oversized_payload_translation_x,
+#           oversized_payload_translation_z,
+#           oversized_payload_rotation,
+#           cruise_trim_elevator_deflection] # try this to speed things up??
+# ###############################################################################################################################
+
 ###############################################################################################################################
-x_init = [pitch,
-          half_ttop,
-          half_tweb,
-          wing_twist_coefficients,
-          center_wing_half_span,
-          transition_half_span,
-          wing_half_span,
-          center_wing_chord_stretch_coefficients,
-          wing_root_chord,
-          wing_tip_chord,
-          wing_sweep,
-          transition_sweep,
-          oversized_payload_translation_x,
-          oversized_payload_translation_z,
-          oversized_payload_rotation,
-          cruise_trim_elevator_deflection] # try this to speed things up??
+x_init = [np.array([5.0]),
+          half_ttop + 0.001,
+          half_tweb + 0.001,
+          np.array([-2e+00, -2e+00]),
+          np.array([3]),
+          np.array([3]),
+          np.array([1.5e+01]),
+          np.array([-5.5e-01, -4e+00, -3e+00, -3.5e+00]),
+          np.array([5]),
+          np.array([1.5]),
+          np.array([40]),
+          np.array([30]),
+          np.array([9]), # WAS 10 for checkpoint 7
+          np.array([0]),
+          np.array([0]),
+          np.array([5])] # try this to speed things up??
 ###############################################################################################################################
 
 
@@ -104,7 +123,7 @@ def global_con(x):
 opt = H5Plex(subproblems=[subproblem_1, subproblem_2],
              x_init=x_init,
              con=global_con,
-             path="examples/bwb/checkpoint4.h5",
+             path="examples/bwb/checkpoint7.h5",
              solution=solution,
              )
 
@@ -120,6 +139,19 @@ opt = H5Plex(subproblems=[subproblem_1, subproblem_2],
 #           mu=50.0,
 #           )
 
+# checkpoint 6
+# opt.solve(max_outer_iter=300,
+#           max_inner_iter=2,
+#           ATOL_out=1e-5, 
+#           RTOL_out=1e-5,
+#           ATOL_in=1e-2, 
+#           RTOL_in=1e-2,
+#           ATOL_feas=1e-4,
+#           rho=1.2,
+#           mu=100.0,
+#           )
+
+# checkpoint 7
 opt.solve(max_outer_iter=300,
           max_inner_iter=2,
           ATOL_out=1e-5, 
@@ -128,7 +160,7 @@ opt.solve(max_outer_iter=300,
           RTOL_in=1e-2,
           ATOL_feas=1e-4,
           rho=1.2,
-          mu=100.0,
+          mu=30.0,
           )
 
 solution = opt.x

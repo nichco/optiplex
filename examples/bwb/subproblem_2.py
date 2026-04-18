@@ -1,6 +1,6 @@
 from build_model_2 import build_model_2
 from modopt import CSDLAlphaProblem
-from modopt import PySLSQP
+from modopt import PySLSQP, IPOPT
 import cstate
 import warnings
 warnings.filterwarnings("ignore")
@@ -28,33 +28,11 @@ def subproblem_2(x, y, mu):
     oversized_payload_rotation = x[14]
     cruise_trim_elevator_deflection = x[15]
 
-    # # assign values to the sim variables
-    # sim_2[additional_inputs_dict_SP2['pitch']] = pitch
-    # sim_2[design_variables_2['half_ttop'].variable] = half_ttop
-    # sim_2[design_variables_2['half_tweb'].variable] = half_tweb
-    # sim_2[additional_inputs_dict_SP2['wing_twist_coefficients']] = wing_twist_coefficients
-    # sim_2[additional_inputs_dict_SP2['center_wing_half_span']] = center_wing_half_span
-    # sim_2[additional_inputs_dict_SP2['transition_half_span']] = transition_half_span
-    # sim_2[additional_inputs_dict_SP2['wing_half_span']] = wing_half_span
-    # sim_2[additional_inputs_dict_SP2['center_wing_chord_stretch_coefficients']] = center_wing_chord_stretch_coefficients
-    # sim_2[additional_inputs_dict_SP2['wing_root_chord']] = wing_root_chord
-    # sim_2[additional_inputs_dict_SP2['wing_tip_chord']] = wing_tip_chord
-    # sim_2[additional_inputs_dict_SP2['wing_sweep']] = wing_sweep
-    # sim_2[additional_inputs_dict_SP2['transition_sweep']] = transition_sweep
-    # sim_2[design_variables_2['oversized_payload_translation_x'].variable] = oversized_payload_translation_x
-    # sim_2[design_variables_2['oversized_payload_translation_z'].variable] = oversized_payload_translation_z
-    # sim_2[design_variables_2['oversized_payload_rotation'].variable] = oversized_payload_rotation
-    # sim_2[additional_inputs_dict_SP2['cruise_trim_elevator_deflection']] = cruise_trim_elevator_deflection
-
-    # # assign y and mu and slack values to the sim
-    # sim_2[additional_inputs_dict_SP2['y']] = y
-    # sim_2[additional_inputs_dict_SP2['mu']] = mu
-
     # print('Checkpoint SP2!')
 
-    prob = CSDLAlphaProblem(problem_name='SP2_V5', simulator=sim_2)
+    prob = CSDLAlphaProblem(problem_name='SP2_V7', simulator=sim_2)
     # optimizer = PySLSQP(prob, solver_options={'maxiter':300, 'acc':1e-5}, readable_outputs=['x'])
-    optimizer = PySLSQP(prob, solver_options={'maxiter':300, 'acc':1e-6}, readable_outputs=['x'])
+    optimizer = PySLSQP(prob, solver_options={'maxiter':200, 'acc':1e-6}, readable_outputs=['x'])
     optimizer.solve()
     # success = optimizer.results['success']
     # solution = optimizer.results['x']

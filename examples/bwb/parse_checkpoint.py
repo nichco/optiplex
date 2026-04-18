@@ -3,7 +3,7 @@ import h5py
 import matplotlib.pyplot as plt
 
 
-path = 'examples/bwb/checkpoint_new_6.h5'
+path = 'examples/bwb/checkpoint4 copy.h5'
 
 with h5py.File(path, 'r') as f:
 	iteration_ids = sorted((int(key) for key in f.keys()))
@@ -11,6 +11,7 @@ with h5py.File(path, 'r') as f:
 	x_history = [f[str(iteration_id)]['x'][()] for iteration_id in iteration_ids]
 	error_history = [f[str(iteration_id)]['error'][()] for iteration_id in iteration_ids]
 	mu_history = [f[str(iteration_id)]['mu'][()] for iteration_id in iteration_ids]
+	time_history = [f[str(iteration_id)]['time'][()] for iteration_id in iteration_ids]
 
 
 x_history = x_history[2:]
@@ -68,10 +69,12 @@ print(x_history[-1])
 plt.figure(figsize=(4, 3))
 
 plt.plot(error, linewidth=2)
+# plt.plot(time_history, error, linewidth=2)
+# plt.semilogy(time_history, error, linewidth=2)
 plt.xlabel('Iteration')
 plt.ylabel('Error')
 
-plt.savefig('bwb_convergence.png', bbox_inches='tight', transparent=True, dpi=600)
+# plt.savefig('bwb_convergence.png', bbox_inches='tight', transparent=True, dpi=600)
 plt.show()
 
 
