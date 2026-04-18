@@ -94,9 +94,9 @@ solution = np.concatenate([pitch,
 # ###############################################################################################################################
 
 ###############################################################################################################################
-x_init = [np.array([5.0]),
-          half_ttop + 0.001,
-          half_tweb + 0.001,
+x_init = [np.array([4.0]),
+          half_ttop - 0.001,
+          half_tweb - 0.001,
           np.array([-2e+00, -2e+00]),
           np.array([3]),
           np.array([3]),
@@ -106,10 +106,10 @@ x_init = [np.array([5.0]),
           np.array([1.5]),
           np.array([40]),
           np.array([30]),
-          np.array([9]), # WAS 10 for checkpoint 7
+          np.array([8]), # WAS 10 for checkpoint 7
           np.array([0]),
           np.array([0]),
-          np.array([5])] # try this to speed things up??
+          np.array([4])] # try this to speed things up??
 ###############################################################################################################################
 
 
@@ -123,7 +123,7 @@ def global_con(x):
 opt = H5Plex(subproblems=[subproblem_1, subproblem_2],
              x_init=x_init,
              con=global_con,
-             path="examples/bwb/checkpoint7.h5",
+             path="examples/bwb/checkpoint9.h5",
              solution=solution,
              )
 
@@ -151,16 +151,16 @@ opt = H5Plex(subproblems=[subproblem_1, subproblem_2],
 #           mu=100.0,
 #           )
 
-# checkpoint 7
+# checkpoint 7 and 8
 opt.solve(max_outer_iter=300,
           max_inner_iter=2,
           ATOL_out=1e-5, 
           RTOL_out=1e-5,
           ATOL_in=1e-2, 
           RTOL_in=1e-2,
-          ATOL_feas=1e-4,
+          ATOL_feas=1e-5,
           rho=1.2,
-          mu=30.0,
+          mu=10,
           )
 
 solution = opt.x

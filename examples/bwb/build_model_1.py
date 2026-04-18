@@ -1109,10 +1109,14 @@ def build_model_1(x_init, y_mult, mu_pen):
     yy = csdl.Variable(value=y_mult)
 
     c = csdl.Variable(value=np.zeros(4))
-    c = c.set(csdl.slice[0], cruise_trim * 1e-5)
+    # c = c.set(csdl.slice[0], cruise_trim * 1e-5)
+    # c = c.set(csdl.slice[1], CM_cg_cruise_nominal * 1e1)
+    # c = c.set(csdl.slice[2], (static_margin - 0.1) * 1e1)
+    # c = c.set(csdl.slice[3], (beam_max_stress_S1_SF - 324e6) * 1e-9)
+    c = c.set(csdl.slice[0], cruise_trim * 1e-4)
     c = c.set(csdl.slice[1], CM_cg_cruise_nominal * 1e1)
     c = c.set(csdl.slice[2], (static_margin - 0.1) * 1e1)
-    c = c.set(csdl.slice[3], (beam_max_stress_S1_SF - 324e6) * 1e-9)
+    c = c.set(csdl.slice[3], (beam_max_stress_S1_SF - 324e6) * 1e-8)
 
     mu = csdl.Variable(value=mu_pen)
     augmented_lagrangian = 1e-5 * fuel_burn + csdl.inner(yy, c) + 0.5 * mu * csdl.sum(c**2)

@@ -226,7 +226,7 @@ opt.solve(max_outer_iter=300,
           ATOL_in=1e-3, 
           RTOL_in=1e-3,
           ATOL_feas=1e-5,
-          rho=1.2,
+          rho=2.0,#1.2,
           mu=10.0,
           )
 
@@ -291,4 +291,4 @@ plt.ylabel('Load (N)')
 plt.show()
 
 # save error history and mu history and x_time and mu_time
-# np.savez('examples/aero_structural/history_idf.npz', error=error, mu_history=opt.mu_history, x_time=opt.x_time)
+np.savez('examples/aero_structural/history_idf_r20.npz', error=error, mu_history=opt.mu_history, x_time=opt.x_time)
