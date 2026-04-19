@@ -34,7 +34,7 @@ def build_model_2(x_init, y_mult, mu_pen):
 
     # print('Building model 2 simulator...')
 
-    recorder = csdl.Recorder(inline=True, debug=True)
+    recorder = csdl.Recorder(inline=True, debug=False)
     recorder.start()
 
     # region ============================ geometry import and setup ============================

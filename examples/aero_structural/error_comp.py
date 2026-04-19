@@ -73,7 +73,7 @@ plt.semilogy(time_pen_4e3, error_pen_4e3, label='Penalty (4e3)', linewidth=2)
 # plt.semilogy(time_pen_1e4, error_pen_1e4, label='Penalty (1e4)', linewidth=1.5)
 
 
-plt.xlabel('Wall Time (s)')
+plt.xlabel('Wall time (s)')
 plt.ylabel('Error')
 plt.legend(loc='lower right', fontsize='small')
 
