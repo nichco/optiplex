@@ -60,12 +60,17 @@ def structures_model(loads, thickness):
 
 
 # scalers for constraint functions
+"""
 lw_scale = 1e-4
 f_scale = 1e-2
 disp_scale = 1e2
 # lw_scale = 1e-4
 # f_scale = 1e-2
 # disp_scale = 1e1
+"""
+lw_scale = 2#1
+f_scale = 1e-2
+disp_scale = 1e2
 
 thickness0 = np.ones(num_nodes - 1) * 0.002
 twist0 = np.ones(N) * np.deg2rad(5)
@@ -102,7 +107,8 @@ def con(x):
     f_con = (f_copy - f_real) * f_scale
 
     # lift equals weight constraint
-    l_equals_w = (lift - weight) * lw_scale
+    # l_equals_w = (lift - weight) * lw_scale
+    l_equals_w = (lift / weight - 1) * lw_scale
 
     # displacement constraints
     right_disp_con = (right_tip_disp - tip_disp_target) * disp_scale
@@ -132,7 +138,8 @@ def aero_subproblem(x, y, mu):
         
         # compute the global constraints
         f_con = (f_copy - f_real) * f_scale
-        l_equals_w = (lift - weight) * lw_scale
+        # l_equals_w = (lift - weight) * lw_scale
+        l_equals_w = (lift / weight - 1) * lw_scale
         right_disp_con = (right_tip_disp - tip_disp_target) * disp_scale
         left_disp_con = (left_tip_disp - tip_disp_target) * disp_scale
         c = jnp.concatenate([f_con, jnp.array([right_disp_con, left_disp_con, l_equals_w])])
@@ -144,7 +151,7 @@ def aero_subproblem(x, y, mu):
     jaxprob = mo.JaxProblem(x0=v0, jax_obj=jax_obj, x_scaler=x_scaler)
     optimizer = mo.SLSQP(jaxprob, solver_options={'maxiter': 300, 'ftol': 1e-8}, turn_off_outputs=True)
     optimizer.solve()
-    optimizer.print_results()
+    # optimizer.print_results()
     twist_solution = optimizer.results['x'] / x_scaler
 
     # update the data dict
@@ -179,7 +186,8 @@ def struct_subproblem(x, y, mu):
 
         # compute the global constraints
         f_con = (f_copy - f_real) * f_scale
-        l_equals_w = (lift - weight) * lw_scale
+        # l_equals_w = (lift - weight) * lw_scale
+        l_equals_w = (lift / weight - 1) * lw_scale
         right_disp_con = (right_tip_disp - tip_disp_target) * disp_scale
         left_disp_con = (left_tip_disp - tip_disp_target) * disp_scale
         c = jnp.concatenate([f_con, jnp.array([right_disp_con, left_disp_con, l_equals_w])])
@@ -199,7 +207,7 @@ def struct_subproblem(x, y, mu):
     jaxprob = mo.JaxProblem(x0=v0, jax_obj=jax_obj, xl=xl, xu=xu, x_scaler=x_scaler)
     optimizer = mo.SLSQP(jaxprob, solver_options={'maxiter': 300, 'ftol': 1e-8}, turn_off_outputs=True)
     optimizer.solve()
-    optimizer.print_results()
+    # optimizer.print_results()
     sol = optimizer.results['x'] / x_scaler
     thickness_solution = sol[:num_nodes - 1]
     load_solution = sol[num_nodes - 1:]
@@ -239,9 +247,9 @@ opt.solve(max_outer_iter=100,
           max_inner_iter=10,
           ATOL_out=1e-5, 
           RTOL_out=1e-5,
-          eps=1e-3, # 1e-3
+          eps=1e-2, # 1e-3
           ATOL_feas=1e-3, # 1e-4
-          rho=1.1, # 1.2
+          rho=1.2, # 1.2
           mu=4, # 10
           )
 
