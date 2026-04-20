@@ -23,8 +23,6 @@ class Plex():
         self.mu_history = []
         self.x_time = [0.0] # time history for each x update
         # self.m_time = [0.0] # time history for each multiplier update
-        self.max_mu = 3000
-    
 
     def solve(self, 
               max_outer_iter: int=1000, # maximum number of outer iterations
@@ -37,6 +35,7 @@ class Plex():
             #   RTOL_out: float=1e-4,
               tol: float=1e-6,
               mu = 1.0, # augmented Lagrangian penalty coefficient
+              max_mu: float = 1000.0
               ) -> None:
         
         # assert rho > 1
@@ -95,7 +94,7 @@ class Plex():
 
             self.y += mu * c # Update the multipliers
             # mu = rho * mu    # Update the penalty coefficient
-            mu = min(rho * mu, self.max_mu)
+            mu = min(rho * mu, max_mu)
 
             print(f"du_itr={k:03d} | "
                   f"feas={feas:.3e} | "

@@ -233,10 +233,11 @@ opt = PlexT(subproblems=[aero_subproblem, struct_subproblem],
 
 opt.solve(max_outer_iter=100,
           max_inner_iter=50,
-          eps=1e-4, # 1e-3 # inner loop
-          tol=0.5e-6,#1e-5,#1e-4, # 1e-4 # outer loop feasibility
+          eps=1e-5,#1e-4, # 1e-3 # inner loop
+          tol=1e-3,#0.5e-6,#1e-5,#1e-4, # 1e-4 # outer loop feasibility
           rho=1.2, # 1.2
-          mu=3#10
+          mu=3,#10
+          max_mu=1e3,
           )
 
 # works for mu = 1, 2,

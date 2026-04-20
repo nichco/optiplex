@@ -144,7 +144,7 @@ def aero_subproblem(x, y, mu):
     jaxprob = mo.JaxProblem(x0=v0, jax_obj=jax_obj, x_scaler=x_scaler)
     optimizer = mo.SLSQP(jaxprob, solver_options={'maxiter': 300, 'ftol': 1e-8}, turn_off_outputs=True)
     optimizer.solve()
-    # optimizer.print_results()
+    optimizer.print_results()
     twist_solution = optimizer.results['x'] / x_scaler
 
     # update the data dict
@@ -306,4 +306,4 @@ plt.ylabel('Load (N)')
 plt.show()
 
 # save error history and mu history and x_time and mu_time
-np.savez('examples/aero_structural/history_idf_with_feas.npz', error=error, mu_history=opt.mu_history, x_time=opt.x_time, feas_history=opt.feas_history, feas_time=opt.feas_time)
+np.savez('examples/aero_structural/history_idf_with_feas.npz', error=error, mu_history=opt.mu_history, x_time=opt.x_time, feas_history=opt.feas_history)
