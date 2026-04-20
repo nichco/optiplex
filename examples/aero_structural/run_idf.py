@@ -144,7 +144,7 @@ def aero_subproblem(x, y, mu):
     jaxprob = mo.JaxProblem(x0=v0, jax_obj=jax_obj, x_scaler=x_scaler)
     optimizer = mo.SLSQP(jaxprob, solver_options={'maxiter': 300, 'ftol': 1e-8}, turn_off_outputs=True)
     optimizer.solve()
-    optimizer.print_results()
+    # optimizer.print_results()
     twist_solution = optimizer.results['x'] / x_scaler
 
     # update the data dict
@@ -199,7 +199,7 @@ def struct_subproblem(x, y, mu):
     jaxprob = mo.JaxProblem(x0=v0, jax_obj=jax_obj, xl=xl, xu=xu, x_scaler=x_scaler)
     optimizer = mo.SLSQP(jaxprob, solver_options={'maxiter': 300, 'ftol': 1e-8}, turn_off_outputs=True)
     optimizer.solve()
-    optimizer.print_results()
+    # optimizer.print_results()
     sol = optimizer.results['x'] / x_scaler
     thickness_solution = sol[:num_nodes - 1]
     load_solution = sol[num_nodes - 1:]
@@ -214,36 +214,36 @@ def struct_subproblem(x, y, mu):
 
 
 
-# opt = Plex(subproblems=[aero_subproblem, struct_subproblem],
-#            x_init=x_init,
-#            con=con,
-#            )
-
-# opt.solve(max_outer_iter=300,
-#           max_inner_iter=10,
-#           ATOL_out=1e-5, 
-#           RTOL_out=1e-5,
-#           ATOL_in=1e-3, # 1e-3
-#           RTOL_in=1e-3, # 1e-3
-#           ATOL_feas=1e-5, # 1e-4
-#           rho=1.05, # 1.2
-#           mu=4, # 10
-#           )
-
-opt = PlexT(subproblems=[aero_subproblem, struct_subproblem],
+opt = Plex(subproblems=[aero_subproblem, struct_subproblem],
            x_init=x_init,
            con=con,
            )
 
-opt.solve(max_outer_iter=100,
+opt.solve(max_outer_iter=300,
           max_inner_iter=10,
           ATOL_out=1e-5, 
           RTOL_out=1e-5,
-          eps=1e-3, # 1e-3
-          ATOL_feas=1e-3, # 1e-4
-          rho=1.1, # 1.2
-          mu=4, # 10
+          ATOL_in=1e-3, # 1e-3
+          RTOL_in=1e-3, # 1e-3
+          ATOL_feas=1e-5, # 1e-4
+          rho=1.2, # 1.2
+          mu=10, # 10
           )
+
+# opt = PlexT(subproblems=[aero_subproblem, struct_subproblem],
+#            x_init=x_init,
+#            con=con,
+#            )
+
+# opt.solve(max_outer_iter=100,
+#           max_inner_iter=10,
+#           ATOL_out=1e-5, 
+#           RTOL_out=1e-5,
+#           eps=1e-3, # 1e-3
+#           ATOL_feas=1e-3, # 1e-4
+#           rho=1.1, # 1.2
+#           mu=4, # 10
+#           )
 
 solution = opt.x
 
@@ -306,4 +306,4 @@ plt.ylabel('Load (N)')
 plt.show()
 
 # save error history and mu history and x_time and mu_time
-# np.savez('examples/aero_structural/history_idf_r1_andrew.npz', error=error, mu_history=opt.mu_history, x_time=opt.x_time)
+np.savez('examples/aero_structural/history_idf_with_feas.npz', error=error, mu_history=opt.mu_history, x_time=opt.x_time, feas_history=opt.feas_history)
