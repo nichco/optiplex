@@ -22,6 +22,7 @@ class Plex():
         self.history = [self.x.copy()] # data dictionary/list
         self.mu_history = []
         self.feas_history = []
+        self.feas_time = []
         self.x_time = [0.0] # time history for each x update
         # self.m_time = [0.0] # time history for each multiplier update
     
@@ -79,6 +80,7 @@ class Plex():
             c = self.con(self.x)
             feas = np.linalg.norm(c)
             self.feas_history.append(feas)
+            self.feas_time.append(time.perf_counter() - t1)
 
             x_new = np.concatenate([xi.ravel() for xi in self.x])
             r_norm_outer = np.linalg.norm(x_new - x_old)

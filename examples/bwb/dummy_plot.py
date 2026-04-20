@@ -60,7 +60,7 @@ error = [np.linalg.norm((x_history[i] - x_star) / denominator) for i in range(le
 fig, ax1 = plt.subplots(figsize=(4, 3))
 
 color_error = 'tab:blue'
-ax1.set_xlabel('Wall time (s)')
+ax1.set_xlabel('BCD Iteration')
 ax1.set_ylabel('Error')
 ax1.semilogy(np.array(error), color=color_error, linewidth=2, label='Error')
 # ax1.legend(loc='upper right')

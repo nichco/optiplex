@@ -44,6 +44,7 @@ time_pen_1e4 = data_pen_1e4['x_time']
 
 
 plt.figure(figsize=(4,3))
+plt.grid(axis='y', color='lavender', zorder=-10)
 
 # plt.semilogy(time, error, label='AL-BCD', linewidth=1.5, marker='o', markersize=4, markevery=12)
 plt.semilogy(time, error, label='AL-BCD', linewidth=2)
@@ -75,7 +76,9 @@ plt.semilogy(time_pen_4e3, error_pen_4e3, label='Penalty (4e3)', linewidth=2)
 
 plt.xlabel('Wall time (s)')
 plt.ylabel('Error')
-plt.legend(loc='lower right', fontsize='small')
+# plt.legend(loc='lower right', fontsize='small')
+plt.legend(loc='lower right')
+# plt.grid(axis='y', color='lavender', zorder=0)
 
 plt.savefig('simple_error_comp.pdf', bbox_inches='tight')
 plt.show()

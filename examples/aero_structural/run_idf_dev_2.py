@@ -91,6 +91,7 @@ data = {'f_real': lift_distribution_init,
 
 x_init = [twist0, thickness0, lift_distribution_init]
 
+cd_history = []
 
 def con(x):
 
@@ -159,6 +160,7 @@ def aero_subproblem(x, y, mu):
     data['f_real'] = f_real
     data['CD'] = CD
     data['Lift'] = lift
+    cd_history.append(CD)
 
     return [twist_solution, thickness, f_copy]
 
@@ -218,6 +220,8 @@ def struct_subproblem(x, y, mu):
     data['left_tip_disp'] = left_tip_disp
     data['Weight'] = weight
 
+    cd_history.append(CD)
+
     return [twist, thickness_solution, load_solution]
 
 
@@ -230,10 +234,12 @@ opt = PlexT(subproblems=[aero_subproblem, struct_subproblem],
 opt.solve(max_outer_iter=100,
           max_inner_iter=50,
           eps=1e-4, # 1e-3 # inner loop
-          tol=1e-5,#1e-4, # 1e-4 # outer loop feasibility
+          tol=0.5e-6,#1e-5,#1e-4, # 1e-4 # outer loop feasibility
           rho=1.2, # 1.2
-          mu=10
+          mu=3#10
           )
+
+# works for mu = 1, 2,
 
 print('Lagrange multipliers: ', opt.y)
 solution = opt.x
@@ -259,12 +265,28 @@ print('Weight: ', weight)
 print('Right tip displacement: ', right_tip_disp)
 print('Left tip displacement: ', left_tip_disp)
 
+f_real = data['f_real']
+f_con = (f_copy - f_real) * f_scale
+l_equals_w = (lift - weight) * lw_scale
+right_disp_con = (right_tip_disp - tip_disp_target) * disp_scale
+left_disp_con = (left_tip_disp - tip_disp_target) * disp_scale
+
+print('Scaled constraint values: ')
+print('f_con max abs: ', jnp.max(jnp.abs(f_con)))
+print('l_equals_w: ', l_equals_w)
+print('right_disp_con: ', right_disp_con)
+print('left_disp_con: ', left_disp_con)
+
 
 solution = np.load('examples/aero_structural/solution.npz')
 x_star = np.concatenate([solution['twist'], solution['thickness']])
 
 history_vecs = [np.concatenate(h[:2]) for h in opt.history]
 error = [np.linalg.norm((x - x_star) / x_star) for x in history_vecs]
+
+print('CD: ', cd_history[-1]) # correct value should be CD:  0.013790146790628004
+# currently sometimes getting CD:  0.01691472981927389
+# CD:  0.01691545746597533
 
 # plt.semilogy(error)
 # plt.xlabel('Iteration')
@@ -286,12 +308,27 @@ plt.xlabel('Time (s)')
 plt.ylabel('Penalty parameter')
 plt.show()
 
-plt.plot(solution['twist'], label='Reference twist')
-plt.plot(twist, label='Plex twist')
-plt.legend()
-plt.xlabel('Spanwise location')
-plt.ylabel('Twist (rad)')
+# plt.plot(solution['twist'], label='Reference twist')
+# plt.plot(twist, label='Plex twist')
+# plt.legend()
+# plt.xlabel('Spanwise location')
+# plt.ylabel('Twist (rad)')
+# plt.show()
+
+fig, (ax1, ax2) = plt.subplots(1, 2)
+ax1.plot(lifting_line.y, solution['twist'], label='Reference twist')
+ax1.plot(lifting_line.y, twist, label='Plex twist')
+ax1.set_xlabel('Spanwise location')
+ax1.set_ylabel('Twist (rad)')
+ax1.legend()
+ax2.plot(solution['thickness'], label='Reference thickness')
+ax2.plot(thickness, label='Plex thickness')
+ax2.set_xlabel('Spanwise location')
+ax2.set_ylabel('Thickness (m)')
+ax2.legend()
+plt.tight_layout()
 plt.show()
+
 
 f_real = data['f_real']
 plt.plot(f_copy, label='f_copy')
@@ -299,6 +336,11 @@ plt.plot(f_real, label='f_real')
 plt.legend()
 plt.xlabel('Spanwise location')
 plt.ylabel('Load (N)')
+plt.show()
+
+plt.plot(cd_history)
+plt.xlabel('Iteration')
+plt.ylabel('CD')
 plt.show()
 
 # save error history and mu history and x_time and mu_time

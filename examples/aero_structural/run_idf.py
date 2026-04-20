@@ -306,4 +306,4 @@ plt.ylabel('Load (N)')
 plt.show()
 
 # save error history and mu history and x_time and mu_time
-np.savez('examples/aero_structural/history_idf_with_feas.npz', error=error, mu_history=opt.mu_history, x_time=opt.x_time, feas_history=opt.feas_history)
+np.savez('examples/aero_structural/history_idf_with_feas.npz', error=error, mu_history=opt.mu_history, x_time=opt.x_time, feas_history=opt.feas_history, feas_time=opt.feas_time)

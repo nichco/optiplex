@@ -23,7 +23,7 @@ class Plex():
         self.mu_history = []
         self.x_time = [0.0] # time history for each x update
         # self.m_time = [0.0] # time history for each multiplier update
-        # self.max_mu = 1e6
+        self.max_mu = 3000
     
 
     def solve(self, 
@@ -94,7 +94,8 @@ class Plex():
                 break
 
             self.y += mu * c # Update the multipliers
-            mu = rho * mu    # Update the penalty coefficient
+            # mu = rho * mu    # Update the penalty coefficient
+            mu = min(rho * mu, self.max_mu)
 
             print(f"du_itr={k:03d} | "
                   f"feas={feas:.3e} | "
