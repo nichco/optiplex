@@ -60,17 +60,17 @@ def structures_model(loads, thickness):
 
 
 # scalers for constraint functions
-"""
+# """
 lw_scale = 1e-4
 f_scale = 1e-2
 disp_scale = 1e2
 # lw_scale = 1e-4
 # f_scale = 1e-2
 # disp_scale = 1e1
-"""
-lw_scale = 2#1
-f_scale = 1e-2
-disp_scale = 1e2
+# """
+# lw_scale = 2#1
+# f_scale = 1e-2
+# disp_scale = 1e2
 
 thickness0 = np.ones(num_nodes - 1) * 0.002
 twist0 = np.ones(N) * np.deg2rad(5)
@@ -107,8 +107,8 @@ def con(x):
     f_con = (f_copy - f_real) * f_scale
 
     # lift equals weight constraint
-    # l_equals_w = (lift - weight) * lw_scale
-    l_equals_w = (lift / weight - 1) * lw_scale
+    l_equals_w = (lift - weight) * lw_scale
+    # l_equals_w = (lift / weight - 1) * lw_scale
 
     # displacement constraints
     right_disp_con = (right_tip_disp - tip_disp_target) * disp_scale
@@ -138,8 +138,8 @@ def aero_subproblem(x, y, mu):
         
         # compute the global constraints
         f_con = (f_copy - f_real) * f_scale
-        # l_equals_w = (lift - weight) * lw_scale
-        l_equals_w = (lift / weight - 1) * lw_scale
+        l_equals_w = (lift - weight) * lw_scale
+        # l_equals_w = (lift / weight - 1) * lw_scale
         right_disp_con = (right_tip_disp - tip_disp_target) * disp_scale
         left_disp_con = (left_tip_disp - tip_disp_target) * disp_scale
         c = jnp.concatenate([f_con, jnp.array([right_disp_con, left_disp_con, l_equals_w])])
@@ -186,8 +186,8 @@ def struct_subproblem(x, y, mu):
 
         # compute the global constraints
         f_con = (f_copy - f_real) * f_scale
-        # l_equals_w = (lift - weight) * lw_scale
-        l_equals_w = (lift / weight - 1) * lw_scale
+        l_equals_w = (lift - weight) * lw_scale
+        # l_equals_w = (lift / weight - 1) * lw_scale
         right_disp_con = (right_tip_disp - tip_disp_target) * disp_scale
         left_disp_con = (left_tip_disp - tip_disp_target) * disp_scale
         c = jnp.concatenate([f_con, jnp.array([right_disp_con, left_disp_con, l_equals_w])])
@@ -222,37 +222,20 @@ def struct_subproblem(x, y, mu):
 
 
 
-# opt = Plex(subproblems=[aero_subproblem, struct_subproblem],
-#            x_init=x_init,
-#            con=con,
-#            )
-
-# opt.solve(max_outer_iter=300,
-#           max_inner_iter=10,
-#           ATOL_out=1e-5, 
-#           RTOL_out=1e-5,
-#           ATOL_in=1e-3, # 1e-3
-#           RTOL_in=1e-3, # 1e-3
-#           ATOL_feas=1e-5, # 1e-4
-#           rho=1.05, # 1.2
-#           mu=4, # 10
-#           )
-
 opt = PlexT(subproblems=[aero_subproblem, struct_subproblem],
            x_init=x_init,
            con=con,
            )
 
 opt.solve(max_outer_iter=100,
-          max_inner_iter=10,
-          ATOL_out=1e-5, 
-          RTOL_out=1e-5,
-          eps=1e-2, # 1e-3
-          ATOL_feas=1e-3, # 1e-4
+          max_inner_iter=50,
+          eps=1e-4, # 1e-3 # inner loop
+          tol=1e-5,#1e-4, # 1e-4 # outer loop feasibility
           rho=1.2, # 1.2
-          mu=4, # 10
+          mu=10
           )
 
+print('Lagrange multipliers: ', opt.y)
 solution = opt.x
 
 twist = solution[0]
@@ -293,6 +276,11 @@ plt.xlabel('Time (s)')
 plt.ylabel('Relative error')
 plt.show()
 
+plt.plot(opt.x_time, error)
+plt.xlabel('Time (s)')
+plt.ylabel('Relative error')
+plt.show()
+
 plt.semilogy(opt.x_time, opt.mu_history)
 plt.xlabel('Time (s)')
 plt.ylabel('Penalty parameter')
@@ -314,4 +302,4 @@ plt.ylabel('Load (N)')
 plt.show()
 
 # save error history and mu history and x_time and mu_time
-# np.savez('examples/aero_structural/history_idf_r1_andrew.npz', error=error, mu_history=opt.mu_history, x_time=opt.x_time)
+# np.savez('examples/aero_structural/history2_m2.npz', error=error, mu_history=opt.mu_history, x_time=opt.x_time)

@@ -23,29 +23,30 @@ class Plex():
         self.mu_history = []
         self.x_time = [0.0] # time history for each x update
         # self.m_time = [0.0] # time history for each multiplier update
+        # self.max_mu = 1e6
     
 
     def solve(self, 
-              max_outer_iter: int=100, # maximum number of outer iterations
+              max_outer_iter: int=1000, # maximum number of outer iterations
               max_inner_iter: int=1000, # maximum number of inner iterations
               rho: float=1.2, # penalty increase factor
             #   ATOL_in: float=1e-1,
             #   RTOL_in: float=1e-1,
               eps: float=1e-1,
-              ATOL_out: float=1e-4,
-              RTOL_out: float=1e-4,
-              ATOL_feas: float=1e-6,
+            #   ATOL_out: float=1e-4,
+            #   RTOL_out: float=1e-4,
+              tol: float=1e-6,
               mu = 1.0, # augmented Lagrangian penalty coefficient
               ) -> None:
         
-        assert rho > 1
+        # assert rho > 1
         t1 = time.perf_counter()
 
         self.mu_history.append(mu)
 
         for k in range(max_outer_iter):
 
-            x_old = np.concatenate([xi.ravel() for xi in self.x])
+            # x_old = np.concatenate([xi.ravel() for xi in self.x])
 
             for j in range(max_inner_iter):
 
@@ -83,14 +84,25 @@ class Plex():
                 if relative_step <= eps:
                     print('-Primal loop converged!-')
                     break
-            
-            # Exit for unconstrained problems
-            if self.d == 0: break
 
             # Evaluate the constraints
             c = self.con(self.x)
             feas = np.linalg.norm(c)
 
+            if feas <= tol:
+                print('-Dual loop converged!-')
+                break
+
+            self.y += mu * c # Update the multipliers
+            mu = rho * mu    # Update the penalty coefficient
+
+            print(f"du_itr={k:03d} | "
+                  f"feas={feas:.3e} | "
+                  f"mu={mu:.2f} | "
+                  f"y={np.linalg.norm(self.y):.3e}"
+                  )
+
+            """
             x_new = np.concatenate([xi.ravel() for xi in self.x])
             r_norm_outer = np.linalg.norm(x_new - x_old)
 
@@ -99,7 +111,7 @@ class Plex():
             eps_feas = np.sqrt(self.d) * ATOL_feas
 
             if feas > eps_feas:
-                self.y = self.y + mu * c # Update the multipliers
+                self.y += mu * c # Update the multipliers
                 mu = rho * mu # Update the penalty coefficient
                 # self.mu_history.append(mu)
                 # self.m_time.append(time.perf_counter() - t1)
@@ -115,6 +127,7 @@ class Plex():
             if r_norm_outer <= eps_outer and feas <= eps_feas:
                 print('-Dual loop converged!-')
                 break
+            """
 
 
         self.time = time.perf_counter() - t1

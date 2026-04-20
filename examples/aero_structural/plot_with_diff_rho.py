@@ -48,5 +48,5 @@ ax2.tick_params(axis='y', labelcolor=color_mu)
 
 fig.tight_layout()
 
-plt.savefig('simple_aero_struct_rho.pdf', bbox_inches='tight')
+# plt.savefig('simple_aero_struct_rho.pdf', bbox_inches='tight')
 plt.show()

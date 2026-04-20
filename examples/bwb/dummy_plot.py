@@ -55,36 +55,29 @@ x_star = np.concatenate([pitch,
 denominator = np.where(np.abs(x_star) > 1e-12, x_star, 1.0) # prevent divide-by-zero errors
 error = [np.linalg.norm((x_history[i] - x_star) / denominator) for i in range(len(x_history))]
 
-# print(error)
-
-# increase numpy printing line width so that the full x_star vector is printed on one line
-np.set_printoptions(linewidth=400, precision=4, suppress=True)
-
-print(x_star)
-print(x_history[-1])
-# print(x_history[-1] - x_history[-2])
 
 
-# fig, ax1 = plt.subplots(figsize=(4, 3))
-plt.figure(figsize=(4, 3))
+fig, ax1 = plt.subplots(figsize=(4, 3))
 
-plt.plot(error, linewidth=2)
-# plt.plot(time_history, error, linewidth=2)
-# plt.semilogy(time_history, error, linewidth=2)
-plt.xlabel('Iteration')
-plt.ylabel('Error')
+color_error = 'tab:blue'
+ax1.set_xlabel('Wall time (s)')
+ax1.set_ylabel('Error')
+ax1.semilogy(np.array(error), color=color_error, linewidth=2, label='Error')
+# ax1.legend(loc='upper right')
 
-# plt.savefig('bwb_convergence.png', bbox_inches='tight', transparent=True, dpi=600)
-plt.show()
+ax2 = ax1.twinx()
+color_mu = 'tab:orange'
+ax2.set_ylabel('Penalty parameter')
+ax2.plot(np.array(mu_history), ls='--', color=color_mu, linewidth=2, label='μ')
+# ax2.legend(loc='upper left')
 
+# fig.tight_layout()
 
+handles1, labels1 = ax1.get_legend_handles_labels()
+handles2, labels2 = ax2.get_legend_handles_labels()
+fig.legend(handles1 + handles2, labels1 + labels2,
+           loc='upper center', bbox_to_anchor=(0.5, 0.8), ncol=2)
+fig.subplots_adjust(top=0.82)
 
-
-
-plt.semilogy(x_history)
-
-plt.show()
-
-
-plt.plot(mu_history)
+plt.savefig('bwb_convergence.pdf', bbox_inches='tight')
 plt.show()
