@@ -9,6 +9,7 @@ class Plex():
                  x_init: List[np.ndarray],
                 #  constraint: Callable = None,
                  con: Callable = lambda v: np.zeros(0),
+                 scale: float = 1.0,
                  ):
 
         self.subproblems = subproblems
@@ -23,6 +24,7 @@ class Plex():
         self.mu_history = []
         self.x_time = [0.0] # time history for each x update
         # self.m_time = [0.0] # time history for each multiplier update
+        self.scale = scale
 
     def solve(self, 
               max_outer_iter: int=1000, # maximum number of outer iterations
@@ -35,13 +37,16 @@ class Plex():
             #   RTOL_out: float=1e-4,
               tol: float=1e-6,
               mu = 1.0, # augmented Lagrangian penalty coefficient
-              max_mu: float = 1000.0
+              max_mu: float = 1000.0,
+              tau: float = 0.5, # factor for increasing mu based on constraint violation
               ) -> None:
         
         # assert rho > 1
         t1 = time.perf_counter()
 
         self.mu_history.append(mu)
+
+        feas_prev = np.inf
 
         for k in range(max_outer_iter):
 
@@ -74,8 +79,10 @@ class Plex():
 
                 z_new = np.concatenate([xi.ravel() for xi in self.x])
                 step = z_new - z_old
-                scale = np.maximum(1.0, np.abs(z_old))
-                relative_step = np.linalg.norm(step / scale)
+                # scale = np.maximum(1.0, np.abs(z_old))
+                # scale = np.maximum(self.scale, np.abs(z_old))
+                # relative_step = np.linalg.norm(step / scale)
+                relative_step = np.linalg.norm(step * self.scale)
 
                 # Print inner iteration data
                 print(f"pr_itr={j:03d} | "f"rel_stp={relative_step:.3e} | ")
@@ -92,9 +99,19 @@ class Plex():
                 print('-Dual loop converged!-')
                 break
 
-            self.y += mu * c # Update the multipliers
+            self.y += mu * c # Always update the multipliers
             # mu = rho * mu    # Update the penalty coefficient
-            mu = min(rho * mu, max_mu)
+            # mu = min(rho * mu, max_mu)
+
+
+
+            if feas > tau * feas_prev:
+                print('Increasing mu')
+                mu = min(rho * mu, max_mu)
+
+            feas_prev = feas
+
+
 
             print(f"du_itr={k:03d} | "
                   f"feas={feas:.3e} | "

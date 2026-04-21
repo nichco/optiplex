@@ -61,7 +61,7 @@ def structures_model(loads, thickness):
 
 # scalers for constraint functions
 # """
-lw_scale = 1e-4
+lw_scale = 1e-3
 f_scale = 1e-2
 disp_scale = 1e2
 # lw_scale = 1e-4
@@ -75,6 +75,10 @@ disp_scale = 1e2
 thickness0 = np.ones(num_nodes - 1) * 0.002
 twist0 = np.ones(N) * np.deg2rad(5)
 
+thickness_scale = 1e2
+theta_scale = 1e1
+f_copy_scale = 1e-1
+scale = np.concatenate([np.ones(num_nodes - 1) * thickness_scale, np.ones(N) * theta_scale, np.ones(N) * f_copy_scale])
 
 # run the aero model once to populate args
 CD_init, lift_distribution_init, lift_init = aero_model(twist0)
@@ -120,7 +124,7 @@ def con(x):
 
 def aero_subproblem(x, y, mu):
 
-    print('Solving aerodynamic subproblem...')
+    print('Solving aerodynamic subproblem...', end=' ', flush=True)
 
     twist = x[0]
     thickness = x[1]
@@ -161,12 +165,13 @@ def aero_subproblem(x, y, mu):
     data['CD'] = CD
     data['Lift'] = lift
     cd_history.append(CD)
+    print('CD: ', CD, ' obj: ', optimizer.results['fun'])
 
     return [twist_solution, thickness, f_copy]
 
 def struct_subproblem(x, y, mu):
 
-    print('Solving structural subproblem...')
+    print('Solving structural subproblem....', end=' ', flush=True)
 
     twist = x[0]
     t = x[1]
@@ -221,6 +226,7 @@ def struct_subproblem(x, y, mu):
     data['Weight'] = weight
 
     cd_history.append(CD)
+    print('CD: ', CD, ' obj: ', optimizer.results['fun'])
 
     return [twist, thickness_solution, load_solution]
 
@@ -229,13 +235,14 @@ def struct_subproblem(x, y, mu):
 opt = PlexT(subproblems=[aero_subproblem, struct_subproblem],
            x_init=x_init,
            con=con,
+           scale=scale,
            )
 
 opt.solve(max_outer_iter=100,
           max_inner_iter=50,
-          eps=1e-5,#1e-4, # 1e-3 # inner loop
+          eps=1e-4,#1e-4, # 1e-3 # inner loop
           tol=1e-3,#0.5e-6,#1e-5,#1e-4, # 1e-4 # outer loop feasibility
-          rho=1.2, # 1.2
+          rho=1.5, # 1.2
           mu=3,#10
           max_mu=1e3,
           )
@@ -288,6 +295,9 @@ error = [np.linalg.norm((x - x_star) / x_star) for x in history_vecs]
 print('CD: ', cd_history[-1]) # correct value should be CD:  0.013790146790628004
 # currently sometimes getting CD:  0.01691472981927389
 # CD:  0.01691545746597533
+# CD:  0.016894571235545806
+# CD:  0.016419344396332646
+# CD:  0.01687470315629312 with birkin scheme
 
 # plt.semilogy(error)
 # plt.xlabel('Iteration')
