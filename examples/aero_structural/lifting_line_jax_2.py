@@ -56,14 +56,18 @@ class LiftingLine:
 
     def compute_lift_coefficient(self, coef):
         return jnp.pi*self.AR*coef[0]
-
-    def compute_lift_distribution(self, coef, rho, v_inf):
+    
+    def circulation(self, coef, v_inf):
 
         Gamma = jnp.zeros(self.N)
         for n in range(self.N):
-            Gamma = Gamma + 2.0 * self.b * coef[n] * jnp.sin((n + 1) * self.theta)
-            # Gamma = Gamma + 2.0 * self.b * v_inf * coef[n] * jnp.sin((n + 1) * self.theta)
+            Gamma = Gamma + 2.0 * self.b * v_inf * coef[n] * jnp.sin((n + 1) * self.theta)
 
+        return Gamma
+
+    def compute_lift_distribution(self, coef, rho, v_inf):
+
+        Gamma = self.circulation(coef, v_inf)
         L_prime = rho * v_inf * Gamma
 
         return L_prime
@@ -77,15 +81,9 @@ class LiftingLine:
         F_z: lift (normal)
         """
         coef = self.solve_lifting_line_model(x)
+        Gamma = self.circulation(coef, v_inf) # Actual circulation Γ = 2bV∞ Σ Aₙ sin(nθ)
 
-        # Actual circulation Γ = 2bV∞ Σ Aₙ sin(nθ)
-        Gamma = jnp.zeros(self.N)
-        for n in range(self.N):
-            Gamma = Gamma + 2.0 * self.b * v_inf * coef[n] * jnp.sin((n + 1) * self.theta)
-
-        # n = jnp.arange(1, self.N + 1)[:, None]
-        # sin_n_theta = jnp.sin(n * self.theta)
-        # Gamma = 2.0 * self.b * v_inf * jnp.sum(coef[:, None] * sin_n_theta, axis=0)
+        sin_theta = jnp.clip(jnp.sin(self.theta), 1e-8, None) # for stability
 
         # Induced angle of attack: αᵢ = Σ n Aₙ sin(nθ)/sin(θ)
         alpha_i = jnp.zeros(self.N)
@@ -93,7 +91,7 @@ class LiftingLine:
             alpha_i = (alpha_i
                     + (n + 1) * coef[n]
                     * jnp.sin((n + 1) * self.theta)
-                    / jnp.sin(self.theta))
+                    / sin_theta)
 
         # Induced downwash velocity wᵢ = -V∞ αᵢ  (negative = downward)
         w_i = -v_inf * alpha_i
@@ -111,21 +109,19 @@ class LiftingLine:
         return jnp.stack([F_x, F_y, F_z], axis=1)   # (N, 3)
 
 
-    def plot_3d(self, x, plotter, cmap="viridis", disp=None):
+    def plot_3d(self, x, plotter, v_inf, rho, cmap="viridis", disp=None):
 
         coef   = np.array(self.solve_lifting_line_model(x))
         y_span = np.array(self.y)
 
-        Gamma = np.zeros(self.N)
-        for n in range(self.N):
-            Gamma += 2.0 * float(self.b) * float(coef[n]) * np.sin((n + 1) * np.array(self.theta))
+        Gamma = self.circulation(coef, v_inf=v_inf)
 
         u = np.abs(2.0 * y_span / float(self.b))
         chord_span = (1.0 - u) * float(self.c_root) + u * float(self.c_tip)
 
         disp = np.array(disp[:, :3]) if disp is not None else np.zeros((self.N, 3))
 
-        pts, scalars = [], []
+        pts, scalars, centers = [], [], []
         for j in range(self.N):
             x_le = -0.25 * chord_span[j] + disp[j, 0]
             x_te =  0.75 * chord_span[j] + disp[j, 0]
@@ -134,6 +130,7 @@ class LiftingLine:
             pts.append([x_le, y_j, z_j])
             pts.append([x_te, y_j, z_j])
             scalars.extend([Gamma[j], Gamma[j]])
+            centers.append(np.array([0.5*(x_le + x_te), y_j, z_j])) # for arrows
 
         pts     = np.array(pts)
         scalars = np.array(scalars)
@@ -147,6 +144,22 @@ class LiftingLine:
         plotter.add_mesh(mesh, scalars="Gamma", cmap=cmap, show_edges=True)
 
 
+        forces = np.array(self.compute_forces(x, rho, v_inf)) # (N,3) for arrows
+        mag = np.linalg.norm(forces, axis=1)
+
+        cloud = pv.PolyData(np.array(centers))
+        cloud["forces"] = forces
+
+        glyphs = cloud.glyph(
+            orient="forces",
+            scale="forces",
+            factor=0.2 * self.b / (np.max(mag) + 1e-12)
+        )
+
+        plotter.add_mesh(glyphs, color="red")
+
+
+
 if __name__ == "__main__":
 
     N = 31
@@ -154,6 +167,7 @@ if __name__ == "__main__":
     c_root = 1.0
     c_tip = 0.65
     v_inf = 100.0
+    rho = 1.225
 
     lifting_line = LiftingLine(N, b, c_root, c_tip)
 
@@ -164,11 +178,9 @@ if __name__ == "__main__":
     CD = lifting_line.compute_drag(coef)
     print('CD: ', CD)
 
-    lift_distribution = lifting_line.compute_lift_distribution(coef, rho=1.225, v_inf=v_inf)
+    lift_distribution = lifting_line.compute_lift_distribution(coef, rho=rho, v_inf=v_inf)
 
-    Gamma = jnp.zeros(N)
-    for n in range(N):
-        Gamma = Gamma + 2.0 * b * v_inf * coef[n] * jnp.sin((n + 1) * lifting_line.theta)
+    Gamma = lifting_line.circulation(coef, v_inf=v_inf)
 
     fig, ax = plt.subplots(1, 2, figsize=(12, 4))
     ax[0].plot(lifting_line.y, x, linewidth=2)
@@ -178,16 +190,16 @@ if __name__ == "__main__":
     plt.show()
 
 
-
     plotter = pv.Plotter()
-    lifting_line.plot_3d(x, plotter)
+    lifting_line.plot_3d(x, plotter, v_inf=v_inf, rho=rho)
     plotter.view_isometric()
     plotter.show()
 
 
-    forces = lifting_line.compute_forces(x, rho=1.225, v_inf=v_inf)
+    forces = lifting_line.compute_forces(x, rho=rho, v_inf=v_inf)
+    print('Forces (F_x, F_y, F_z) at each panel: \n', forces)
 
-    q_inf      = 0.5 * 1.225 * v_inf**2
+    q_inf      = 0.5 * rho * v_inf**2
     coef       = lifting_line.solve_lifting_line_model(x)
     CL_series  = lifting_line.compute_lift_coefficient(coef)
     CL_panels  = jnp.sum(forces[:, 2]) / (q_inf * lifting_line.S)
