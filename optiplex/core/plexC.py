@@ -18,11 +18,11 @@ class Plex():
         self.time = None
         self.con = con
         self.y = np.zeros_like(con(self.x)) # Lagrange multipliers
-        self.d = len(self.y) # number of constraints
+        # self.d = len(self.y) # number of constraints
         self.history = [self.x.copy()] # data dictionary/list
         self.x_time = [0.0] # time history for each x update
         self.scale = scale
-        self.mu = np.ones(self.d) if mu is None else mu # augmented Lagrangian penalty parameter
+        self.mu = np.ones(len(self.y)) if mu is None else mu # augmented Lagrangian penalty parameter
         self.mu_history = [self.mu]
 
     def solve(self, 
@@ -39,7 +39,6 @@ class Plex():
         t1 = time.perf_counter()
 
         c_prev = self.con(self.x)
-        # feas_prev = np.linalg.norm(c_prev)
 
         for k in range(max_outer_iter):
 
@@ -67,29 +66,29 @@ class Plex():
 
             # Evaluate the constraints
             c_new = self.con(self.x)
-            feas = np.linalg.norm(c_new, order='inf')
+            feas = np.max(c_new)
 
             if feas <= tol:
                 print('-Dual loop converged with feasibility: ', feas)
                 break
 
-            # self.y += mu * c # Always update the multipliers
-            self.y += self.mu * self.mu * c_new
-            # L = f(x) + y^T c(x) + 0.5 * ||mu * c(x)||^2
+            self.y += self.mu * c_new # Always update the multipliers
+            # self.y += 2 * self.mu * self.mu * c_new # Always update the multipliers
 
-            # update mu on a per-constraint basis
-            for i in range(self.d):
-                c_new_i = c_new[i]
-                c_prev_i = c_prev[i]
+            # update mu on a per-scalar-constraint basis
+            for i in range(len(c_new)):
+                feas_i = np.abs(c_new[i])
+                feas_prev_i = np.abs(c_prev[i])
 
-                if abs(c_new_i) > tau * abs(c_prev_i):
-                    print(f'increasing mu for constraint {i}')
+                if feas_i > tau * feas_prev_i:
+                    # print(f'increasing mu for constraint {i}')
                     self.mu[i] = min(rho * self.mu[i], max_mu)
 
 
             print(f"du_itr={k:03d} | "
                   f"feas={feas:.3e} | "
-                  f"mu={self.mu:.2f} | "
+                  f"max mu={np.max(self.mu):.3e} | "
+                  f"min mu={np.min(self.mu):.3e} | "
                   f"y={np.linalg.norm(self.y):.3e}"
                   )
 
