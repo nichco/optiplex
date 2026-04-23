@@ -61,18 +61,19 @@ def structures_model(aero_loads, thickness):
 
 
 # scalers for constraint functions
-lw_scale = 1e1
+lw_scale = 10
 f_scale = 1
-disp_scale = 1
+disp_scale = 10
 
 # initial design variable values
 thickness0 = np.ones(num_nodes - 1) * 0.002
 twist0 = np.ones(N) * np.deg2rad(5)
 
 # new design variable scalers for the inner-loop convergence check
-scale = np.concatenate([np.ones(num_nodes - 1) * 1e1, # twist scaler
-                        np.ones(N) * 1e2,             # thickness scaler
-                        np.ones(N) * 1e-3])         # aero_loads_copy scaler
+scale = np.concatenate([np.ones(num_nodes - 1) * 1,#1e1, # twist scaler
+                        np.ones(N) * 1e1,#1e2,             # thickness scaler
+                        # np.ones(N) * 1e-3])         # aero_loads_copy scaler
+                        np.ones(N) * 1e-4])         # aero_loads_copy scaler
 
 # run the aero model once to populate data dict
 CD_init, aero_loads_init, lift_init = aero_model(twist0)
@@ -238,8 +239,8 @@ opt = PlexT(subproblems=[aero_subproblem, struct_subproblem],
 
 opt.solve(max_outer_iter=100,
           max_inner_iter=10,
-          eps=1e-2, # inner loop
-          tol=1e-2, # outer loop feasibility
+          eps=1e-3,#1e-2, # inner loop
+          tol=1e-4,#1e-2, # outer loop feasibility
           rho=1.5,
           mu=10,
           max_mu=1e3,

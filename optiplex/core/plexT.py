@@ -30,11 +30,7 @@ class Plex():
               max_outer_iter: int=1000, # maximum number of outer iterations
               max_inner_iter: int=1000, # maximum number of inner iterations
               rho: float=1.2, # penalty increase factor
-            #   ATOL_in: float=1e-1,
-            #   RTOL_in: float=1e-1,
               eps: float=1e-1,
-            #   ATOL_out: float=1e-4,
-            #   RTOL_out: float=1e-4,
               tol: float=1e-6,
               mu = 1.0, # augmented Lagrangian penalty coefficient
               max_mu: float = 1000.0,
