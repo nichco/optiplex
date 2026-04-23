@@ -61,18 +61,18 @@ def structures_model(aero_loads, thickness):
 
 
 # scalers for constraint functions
-lw_scale = 1e-2
-f_scale = 1e-2
-disp_scale = 1e1
+lw_scale = 1e1
+f_scale = 1
+disp_scale = 1
 
 # initial design variable values
 thickness0 = np.ones(num_nodes - 1) * 0.002
 twist0 = np.ones(N) * np.deg2rad(5)
 
-# new design variable scalers for the albcd inner-loop convergence check
-scale = np.concatenate([np.ones(num_nodes - 1) * 1e2, # thickness scaler
-                        np.ones(N) * 1e1,             # twist scaler
-                        np.ones(N) * 1e-2])           # aero_loads_copy scaler
+# new design variable scalers for the inner-loop convergence check
+scale = np.concatenate([np.ones(num_nodes - 1) * 1e1, # twist scaler
+                        np.ones(N) * 1e2,             # thickness scaler
+                        np.ones(N) * 1e-3])         # aero_loads_copy scaler
 
 # run the aero model once to populate data dict
 CD_init, aero_loads_init, lift_init = aero_model(twist0)
@@ -98,8 +98,6 @@ cd_history = []
 def con(x):
 
     aero_loads_copy = x[2]
-
-    # unpack the data dict
     aero_loads = data['aero_loads']
     lift = data['Lift']
     right_tip_disp = data['right_tip_disp']
@@ -107,10 +105,11 @@ def con(x):
     weight = data['Weight']
 
     # consensus constraint
-    f_con = (aero_loads_copy - aero_loads) * f_scale
+    # f_con = (aero_loads_copy - aero_loads) * f_scale
+    f_con = ((aero_loads_copy - aero_loads) / aero_loads) * f_scale
 
     # lift equals weight constraint
-    l_equals_w = (lift - weight) * lw_scale
+    l_equals_w = ((lift - weight) / weight) * lw_scale
 
     # displacement constraints
     right_disp_con = (right_tip_disp - tip_disp_target) * disp_scale
@@ -139,8 +138,9 @@ def aero_subproblem(x, y, mu):
         CD, aero_loads, lift = aero_model(v)
         
         # compute the global constraints
-        f_con = (aero_loads_copy - aero_loads) * f_scale
-        l_equals_w = (lift - weight) * lw_scale
+        # f_con = (aero_loads_copy - aero_loads) * f_scale
+        f_con = ((aero_loads_copy - aero_loads) / aero_loads) * f_scale
+        l_equals_w = ((lift - weight) / weight) * lw_scale
         # l_equals_w = (lift / weight - 1) * lw_scale
         right_disp_con = (right_tip_disp - tip_disp_target) * disp_scale
         left_disp_con = (left_tip_disp - tip_disp_target) * disp_scale
@@ -151,7 +151,7 @@ def aero_subproblem(x, y, mu):
     x_scaler = np.ones(N) * 10 # twist scaler
 
     jaxprob = mo.JaxProblem(x0=v0, jax_obj=jax_obj, x_scaler=x_scaler)
-    optimizer = mo.SLSQP(jaxprob, solver_options={'maxiter': 300, 'ftol': 1e-8}, turn_off_outputs=True)
+    optimizer = mo.SLSQP(jaxprob, solver_options={'maxiter': 300, 'ftol': 1e-6}, turn_off_outputs=True)
     optimizer.solve()
     # optimizer.print_results()
     twist_solution = optimizer.results['x'] / x_scaler
@@ -189,8 +189,9 @@ def struct_subproblem(x, y, mu):
         right_tip_disp, left_tip_disp, weight = structures_model(aero_loads_copy, t)
 
         # compute the global constraints
-        f_con = (aero_loads_copy - aero_loads) * f_scale
-        l_equals_w = (lift - weight) * lw_scale
+        # f_con = (aero_loads_copy - aero_loads) * f_scale
+        f_con = ((aero_loads_copy - aero_loads) / aero_loads) * f_scale
+        l_equals_w = ((lift - weight) / weight) * lw_scale
         # l_equals_w = (lift / weight - 1) * lw_scale
         right_disp_con = (right_tip_disp - tip_disp_target) * disp_scale
         left_disp_con = (left_tip_disp - tip_disp_target) * disp_scale
@@ -209,7 +210,7 @@ def struct_subproblem(x, y, mu):
     x_scaler = np.concatenate([t_scaler, l_scaler])
 
     jaxprob = mo.JaxProblem(x0=v0, jax_obj=jax_obj, xl=xl, xu=xu, x_scaler=x_scaler)
-    optimizer = mo.SLSQP(jaxprob, solver_options={'maxiter': 300, 'ftol': 1e-8}, turn_off_outputs=True)
+    optimizer = mo.SLSQP(jaxprob, solver_options={'maxiter': 300, 'ftol': 1e-6}, turn_off_outputs=True)
     optimizer.solve()
     # optimizer.print_results()
     sol = optimizer.results['x'] / x_scaler
@@ -236,8 +237,8 @@ opt = PlexT(subproblems=[aero_subproblem, struct_subproblem],
            )
 
 opt.solve(max_outer_iter=100,
-          max_inner_iter=30,
-          eps=1e-3, # inner loop
+          max_inner_iter=10,
+          eps=1e-2, # inner loop
           tol=1e-2, # outer loop feasibility
           rho=1.5,
           mu=10,
@@ -312,30 +313,22 @@ plt.xlabel('Time (s)')
 plt.ylabel('Penalty parameter')
 plt.show()
 
-# plt.plot(solution['twist'], label='Reference twist')
-# plt.plot(twist, label='Plex twist')
-# plt.legend()
-# plt.xlabel('Spanwise location')
-# plt.ylabel('Twist (rad)')
-# plt.show()
-
 fig, (ax1, ax2) = plt.subplots(1, 2)
 ax1.plot(lifting_line.y, solution['twist'], label='Reference twist')
-ax1.plot(lifting_line.y, twist, label='Plex twist')
+ax1.plot(lifting_line.y, twist, label='Plex twist', marker='o')
 ax1.set_xlabel('Spanwise location')
 ax1.set_ylabel('Twist (rad)')
 ax1.legend()
 ax2.plot(solution['thickness'], label='Reference thickness')
-ax2.plot(thickness, label='Plex thickness')
+ax2.plot(thickness, label='Plex thickness', marker='o')
 ax2.set_xlabel('Spanwise location')
 ax2.set_ylabel('Thickness (m)')
 ax2.legend()
 plt.tight_layout()
 plt.show()
 
-
 aero_loads = data['aero_loads']
-plt.plot(aero_loads_copy, label='aero_loads_copy')
+plt.plot(aero_loads_copy, label='aero_loads_copy', marker='o')
 plt.plot(aero_loads, label='aero_loads')
 plt.legend()
 plt.xlabel('Spanwise location')

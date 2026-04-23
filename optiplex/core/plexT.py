@@ -46,7 +46,8 @@ class Plex():
 
         self.mu_history.append(mu)
 
-        feas_prev = np.inf
+        feas_prev = np.linalg.norm(self.con(self.x))
+        # feas_prev = np.inf
 
         for k in range(max_outer_iter):
 
@@ -145,6 +146,8 @@ class Plex():
                 print('-Dual loop converged!-')
                 break
             """
+
+        print('feasibility: ', feas)
 
 
         self.time = time.perf_counter() - t1
