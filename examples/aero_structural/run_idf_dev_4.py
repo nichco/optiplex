@@ -23,7 +23,7 @@ def aero_model(twist):
 
     coef = lifting_line.solve_lifting_line_model(twist)
     CD = lifting_line.compute_drag(coef)
-    aero_loads = lifting_line.compute_forces(twist)
+    aero_loads = lifting_line.compute_forces(coef)
     aero_loads = jnp.linalg.norm(aero_loads, axis=1)
     CL = lifting_line.compute_lift_coefficient(coef)
     lift = 0.5 * rho_atm * v_inf**2 * CL * lifting_line.S
@@ -61,9 +61,9 @@ def structures_model(aero_loads, thickness):
 
 
 # scalers for constraint functions
-lw_scale = 1e-3#1e-4#1#10
+lw_scale = 1e-2#10
 f_scale = 1
-disp_scale = 1#10
+disp_scale = 1
 
 # initial design variable values
 thickness0 = np.ones(num_nodes - 1) * 0.002
@@ -111,7 +111,7 @@ def con(x):
 
     # lift equals weight constraint
     l_equals_w = (lift - weight) * lw_scale
-    # l_equals_w = ((lift - weight) / weight) * lw_scale
+    # l_equals_w = (lift / weight - 1) * lw_scale
 
     # displacement constraints
     right_disp_con = (right_tip_disp - tip_disp_target) * disp_scale
@@ -142,8 +142,8 @@ def aero_subproblem(x, y, mu):
         # compute the global constraints
         # f_con = (aero_loads_copy - aero_loads) * f_scale
         f_con = ((aero_loads_copy - aero_loads) / aero_loads) * f_scale
-        # l_equals_w = ((lift - weight) / weight) * lw_scale
         l_equals_w = (lift - weight) * lw_scale
+        # l_equals_w = (lift / weight - 1) * lw_scale
         right_disp_con = (right_tip_disp - tip_disp_target) * disp_scale
         left_disp_con = (left_tip_disp - tip_disp_target) * disp_scale
         c = jnp.concatenate([f_con, jnp.array([right_disp_con, left_disp_con, l_equals_w])])
@@ -154,7 +154,7 @@ def aero_subproblem(x, y, mu):
     x_scaler = np.ones(N) * 10 # twist scaler
 
     jaxprob = mo.JaxProblem(x0=v0, jax_obj=jax_obj, x_scaler=x_scaler)
-    optimizer = mo.SLSQP(jaxprob, solver_options={'maxiter': 300, 'ftol': 1e-6}, turn_off_outputs=True)
+    optimizer = mo.SLSQP(jaxprob, solver_options={'maxiter': 300, 'ftol': 1e-7}, turn_off_outputs=True)
     optimizer.solve()
     # optimizer.print_results()
     twist_solution = optimizer.results['x'] / x_scaler
@@ -194,8 +194,8 @@ def struct_subproblem(x, y, mu):
         # compute the global constraints
         # f_con = (aero_loads_copy - aero_loads) * f_scale
         f_con = ((aero_loads_copy - aero_loads) / aero_loads) * f_scale
-        # l_equals_w = ((lift - weight) / weight) * lw_scale
         l_equals_w = (lift - weight) * lw_scale
+        # l_equals_w = (lift / weight - 1) * lw_scale
         right_disp_con = (right_tip_disp - tip_disp_target) * disp_scale
         left_disp_con = (left_tip_disp - tip_disp_target) * disp_scale
         c = jnp.concatenate([f_con, jnp.array([right_disp_con, left_disp_con, l_equals_w])])
@@ -214,7 +214,7 @@ def struct_subproblem(x, y, mu):
     x_scaler = np.concatenate([t_scaler, l_scaler])
 
     jaxprob = mo.JaxProblem(x0=v0, jax_obj=jax_obj, xl=xl, xu=xu, x_scaler=x_scaler)
-    optimizer = mo.SLSQP(jaxprob, solver_options={'maxiter': 300, 'ftol': 1e-6}, turn_off_outputs=True)
+    optimizer = mo.SLSQP(jaxprob, solver_options={'maxiter': 300, 'ftol': 1e-7}, turn_off_outputs=True)
     optimizer.solve()
     # optimizer.print_results()
     sol = optimizer.results['x'] / x_scaler
@@ -238,21 +238,24 @@ opt = PlexC(subproblems=[aero_subproblem, struct_subproblem],
             x_init=x_init,
             con=con,
             scale=scale,
-            mu=np.ones(N + 3) * 1, # initial penalty parameters for each constraint
+            mu=np.ones(N + 3) * 10, # initial penalty parameters for each constraint
             )
 
 opt.solve(max_outer_iter=100,
           max_inner_iter=10,
-          eps=1e-4,#1e-2, # inner loop
-          tol=1e-3,#1e-2, # outer loop feasibility
-          rho=1.5,
+          eps=1e-3,#1e-4, # inner loop
+          tol=1e-3, # outer loop feasibility
+          rho=1.2,#1.5,
           max_mu=1e3,
+          tau=0.5,
           )
 
 
 # The optimal CD should be:  0.012349323882890414
 
 print('Lagrange multipliers: ', opt.y)
+print('Penalty parameters: ', opt.mu)
+
 solution = opt.x
 
 twist = solution[0]

@@ -66,7 +66,7 @@ class LiftingLine:
 
         return Gamma
     
-    def compute_forces(self, x):
+    def compute_forces(self, coef):
         """
         Returns panel forces, shape (N, 3) [F_x, F_y, F_z].
         N collocation points = N panels (each point is a panel center).
@@ -74,7 +74,7 @@ class LiftingLine:
         F_y: zero
         F_z: lift (normal)
         """
-        coef = self.solve_lifting_line_model(x)
+        # coef = self.solve_lifting_line_model(x)
         Gamma = self.circulation(coef) # Actual circulation Γ = 2bV∞ Σ Aₙ sin(nθ)
 
         # sin_theta = jnp.clip(jnp.sin(self.theta), 1e-8, None) # for stability
@@ -194,11 +194,11 @@ if __name__ == "__main__":
     plotter.show()
 
 
-    forces = lifting_line.compute_forces(x)
+    forces = lifting_line.compute_forces(coef)
     print('Forces (F_x, F_y, F_z) at each panel: \n', forces)
 
     q_inf      = 0.5 * rho * v_inf**2
-    coef       = lifting_line.solve_lifting_line_model(x)
+    # coef       = lifting_line.solve_lifting_line_model(x)
     CL_series  = lifting_line.compute_lift_coefficient(coef)
     CL_panels  = jnp.sum(forces[:, 2]) / (q_inf * lifting_line.S)
     CDi_series = lifting_line.compute_drag(coef)

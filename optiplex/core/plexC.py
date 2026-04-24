@@ -66,23 +66,33 @@ class Plex():
 
             # Evaluate the constraints
             c_new = self.con(self.x)
-            feas = np.max(c_new)
+            # feas = np.max(np.abs(c_new))
+            feas = np.linalg.norm(c_new, ord=np.inf)
 
             if feas <= tol:
                 print('-Dual loop converged with feasibility: ', feas)
                 break
 
             self.y += self.mu * c_new # Always update the multipliers
-            # self.y += 2 * self.mu * self.mu * c_new # Always update the multipliers
 
             # update mu on a per-scalar-constraint basis
+            nc_up = 0
+            nc_greater_than_tol = 0
             for i in range(len(c_new)):
                 feas_i = np.abs(c_new[i])
                 feas_prev_i = np.abs(c_prev[i])
 
-                if feas_i > tau * feas_prev_i:
-                    # print(f'increasing mu for constraint {i}')
+                if feas_i > tol:
+                    nc_greater_than_tol += 1
+
+                # if feas_i > tau * feas_prev_i:
+                if feas_i > tau * feas_prev_i and feas_i > tol:
                     self.mu[i] = min(rho * self.mu[i], max_mu)
+                    nc_up += 1
+
+            print('Updated mu for ', nc_up, ' constraints,', ' num greater than tol: ', nc_greater_than_tol)
+
+            c_prev = c_new # oops
 
 
             print(f"du_itr={k:03d} | "
