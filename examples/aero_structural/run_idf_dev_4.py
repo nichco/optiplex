@@ -238,16 +238,16 @@ opt = PlexC(subproblems=[aero_subproblem, struct_subproblem],
             x_init=x_init,
             con=con,
             scale=scale,
-            mu=np.ones(N + 3) * 10, # initial penalty parameters for each constraint
+            mu=np.ones(N + 3) * 1, # initial penalty parameters for each constraint
+            max_mu=1e3,
+            rho=1.2,
+            tau=0.5,
+            tol=1e-3, # outer loop feasibility
             )
 
 opt.solve(max_outer_iter=100,
           max_inner_iter=10,
           eps=1e-3,#1e-4, # inner loop
-          tol=1e-3, # outer loop feasibility
-          rho=1.2,#1.5,
-          max_mu=1e3,
-          tau=0.5,
           )
 
 

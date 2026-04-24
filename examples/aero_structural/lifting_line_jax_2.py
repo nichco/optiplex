@@ -102,8 +102,8 @@ class LiftingLine:
         delta_y   = jnp.abs(jnp.diff(y_bnd))          # shape (N,)
 
         # Kutta-Joukowski: dF = ρ (V_eff × Γ ŷ) dy
-        F_x = -self.rho * Gamma * w_i   * delta_y   # induced drag (positive downstream)
-        F_y =  jnp.zeros(self.N)               # always zero
+        F_x = -self.rho * Gamma * w_i * delta_y   # induced drag (positive downstream)
+        F_y =  jnp.zeros(self.N)                  # always zero
         F_z =  self.rho * self.v_inf * Gamma * delta_y   # lift
 
         return jnp.stack([F_x, F_y, F_z], axis=1)   # (N, 3)

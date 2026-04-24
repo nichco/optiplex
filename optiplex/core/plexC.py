@@ -9,7 +9,12 @@ class Plex():
                  x_init: List[np.ndarray],
                  con: Callable = lambda v: np.zeros(0),
                  scale: float = 1.0,
-                 mu: np.ndarray = None,
+                 mu: np.ndarray = None, # penalty parameter(s)
+                 max_mu: float = 1e3, # maximum penalty parameter
+                 rho: float = 1.2, # penalty increase factor
+                 tau: float = 0.5, # factor for increasing mu based on constraint violation
+                 tol: float = 1e-3, # outer loop feasibility tolerance
+                 eps: float = 1e-3, # inner loop convergence tolerance
                  ):
 
         self.subproblems = subproblems
@@ -18,27 +23,38 @@ class Plex():
         self.time = None
         self.con = con
         self.y = np.zeros_like(con(self.x)) # Lagrange multipliers
-        # self.d = len(self.y) # number of constraints
         self.history = [self.x.copy()] # data dictionary/list
         self.x_time = [0.0] # time history for each x update
         self.scale = scale
         self.mu = np.ones(len(self.y)) if mu is None else mu # augmented Lagrangian penalty parameter
+        self.max_mu = max_mu
         self.mu_history = [self.mu]
 
+        assert rho >= 1
+        self.rho = rho
+        self.tau = tau
+        self.tol = tol
+        self.eps = eps
+
+
+    def _update_mu(self, c_new, c_old):
+
+        num = 0
+        for i, (f_new, f_old) in enumerate(zip(abs(c_new), abs(c_old))):
+            if f_new > self.tau * f_old and f_new > self.tol:
+                self.mu[i] = min(self.rho * self.mu[i], self.max_mu)
+                num += 1
+
+        return num
+
     def solve(self, 
-              max_outer_iter: int=1000, # maximum number of outer iterations
-              max_inner_iter: int=1000, # maximum number of inner iterations
-              rho: float=1.2, # penalty increase factor
-              eps: float=1e-1,
-              tol: float=1e-6,
-              max_mu: float = 1000.0,
-              tau: float = 0.5, # factor for increasing mu based on constraint violation
+              max_outer_iter: int=100, # maximum number of outer iterations
+              max_inner_iter: int=10, # maximum number of inner iterations
               ) -> None:
         
-        assert rho > 1
         t1 = time.perf_counter()
 
-        c_prev = self.con(self.x)
+        c_old = self.con(self.x)
 
         for k in range(max_outer_iter):
 
@@ -60,46 +76,39 @@ class Plex():
                 # Print inner iteration data
                 print(f"pr_itr={j:03d} | "f"rel_stp={relative_step:.3e} | ")
 
-                if relative_step <= eps:
+                if relative_step <= self.eps:
                     print('-Primal loop converged!-')
                     break
 
             # Evaluate the constraints
             c_new = self.con(self.x)
-            # feas = np.max(np.abs(c_new))
-            feas = np.linalg.norm(c_new, ord=np.inf)
+            feas = np.max(np.abs(c_new))
 
-            if feas <= tol:
-                print('-Dual loop converged with feasibility: ', feas)
+            if feas <= self.tol:
+                print('-Dual loop converged with feasibility: ', feas, ' in ', k, ' dual iterations!-')
                 break
 
             self.y += self.mu * c_new # Always update the multipliers
 
             # update mu on a per-scalar-constraint basis
-            nc_up = 0
-            nc_greater_than_tol = 0
-            for i in range(len(c_new)):
-                feas_i = np.abs(c_new[i])
-                feas_prev_i = np.abs(c_prev[i])
+            # nc_up = 0
+            # for i in range(len(c_new)):
+            #     feas_i = np.abs(c_new[i])
+            #     feas_prev_i = np.abs(c_old[i])
 
-                if feas_i > tol:
-                    nc_greater_than_tol += 1
-
-                # if feas_i > tau * feas_prev_i:
-                if feas_i > tau * feas_prev_i and feas_i > tol:
-                    self.mu[i] = min(rho * self.mu[i], max_mu)
-                    nc_up += 1
-
-            print('Updated mu for ', nc_up, ' constraints,', ' num greater than tol: ', nc_greater_than_tol)
-
-            c_prev = c_new # oops
+            #     if feas_i > self.tau * feas_prev_i and feas_i > self.tol:
+            #         self.mu[i] = min(self.rho * self.mu[i], self.max_mu)
+            #         nc_up += 1
+            nc_up = self._update_mu(c_new, c_old)
+            c_old = c_new # oops, i forgot to update c_old...
 
 
             print(f"du_itr={k:03d} | "
                   f"feas={feas:.3e} | "
                   f"max mu={np.max(self.mu):.3e} | "
                   f"min mu={np.min(self.mu):.3e} | "
-                  f"y={np.linalg.norm(self.y):.3e}"
+                  f"y={np.linalg.norm(self.y):.3e} | "
+                  f"updated mu for {nc_up} constraints"
                   )
 
 
