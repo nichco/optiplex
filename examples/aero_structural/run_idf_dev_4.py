@@ -61,7 +61,7 @@ def structures_model(aero_loads, thickness):
 
 
 # scalers for constraint functions
-lw_scale = 1#1e-3#1e-4#1#10
+lw_scale = 1e-3#1e-4#1#10
 f_scale = 1
 disp_scale = 1#10
 
