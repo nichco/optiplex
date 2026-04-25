@@ -8,8 +8,7 @@ class Plex():
                  subproblems: List[Callable],
                  x_init: List[np.ndarray],
                  con: Callable = lambda v: np.zeros(0),
-                 scale: float = 1.0,
-                 mu: np.ndarray = None, # penalty parameter(s)
+                 mu: np.ndarray = None, # positive penalty parameter(s)
                  max_mu: float = 1e3, # maximum penalty parameter
                  rho: float = 1.2, # penalty increase factor
                  tau: float = 0.5, # factor for increasing mu based on constraint violation
@@ -25,7 +24,6 @@ class Plex():
         self.y = np.zeros_like(con(self.x)) # Lagrange multipliers
         self.history = [self.x.copy()] # data dictionary/list
         self.x_time = [0.0] # time history for each x update
-        self.scale = scale
         self.mu = np.ones(len(self.y)) if mu is None else mu # augmented Lagrangian penalty parameter
         self.max_mu = max_mu
         self.mu_history = [self.mu]
@@ -41,7 +39,8 @@ class Plex():
 
         num = 0
         for i, (f_new, f_old) in enumerate(zip(abs(c_new), abs(c_old))):
-            if f_new > self.tau * f_old and f_new > self.tol:
+            # if f_new > self.tau * f_old and f_new > self.tol:
+            if f_new > self.tol:
                 self.mu[i] = min(self.rho * self.mu[i], self.max_mu)
                 num += 1
 
@@ -69,28 +68,35 @@ class Plex():
                     self.mu_history.append(self.mu)
                     self.x_time.append(time.perf_counter() - t1)
 
+                # z_new = np.concatenate([xi.ravel() for xi in self.x])
+                # step = z_new - z_old
+                # relative_step = np.linalg.norm(step * self.scale)
+
                 z_new = np.concatenate([xi.ravel() for xi in self.x])
-                step = z_new - z_old
-                relative_step = np.linalg.norm(step * self.scale)
+                step = abs(z_new - z_old)
+                denominator = np.maximum(abs(z_old), abs(z_new))
+                denominator = np.maximum(denominator, 1e-5)  # floor
+                relative_step = step / denominator
 
-                # Print inner iteration data
-                print(f"pr_itr={j:03d} | "f"rel_stp={relative_step:.3e} | ")
+                print(f"pr_itr={j:03d} | "f"rel_stp={max(relative_step):.3e} | ")
 
-                if relative_step <= self.eps:
+                if max(relative_step) <= self.eps:
                     print('-Primal loop converged!-')
                     break
 
             # Evaluate the constraints
             c_new = self.con(self.x)
+            print(np.abs(c_new))
             feas = np.max(np.abs(c_new))
 
             if feas <= self.tol:
                 print('-Dual loop converged with feasibility: ', feas, ' in ', k, ' dual iterations!-')
                 break
 
-            self.y += self.mu * c_new # Always update the multipliers
+            # self.y += self.mu * c_new # always update the multipliers
+            self.y += np.diag(self.mu) @ c_new # always update the multipliers
 
-            # update mu on a per-scalar-constraint basis
+            # # update mu on a per-scalar-constraint basis
             # nc_up = 0
             # for i in range(len(c_new)):
             #     feas_i = np.abs(c_new[i])
@@ -99,9 +105,9 @@ class Plex():
             #     if feas_i > self.tau * feas_prev_i and feas_i > self.tol:
             #         self.mu[i] = min(self.rho * self.mu[i], self.max_mu)
             #         nc_up += 1
+
             nc_up = self._update_mu(c_new, c_old)
             c_old = c_new # oops, i forgot to update c_old...
-
 
             print(f"du_itr={k:03d} | "
                   f"feas={feas:.3e} | "
@@ -110,7 +116,6 @@ class Plex():
                   f"y={np.linalg.norm(self.y):.3e} | "
                   f"updated mu for {nc_up} constraints"
                   )
-
 
         self.time = time.perf_counter() - t1
 

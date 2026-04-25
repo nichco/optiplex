@@ -61,19 +61,21 @@ def structures_model(aero_loads, thickness):
 
 
 # scalers for constraint functions
-lw_scale = 1e-2#10
-f_scale = 1
-disp_scale = 1
+# lw_scale = 1
+# f_scale = 1
+# disp_scale = 1
+"""
+lw_scale = 1e-3
+f_scale = 1e-2
+disp_scale = 1e1
+"""
+lw_scale = 1e-5
+f_scale = 1e-5
+disp_scale = 1e-5
 
 # initial design variable values
 thickness0 = np.ones(num_nodes - 1) * 0.002
 twist0 = np.ones(N) * np.deg2rad(5)
-
-# new design variable scalers for the inner-loop convergence check
-scale = np.concatenate([np.ones(num_nodes - 1) * 1,#1e1, # twist scaler
-                        np.ones(N) * 1e1,#1e2,             # thickness scaler
-                        # np.ones(N) * 1e-3])         # aero_loads_copy scaler
-                        np.ones(N) * 1e-4])         # aero_loads_copy scaler
 
 # run the aero model once to populate data dict
 CD_init, aero_loads_init, lift_init = aero_model(twist0)
@@ -105,17 +107,10 @@ def con(x):
     left_tip_disp = data['left_tip_disp']
     weight = data['Weight']
 
-    # consensus constraint
-    # f_con = (aero_loads_copy - aero_loads) * f_scale
-    f_con = ((aero_loads_copy - aero_loads) / aero_loads) * f_scale
-
-    # lift equals weight constraint
-    l_equals_w = (lift - weight) * lw_scale
-    # l_equals_w = (lift / weight - 1) * lw_scale
-
-    # displacement constraints
-    right_disp_con = (right_tip_disp - tip_disp_target) * disp_scale
-    left_disp_con = (left_tip_disp - tip_disp_target) * disp_scale
+    f_con = (aero_loads_copy - aero_loads) * f_scale # consensus constraint
+    l_equals_w = (lift - weight) * lw_scale # lift equals weight constraint
+    right_disp_con = (right_tip_disp - tip_disp_target) * disp_scale # displacement constraints
+    left_disp_con = (left_tip_disp - tip_disp_target) * disp_scale # displacement constraints
 
     return jnp.concatenate([f_con, jnp.array([right_disp_con, left_disp_con, l_equals_w])])
 
@@ -140,10 +135,8 @@ def aero_subproblem(x, y, mu):
         CD, aero_loads, lift = aero_model(v)
         
         # compute the global constraints
-        # f_con = (aero_loads_copy - aero_loads) * f_scale
-        f_con = ((aero_loads_copy - aero_loads) / aero_loads) * f_scale
+        f_con = (aero_loads_copy - aero_loads) * f_scale
         l_equals_w = (lift - weight) * lw_scale
-        # l_equals_w = (lift / weight - 1) * lw_scale
         right_disp_con = (right_tip_disp - tip_disp_target) * disp_scale
         left_disp_con = (left_tip_disp - tip_disp_target) * disp_scale
         c = jnp.concatenate([f_con, jnp.array([right_disp_con, left_disp_con, l_equals_w])])
@@ -192,10 +185,8 @@ def struct_subproblem(x, y, mu):
         right_tip_disp, left_tip_disp, weight = structures_model(aero_loads_copy, t)
 
         # compute the global constraints
-        # f_con = (aero_loads_copy - aero_loads) * f_scale
-        f_con = ((aero_loads_copy - aero_loads) / aero_loads) * f_scale
+        f_con = (aero_loads_copy - aero_loads) * f_scale
         l_equals_w = (lift - weight) * lw_scale
-        # l_equals_w = (lift / weight - 1) * lw_scale
         right_disp_con = (right_tip_disp - tip_disp_target) * disp_scale
         left_disp_con = (left_tip_disp - tip_disp_target) * disp_scale
         c = jnp.concatenate([f_con, jnp.array([right_disp_con, left_disp_con, l_equals_w])])
@@ -237,17 +228,16 @@ def struct_subproblem(x, y, mu):
 opt = PlexC(subproblems=[aero_subproblem, struct_subproblem],
             x_init=x_init,
             con=con,
-            scale=scale,
-            mu=np.ones(N + 3) * 1, # initial penalty parameters for each constraint
+            mu=np.ones(N + 3) * 10, # initial penalty parameters for each constraint
             max_mu=1e3,
-            rho=1.2,
+            rho=1.5,
             tau=0.5,
             tol=1e-3, # outer loop feasibility
+            eps=1e-3, # inner loop convergence
             )
 
-opt.solve(max_outer_iter=100,
-          max_inner_iter=10,
-          eps=1e-3,#1e-4, # inner loop
+opt.solve(max_outer_iter=100, 
+          max_inner_iter=100,
           )
 
 
