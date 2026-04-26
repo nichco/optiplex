@@ -70,8 +70,8 @@ f_scale = 1e-2
 disp_scale = 1e1
 """
 lw_scale = 1e-5
-f_scale = 1e-5
-disp_scale = 1e-5
+f_scale = 3e-5
+disp_scale = 4e-2
 
 # initial design variable values
 thickness0 = np.ones(num_nodes - 1) * 0.002
@@ -147,7 +147,7 @@ def aero_subproblem(x, y, mu):
     x_scaler = np.ones(N) * 10 # twist scaler
 
     jaxprob = mo.JaxProblem(x0=v0, jax_obj=jax_obj, x_scaler=x_scaler)
-    optimizer = mo.SLSQP(jaxprob, solver_options={'maxiter': 300, 'ftol': 1e-7}, turn_off_outputs=True)
+    optimizer = mo.SLSQP(jaxprob, solver_options={'maxiter': 1000, 'ftol': 1e-8}, turn_off_outputs=True)
     optimizer.solve()
     # optimizer.print_results()
     twist_solution = optimizer.results['x'] / x_scaler
@@ -195,7 +195,7 @@ def struct_subproblem(x, y, mu):
         return 1e3 * CD + y.T @ c + 0.5 * c.T @ jnp.diag(mu) @ c
     
     tl = np.ones(num_nodes - 1) * 0.001     # min gauge
-    tu = np.ones(num_nodes - 1) * np.inf    # thickness upper
+    tu = np.ones(num_nodes - 1) * r # np.inf    # thickness upper
     fl = np.ones(num_nodes) * -np.inf       # f lower
     fu = np.ones(num_nodes) * np.inf        # f upper
     xl = np.concatenate([tl, fl])
@@ -205,7 +205,7 @@ def struct_subproblem(x, y, mu):
     x_scaler = np.concatenate([t_scaler, l_scaler])
 
     jaxprob = mo.JaxProblem(x0=v0, jax_obj=jax_obj, xl=xl, xu=xu, x_scaler=x_scaler)
-    optimizer = mo.SLSQP(jaxprob, solver_options={'maxiter': 300, 'ftol': 1e-7}, turn_off_outputs=True)
+    optimizer = mo.SLSQP(jaxprob, solver_options={'maxiter': 1000, 'ftol': 1e-8}, turn_off_outputs=True)
     optimizer.solve()
     # optimizer.print_results()
     sol = optimizer.results['x'] / x_scaler
@@ -229,11 +229,11 @@ opt = PlexC(subproblems=[aero_subproblem, struct_subproblem],
             x_init=x_init,
             con=con,
             mu=np.ones(N + 3) * 10, # initial penalty parameters for each constraint
-            max_mu=1e3,
+            max_mu=1e6,#1e4, # 43 dual iter for 1e5
             rho=1.5,
             tau=0.5,
             tol=1e-3, # outer loop feasibility
-            eps=1e-3, # inner loop convergence
+            eps=1e-5, # inner loop convergence
             )
 
 opt.solve(max_outer_iter=100, 
@@ -300,14 +300,22 @@ plt.xlabel('Time (s)')
 plt.ylabel('Relative error')
 plt.show()
 
-plt.plot(opt.x_time, error)
-plt.xlabel('Time (s)')
-plt.ylabel('Relative error')
-plt.show()
+# plt.plot(opt.x_time, error)
+# plt.xlabel('Time (s)')
+# plt.ylabel('Relative error')
+# plt.show()
 
-plt.semilogy(opt.x_time, opt.mu_history)
+mu_hist = np.asarray(opt.mu_history)
+for i in range(mu_hist.shape[1]):
+    plt.semilogy(opt.x_time, mu_hist[:, i], label=f'mu[{i}]')
+# plt.legend()
 plt.xlabel('Time (s)')
 plt.ylabel('Penalty parameter')
+plt.show()
+
+plt.semilogy(opt.feasibility)
+plt.xlabel('Iteration')
+plt.ylabel('Feasibility')
 plt.show()
 
 fig, (ax1, ax2) = plt.subplots(1, 2)

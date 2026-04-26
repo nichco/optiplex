@@ -13,20 +13,25 @@ class Plex():
                  rho: float = 1.2, # penalty increase factor
                  tau: float = 0.5, # factor for increasing mu based on constraint violation
                  tol: float = 1e-3, # outer loop feasibility tolerance
-                 eps: float = 1e-3, # inner loop convergence tolerance
+                 eps: float = 1e-5, # inner loop convergence tolerance
                  ):
 
         self.subproblems = subproblems
         self.x = [np.asarray(xi) for xi in x_init] # cast to numpy arrays
         self.n = sum(xi.size for xi in self.x) # dimension
-        self.time = None
         self.con = con
-        self.y = np.zeros_like(con(self.x)) # Lagrange multipliers
-        self.history = [self.x.copy()] # data dictionary/list
-        self.x_time = [0.0] # time history for each x update
-        self.mu = np.ones(len(self.y)) if mu is None else mu # augmented Lagrangian penalty parameter
+
+        self.initial_constraint_values = self.con(self.x)
+        self.y = np.zeros_like(self.initial_constraint_values) # Lagrange multipliers
+        self.history = [self.x.copy()]
+        self.feasibility = [max(abs(self.initial_constraint_values))]
+        self.x_time = [0.0]
+        self.mu = np.ones_like(self.initial_constraint_values) if mu is None else mu # penalty parameter
+        assert np.all(self.mu >= 0)
         self.max_mu = max_mu
-        self.mu_history = [self.mu]
+        self.mu_history = [self.mu.copy()]
+        self.t0 = None
+        self.tf = None
 
         assert rho >= 1
         self.rho = rho
@@ -35,25 +40,35 @@ class Plex():
         self.eps = eps
 
 
-    def _update_mu(self, c_new, c_old):
+    def _update_mu(self, c_new, c_old) -> int:
 
         num = 0
         for i, (f_new, f_old) in enumerate(zip(abs(c_new), abs(c_old))):
-            # if f_new > self.tau * f_old and f_new > self.tol:
-            if f_new > self.tol:
+            if f_new > self.tau * f_old and f_new > self.tol:
+            # if f_new > self.tol:
                 self.mu[i] = min(self.rho * self.mu[i], self.max_mu)
                 num += 1
 
         return num
+    
+
+    def _inner_loop(self) -> None:
+        
+        for subP in self.subproblems: 
+
+            self.x = subP(self.x, self.y, self.mu)
+            self.history.append(self.x.copy())
+            self.mu_history.append(self.mu.copy())
+            self.x_time.append(time.perf_counter() - self.t0)
+
 
     def solve(self, 
               max_outer_iter: int=100, # maximum number of outer iterations
-              max_inner_iter: int=10, # maximum number of inner iterations
+              max_inner_iter: int=10,  # maximum number of inner iterations
               ) -> None:
         
-        t1 = time.perf_counter()
-
-        c_old = self.con(self.x)
+        self.t0 = time.perf_counter()
+        c_old = self.initial_constraint_values
 
         for k in range(max_outer_iter):
 
@@ -61,33 +76,31 @@ class Plex():
 
                 z_old = np.concatenate([xi.ravel() for xi in self.x])
 
-                for subP in self.subproblems: 
+                # for subP in self.subproblems: 
 
-                    self.x = subP(self.x, self.y, self.mu)
-                    self.history.append(self.x.copy())
-                    self.mu_history.append(self.mu)
-                    self.x_time.append(time.perf_counter() - t1)
-
-                # z_new = np.concatenate([xi.ravel() for xi in self.x])
-                # step = z_new - z_old
-                # relative_step = np.linalg.norm(step * self.scale)
+                #     self.x = subP(self.x, self.y, self.mu)
+                #     self.history.append(self.x.copy())
+                #     self.mu_history.append(self.mu.copy())
+                #     self.x_time.append(time.perf_counter() - t1)
+                self._inner_loop()
 
                 z_new = np.concatenate([xi.ravel() for xi in self.x])
                 step = abs(z_new - z_old)
-                denominator = np.maximum(abs(z_old), abs(z_new))
-                denominator = np.maximum(denominator, 1e-5)  # floor
-                relative_step = step / denominator
+                denom = np.maximum(abs(z_old), abs(z_new))
+                denom = np.maximum(denom, 1e-5) # floor
+                rel_step = max(step / denom)
 
-                print(f"pr_itr={j:03d} | "f"rel_stp={max(relative_step):.3e} | ")
+                print(f"pr_itr={j:03d} | "f"rel_stp={rel_step:.3e} | ")
 
-                if max(relative_step) <= self.eps:
-                    print('-Primal loop converged!-')
+                if rel_step <= self.eps:
+                    print('-Primal loop converged with rel step: ', rel_step, ' in ', j, ' iterations!-')
                     break
 
-            # Evaluate the constraints
+
             c_new = self.con(self.x)
-            print(np.abs(c_new))
-            feas = np.max(np.abs(c_new))
+            print(abs(c_new))
+            feas = np.max(abs(c_new))
+            self.feasibility.append(feas)
 
             if feas <= self.tol:
                 print('-Dual loop converged with feasibility: ', feas, ' in ', k, ' dual iterations!-')
@@ -117,6 +130,6 @@ class Plex():
                   f"updated mu for {nc_up} constraints"
                   )
 
-        self.time = time.perf_counter() - t1
+        self.tf = time.perf_counter() - self.t0
 
         return None
