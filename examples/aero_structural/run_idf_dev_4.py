@@ -67,7 +67,7 @@ f_scale = 1e-2
 disp_scale = 1e1
 """
 lw_scale = 5e-5
-f_scale = 2e-4#1e-4 (term)
+f_scale = 2e-4
 disp_scale = 1e-1#9e-2 ( this and new f_scale in vscode)
 
 # initial design variable values
