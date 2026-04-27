@@ -61,17 +61,14 @@ def structures_model(aero_loads, thickness):
 
 
 # scalers for constraint functions
-# lw_scale = 1
-# f_scale = 1
-# disp_scale = 1
 """
 lw_scale = 1e-3
 f_scale = 1e-2
 disp_scale = 1e1
 """
-lw_scale = 2e-5
-f_scale = 3e-5
-disp_scale = 8e-2
+lw_scale = 3e-5
+f_scale = 1e-4
+disp_scale = 9e-2
 
 # initial design variable values
 thickness0 = np.ones(num_nodes - 1) * 0.002
@@ -229,9 +226,9 @@ opt = PlexC(subproblems=[aero_subproblem, struct_subproblem],
             x_init=x_init,
             con=con,
             mu=np.ones(N + 3) * 10, # initial penalty parameters for each constraint
-            max_mu=1e6,#1e4, # 43 dual iter for 1e5
+            max_mu=1e6,
             rho=1.5,
-            tau=0.5,
+            tau=0.5,#0.7
             tol=1e-3, # outer loop feasibility
             eps=1e-5, # inner loop convergence
             )
