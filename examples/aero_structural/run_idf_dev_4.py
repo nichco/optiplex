@@ -61,9 +61,9 @@ def structures_model(aero_loads, thickness):
 
 
 # scalers for constraint functions
-lw_scale = 1e-4
+lw_scale = 1e-4#2e-4 # increasing this further results in huge numbers of inner iterations
 f_scale = 2e-4
-disp_scale = 2e-1
+disp_scale = 3e-1
 
 # initial design variable values
 thickness0 = np.ones(num_nodes - 1) * 0.002
@@ -292,11 +292,6 @@ plt.xlabel('Time (s)')
 plt.ylabel('Relative error')
 plt.show()
 
-# plt.plot(opt.x_time, error)
-# plt.xlabel('Time (s)')
-# plt.ylabel('Relative error')
-# plt.show()
-
 mu_hist = np.asarray(opt.mu_history)
 for i in range(mu_hist.shape[1]):
     plt.semilogy(opt.x_time, mu_hist[:, i], label=f'mu[{i}]')
@@ -337,5 +332,4 @@ plt.xlabel('Iteration')
 plt.ylabel('CD')
 plt.show()
 
-# save error history and mu history and x_time and mu_time
-# np.savez('examples/aero_structural/history2_m2.npz', error=error, mu_history=opt.mu_history, x_time=opt.x_time)
+np.savez('examples/aero_structural/history4.npz', error=error, mu_history=opt.mu_history, x_time=opt.x_time)
