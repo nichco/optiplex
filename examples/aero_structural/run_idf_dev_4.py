@@ -61,14 +61,9 @@ def structures_model(aero_loads, thickness):
 
 
 # scalers for constraint functions
-"""
-lw_scale = 1e-3
-f_scale = 1e-2
-disp_scale = 1e1
-"""
-lw_scale = 5e-5
+lw_scale = 1e-4
 f_scale = 2e-4
-disp_scale = 1e-1#9e-2 ( this and new f_scale in vscode)
+disp_scale = 2e-1
 
 # initial design variable values
 thickness0 = np.ones(num_nodes - 1) * 0.002
