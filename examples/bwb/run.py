@@ -7,10 +7,10 @@ import cstate
 from subproblem_1 import subproblem_1
 from subproblem_2 import subproblem_2
 
-# # load x_init from the pickle file
-# with open('examples/bwb/x_init.pkl', "rb") as f:
-#     x_init = pickle.load(f)
-#     x_init = x_init[:-1] # remove the slack and geonic for now
+# load x_init from the pickle file
+with open('examples/bwb/x_init.pkl', "rb") as f:
+    x_init = pickle.load(f)
+    x_init = x_init[:-1] # remove the slack and geonic for now
 
 
 # with h5py.File('examples/bwb/checkpoint.h5', 'r') as f:
@@ -93,24 +93,24 @@ solution = np.concatenate([pitch,
 #           cruise_trim_elevator_deflection] # try this to speed things up??
 # ###############################################################################################################################
 
-###############################################################################################################################
-x_init = [np.array([4.0]),
-          half_ttop - 0.001,
-          half_tweb - 0.001,
-          np.array([-2e+00, -2e+00]),
-          np.array([3]),
-          np.array([3]),
-          np.array([1.5e+01]),
-          np.array([-5.5e-01, -4e+00, -3e+00, -3.5e+00]),
-          np.array([5]),
-          np.array([1.5]),
-          np.array([40]),
-          np.array([30]),
-          np.array([8]), # WAS 10 for checkpoint 7
-          np.array([0]),
-          np.array([0]),
-          np.array([4])] # try this to speed things up??
-###############################################################################################################################
+# ###############################################################################################################################
+# x_init = [np.array([4.0]),
+#           half_ttop - 0.001,
+#           half_tweb - 0.001,
+#           np.array([-2e+00, -2e+00]),
+#           np.array([3]),
+#           np.array([3]),
+#           np.array([1.5e+01]),
+#           np.array([-5.5e-01, -4e+00, -3e+00, -3.5e+00]),
+#           np.array([5]),
+#           np.array([1.5]),
+#           np.array([40]),
+#           np.array([30]),
+#           np.array([8]), # WAS 10 for checkpoint 7
+#           np.array([0]),
+#           np.array([0]),
+#           np.array([4])] # try this to speed things up??
+# ###############################################################################################################################
 
 
 
@@ -120,47 +120,37 @@ def global_con(x):
     return cstate.cstate
 
 
-opt = H5Plex(subproblems=[subproblem_1, subproblem_2],
-             x_init=x_init,
-             con=global_con,
-             path="examples/bwb/checkpoint9.h5",
-             solution=solution,
-             )
+# opt = H5Plex(subproblems=[subproblem_1, subproblem_2],
+#              x_init=x_init,
+#              con=global_con,
+#              path="examples/bwb/checkpoint9.h5",
+#              solution=solution,
+#              )
 
-# original running version:
-# opt.solve(max_outer_iter=300,
-#           max_inner_iter=2,
-#           ATOL_out=1e-4, 
-#           RTOL_out=1e-4,
-#           ATOL_in=1e-2, 
-#           RTOL_in=1e-2,
-#           ATOL_feas=1e-3,
-#           rho=1.2,
-#           mu=50.0,
-#           )
-
-# checkpoint 6
 # opt.solve(max_outer_iter=300,
 #           max_inner_iter=2,
 #           ATOL_out=1e-5, 
 #           RTOL_out=1e-5,
 #           ATOL_in=1e-2, 
 #           RTOL_in=1e-2,
-#           ATOL_feas=1e-4,
+#           ATOL_feas=1e-5,
 #           rho=1.2,
-#           mu=100.0,
+#           mu=10,
 #           )
 
-# checkpoint 7 and 8
-opt.solve(max_outer_iter=300,
-          max_inner_iter=2,
-          ATOL_out=1e-5, 
-          RTOL_out=1e-5,
-          ATOL_in=1e-2, 
-          RTOL_in=1e-2,
-          ATOL_feas=1e-5,
-          rho=1.2,
-          mu=10,
+opt = H5Plex(subproblems=[subproblem_1, subproblem_2],
+            x_init=x_init,
+            con=global_con,
+            mu=np.ones(4) * 10, # initial penalty parameters for each constraint
+            max_mu=1e6,
+            rho=1.5,
+            tau=0.5,
+            tol=1e-3, # outer loop feasibility
+            eps=1e-4, # inner loop convergence
+            )
+
+opt.solve(max_outer_iter=100, 
+          max_inner_iter=4,
           )
 
 solution = opt.x

@@ -330,9 +330,9 @@ plt.xlabel('Iteration')
 plt.ylabel('CD')
 plt.show()
 
-np.savez('examples/aero_structural/history4_r1p5.npz', 
-         error=error, 
-         mu_history=opt.mu_history, 
-         x_time=opt.x_time, 
-         feasibility=opt.feasibility
-         )
+# np.savez('examples/aero_structural/history4_r1p5_m10.npz', 
+#          error=error, 
+#          mu_history=opt.mu_history, 
+#          x_time=opt.x_time, 
+#          feasibility=opt.feasibility
+#          )
