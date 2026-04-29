@@ -61,7 +61,7 @@ def structures_model(aero_loads, thickness):
 
 
 # scalers for constraint functions
-lw_scale = 1e-4#2e-4 # increasing this further results in huge numbers of inner iterations
+lw_scale = 1e-4 # increasing this further results in huge numbers of inner iterations
 f_scale = 2e-4
 disp_scale = 3e-1
 
@@ -223,7 +223,7 @@ opt = PlexC(subproblems=[aero_subproblem, struct_subproblem],
             mu=np.ones(N + 3) * 10, # initial penalty parameters for each constraint
             max_mu=1e6,
             rho=1.5,
-            tau=0.5,#0.7
+            tau=0.5,
             tol=1e-3, # outer loop feasibility
             eps=1e-5, # inner loop convergence
             )
@@ -231,7 +231,6 @@ opt = PlexC(subproblems=[aero_subproblem, struct_subproblem],
 opt.solve(max_outer_iter=100, 
           max_inner_iter=100,
           )
-
 
 # The optimal CD should be:  0.012349323882890414
 
@@ -295,7 +294,6 @@ plt.show()
 mu_hist = np.asarray(opt.mu_history)
 for i in range(mu_hist.shape[1]):
     plt.semilogy(opt.x_time, mu_hist[:, i], label=f'mu[{i}]')
-# plt.legend()
 plt.xlabel('Time (s)')
 plt.ylabel('Penalty parameter')
 plt.show()
@@ -332,4 +330,9 @@ plt.xlabel('Iteration')
 plt.ylabel('CD')
 plt.show()
 
-np.savez('examples/aero_structural/history4.npz', error=error, mu_history=opt.mu_history, x_time=opt.x_time)
+np.savez('examples/aero_structural/history4_r1p5.npz', 
+         error=error, 
+         mu_history=opt.mu_history, 
+         x_time=opt.x_time, 
+         feasibility=opt.feasibility
+         )

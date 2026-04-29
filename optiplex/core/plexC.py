@@ -14,6 +14,7 @@ class Plex():
                  tau: float = 0.5, # factor for increasing mu based on constraint violation
                  tol: float = 1e-3, # outer loop feasibility tolerance
                  eps: float = 1e-5, # inner loop convergence tolerance
+                 max_y: float = 1e6, # maximum Lagrange multiplier value
                  ):
 
         self.subproblems = subproblems
@@ -38,6 +39,7 @@ class Plex():
         self.tau = tau
         self.tol = tol
         self.eps = eps
+        self.max_y = max_y
 
 
     def _update_mu(self, c_new, c_old) -> int:
@@ -76,12 +78,7 @@ class Plex():
 
                 z_old = np.concatenate([xi.ravel() for xi in self.x])
 
-                # for subP in self.subproblems: 
-
-                #     self.x = subP(self.x, self.y, self.mu)
-                #     self.history.append(self.x.copy())
-                #     self.mu_history.append(self.mu.copy())
-                #     self.x_time.append(time.perf_counter() - t1)
+                # th block coordinate descent inner loop
                 self._inner_loop()
 
                 z_new = np.concatenate([xi.ravel() for xi in self.x])
@@ -109,18 +106,9 @@ class Plex():
             # self.y += self.mu * c_new # always update the multipliers
             self.y += np.diag(self.mu) @ c_new # always update the multipliers
 
-            # # update mu on a per-scalar-constraint basis
-            # nc_up = 0
-            # for i in range(len(c_new)):
-            #     feas_i = np.abs(c_new[i])
-            #     feas_prev_i = np.abs(c_old[i])
-
-            #     if feas_i > self.tau * feas_prev_i and feas_i > self.tol:
-            #         self.mu[i] = min(self.rho * self.mu[i], self.max_mu)
-            #         nc_up += 1
-
+            # update mu on a per-scalar-constraint basis
             nc_up = self._update_mu(c_new, c_old)
-            c_old = c_new # oops, i forgot to update c_old...
+            c_old = c_new
 
             print(f"du_itr={k:03d} | "
                   f"feas={feas:.3e} | "
