@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-data = np.load('examples/aero_structural/history_idf.npz')
+data = np.load('examples/aero_structural/history4_r3p0.npz')
 
 time = data['x_time']
 error = data['error']
@@ -47,7 +47,7 @@ plt.figure(figsize=(4,3))
 plt.grid(axis='y', color='lavender', zorder=-10)
 
 # plt.semilogy(time, error, label='AL-BCD', linewidth=1.5, marker='o', markersize=4, markevery=12)
-plt.semilogy(time, error, label='AL-BCD', linewidth=2)
+plt.semilogy(time, error, label='ALBCD-G', linewidth=2)
 
 # plt.semilogy(time_pen_1e2, error_pen_1e2, label='Penalty (1e2)', linewidth=1.5)
 
@@ -77,8 +77,8 @@ plt.semilogy(time_pen_4e3, error_pen_4e3, label='Penalty (4e3)', linewidth=2)
 plt.xlabel('Wall time (s)')
 plt.ylabel('Error')
 # plt.legend(loc='lower right', fontsize='small')
-plt.legend(loc='lower right')
+plt.legend(loc='upper right')
 # plt.grid(axis='y', color='lavender', zorder=0)
 
-plt.savefig('simple_error_comp.pdf', bbox_inches='tight')
+plt.savefig('simple_aero_struct_penalty_comp.pdf', bbox_inches='tight')
 plt.show()

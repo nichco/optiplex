@@ -222,9 +222,9 @@ opt = PlexC(subproblems=[aero_subproblem, struct_subproblem],
             con=con,
             mu=np.ones(N + 3) * 10, # initial penalty parameters for each constraint
             max_mu=1e6,
-            rho=1.5,
+            rho=2.0,#1.5,
             tau=0.5,
-            tol=1e-3, # outer loop feasibility
+            tol=1e-4,#1e-3, # outer loop feasibility
             eps=1e-5, # inner loop convergence
             )
 
@@ -330,9 +330,9 @@ plt.xlabel('Iteration')
 plt.ylabel('CD')
 plt.show()
 
-# np.savez('examples/aero_structural/history4_r1p5_m10.npz', 
-#          error=error, 
-#          mu_history=opt.mu_history, 
-#          x_time=opt.x_time, 
-#          feasibility=opt.feasibility
-#          )
+np.savez('examples/aero_structural/history4_r2p0_c1e-4.npz', 
+         error=error, 
+         mu_history=opt.mu_history, 
+         x_time=opt.x_time, 
+         feasibility=opt.feasibility
+         )

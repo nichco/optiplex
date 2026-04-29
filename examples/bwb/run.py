@@ -147,6 +147,8 @@ opt = H5Plex(subproblems=[subproblem_1, subproblem_2],
             tau=0.5,
             tol=1e-3, # outer loop feasibility
             eps=1e-4, # inner loop convergence
+            solution=solution,
+            path="examples/bwb/checkpoint.h5",
             )
 
 opt.solve(max_outer_iter=100, 

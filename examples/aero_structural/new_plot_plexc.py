@@ -5,7 +5,7 @@ data = np.load('examples/aero_structural/history4_r1p5.npz')
 
 time = data['x_time']
 error = data['error']
-# feasibility = data['feasibility']
+feasibility = data['feasibility']
 mu = data['mu_history']
 
 plt.figure(figsize=(4, 3))
@@ -19,13 +19,13 @@ plt.show()
 
 
 
-# plt.figure(figsize=(4, 3))
-# plt.semilogy(feasibility, color='tab:blue', label='Feasibility', linewidth=2)
-# plt.xlabel('Iteration')
-# plt.ylabel('Feasibility')
-# plt.grid(axis='y', color='lavender')
-# plt.savefig('simple_aero_struct_feasibility.pdf', bbox_inches='tight')
-# plt.show()
+plt.figure(figsize=(4, 3))
+plt.semilogy(feasibility, color='tab:blue', label='Feasibility', linewidth=2)
+plt.xlabel('Iteration')
+plt.ylabel('Feasibility')
+plt.grid(axis='y', color='lavender')
+plt.savefig('simple_aero_struct_feasibility.pdf', bbox_inches='tight')
+plt.show()
 
 
 

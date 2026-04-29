@@ -83,54 +83,54 @@ class Plex():
             self.itr += 1 # iteration counter for checkpointing in the h5py file
 
     
-        def solve(self, 
+    def solve(self, 
               max_outer_iter: int=100, # maximum number of outer iterations
               max_inner_iter: int=10,  # maximum number of inner iterations
               ) -> None:
             
-            self.t0 = time.perf_counter()
+        self.t0 = time.perf_counter()
 
-            with h5py.File(self.checkpoint_path, "w") as f:
-                pass # clear the file from previous runs by opening in write mode and immediately closing
+        with h5py.File(self.checkpoint_path, "w") as f:
+            pass # clear the file from previous runs by opening in write mode and immediately closing
 
-            c_old = self.initial_constraint_values
+        c_old = self.initial_constraint_values
 
-            for k in range(max_outer_iter):
+        for k in range(max_outer_iter):
 
-                for j in range(max_inner_iter):
+            for j in range(max_inner_iter):
 
-                    z_old = np.concatenate([xi.ravel() for xi in self.x])
+                z_old = np.concatenate([xi.ravel() for xi in self.x])
 
-                    self._inner_loop()
+                self._inner_loop()
 
-                    z_new = np.concatenate([xi.ravel() for xi in self.x])
-                    step = abs(z_new - z_old)
-                    denom = np.maximum(abs(z_old), abs(z_new))
-                    denom = np.maximum(denom, 1e-5) # floor
-                    rel_step = max(step / denom)
+                z_new = np.concatenate([xi.ravel() for xi in self.x])
+                step = abs(z_new - z_old)
+                denom = np.maximum(abs(z_old), abs(z_new))
+                denom = np.maximum(denom, 1e-5) # floor
+                rel_step = max(step / denom)
 
-                    print(f"pr_itr={j:03d} | "f"rel_stp={rel_step:.3e} | ")
+                print(f"pr_itr={j:03d} | "f"rel_stp={rel_step:.3e} | ")
 
-                    if rel_step <= self.eps:
-                        print('-Primal loop converged with rel step: ', rel_step, ' in ', j, ' iterations!-')
-                        break
-
-
-                c_new = self.con(self.x)
-                print(abs(c_new))
-                feas = np.max(abs(c_new))
-                self.feasibility.append(feas)
-
-                if feas <= self.tol:
-                    print('-Dual loop converged with feasibility: ', feas, ' in ', k, ' dual iterations!-')
+                if rel_step <= self.eps:
+                    print('-Primal loop converged with rel step: ', rel_step, ' in ', j, ' iterations!-')
                     break
 
-                self.y += np.diag(self.mu) @ c_new # always update the multipliers
 
-                nc_up = self._update_mu(c_new, c_old)
-                c_old = c_new
+            c_new = self.con(self.x)
+            print(abs(c_new))
+            feas = np.max(abs(c_new))
+            self.feasibility.append(feas)
 
-                print(f"du_itr={k:03d} | "
+            if feas <= self.tol:
+                print('-Dual loop converged with feasibility: ', feas, ' in ', k, ' dual iterations!-')
+                break
+
+            self.y += np.diag(self.mu) @ c_new # always update the multipliers
+
+            nc_up = self._update_mu(c_new, c_old)
+            c_old = c_new
+
+            print(f"du_itr={k:03d} | "
                     f"feas={feas:.3e} | "
                     f"max mu={np.max(self.mu):.3e} | "
                     f"min mu={np.min(self.mu):.3e} | "
@@ -138,6 +138,6 @@ class Plex():
                     f"updated mu for {nc_up} constraints"
                     )
 
-            self.tf = time.perf_counter() - self.t0
+        self.tf = time.perf_counter() - self.t0
 
-            return None
+        return None
