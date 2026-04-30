@@ -30,7 +30,7 @@ def subproblem_2(x, y, mu):
 
     # print('Checkpoint SP2!')
 
-    prob = CSDLAlphaProblem(problem_name='SP2_V9', simulator=sim_2)
+    prob = CSDLAlphaProblem(problem_name='SP2_V10', simulator=sim_2)
     # optimizer = PySLSQP(prob, solver_options={'maxiter':300, 'acc':1e-5}, readable_outputs=['x'])
     optimizer = PySLSQP(prob, solver_options={'maxiter':200, 'acc':1e-7}, readable_outputs=['x'])
     optimizer.solve()
