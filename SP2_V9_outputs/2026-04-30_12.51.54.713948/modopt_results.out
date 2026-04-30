@@ -1,0 +1,45 @@
+
+	Solution from PySLSQP:
+	----------------------------------------------------------------------------------------------------
+	Problem                       : SP2_V9
+	Solver                        : pyslsqp
+	Success                       : True
+	Message                       : Optimization terminated successfully
+	Status                        : 0
+	Objective                     : 0.5911656985401381
+	Optimality                    : -8.061385770030682e-08
+	Feasibility                   : 0.0
+	Gradient norm                 : 0.11807885550148892
+	Major iterations              : 22
+	Total function evals          : 77
+	Total gradient evals          : 21
+	Total time                    : 4760.942232131958
+	Function eval. time           : 3774.4983324005734
+	Derivative eval. time         : 986.343149700202
+	Optimizer time                : 0.002562199719250202
+	Processing time               : 0.03150359960272908
+	Visualization time            : 0.0
+	Summary saved in              : SP2_V9_outputs/2026-04-30_12.51.54.713948/slsqp_summary.out
+	Total callbacks               : 98
+	Reused callbacks              : 0
+	obj callbacks                 : 77
+	grad callbacks                : 21
+	hess callbacks                : 0
+	con callbacks                 : 0
+	jac callbacks                 : 0
+	Optimal variables             : [1.72213974e-01 3.93546146e-01 1.26934278e+00 1.41163464e+00
+ 1.36408931e+00 1.16160246e+00 8.95638507e-01 6.51373336e-01
+ 3.61718607e-01 1.23141670e-01 1.65985974e-01 3.63177262e-01
+ 3.57016400e-01 4.36475260e-01 5.13033591e-01 3.92772633e-01
+ 3.45990322e-01 2.54342819e-01 1.52305400e-01 1.00405709e-01
+ 1.00000000e+01 0.00000000e+00 6.50742394e-18]
+	Optimal obj. gradient         : [ 3.46944232e-02  2.28906070e-02  3.32528812e-03  1.94861978e-03
+  3.27140585e-03  4.55666116e-03  2.25432175e-03  1.76961629e-03
+  1.30278695e-03  8.52896709e-04  7.50282035e-03  4.93820930e-03
+  6.52212903e-04  3.76237235e-04  6.23425501e-04 -1.09829553e-01
+  4.20503863e-04  3.24318157e-04  2.32840837e-04  1.43621802e-04
+ -3.66792879e-03  0.00000000e+00 -1.33962576e-22]
+	Optimal constraints           : []
+	Optimal multipliers (constr.) : []
+	Optimal Jacobian              : []
+	----------------------------------------------------------------------------------------------------
