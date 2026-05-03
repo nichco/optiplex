@@ -27,6 +27,7 @@ class Plex():
         self.history = [self.x.copy()]
         self.feasibility = [max(abs(self.initial_constraint_values))]
         self.x_time = [0.0]
+        self.y_history = [self.y.copy()]
         self.mu = np.ones_like(self.initial_constraint_values) if mu is None else mu # penalty parameter
         assert np.all(self.mu >= 0)
         self.max_mu = max_mu
@@ -105,6 +106,7 @@ class Plex():
 
             # self.y += self.mu * c_new # always update the multipliers
             self.y += np.diag(self.mu) @ c_new # always update the multipliers
+            self.y_history.append(self.y.copy())
 
             # update mu on a per-scalar-constraint basis
             nc_up = self._update_mu(c_new, c_old)

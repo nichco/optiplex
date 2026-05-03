@@ -21,7 +21,11 @@ plt.show()
 
 plt.figure(figsize=(4, 3))
 plt.semilogy(feasibility, color='tab:blue', label='Feasibility', linewidth=2)
-plt.xlabel('Iteration')
+# add a dashed horizontal line at y=1e-3
+plt.axhline(1e-3, color='gray', linestyle=':', label='Feasibility tolerance')
+# add text saying 'tolerance'
+plt.text(5, 1e-3*1.5, 'Feasibility tolerance', fontsize=8, ha='center')
+plt.xlabel('Outer-loop iteration')
 plt.ylabel('Feasibility')
 plt.grid(axis='y', color='lavender')
 plt.savefig('simple_aero_struct_feasibility.pdf', bbox_inches='tight')

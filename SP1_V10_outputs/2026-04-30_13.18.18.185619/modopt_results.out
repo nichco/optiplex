@@ -1,0 +1,40 @@
+
+	Solution from PySLSQP:
+	----------------------------------------------------------------------------------------------------
+	Problem                       : SP1_V10
+	Solver                        : pyslsqp
+	Success                       : True
+	Message                       : Optimization terminated successfully
+	Status                        : 0
+	Objective                     : 0.49399534817307
+	Optimality                    : 9.145447589828654e-08
+	Feasibility                   : 0.0
+	Gradient norm                 : 0.027280838679615074
+	Major iterations              : 53
+	Total function evals          : 53
+	Total gradient evals          : 53
+	Total time                    : 3708.3485474586487
+	Function eval. time           : 1489.5804598002578
+	Derivative eval. time         : 2218.8253450000775
+	Optimizer time                : 0.0041820002370513976
+	Processing time               : 0.08562969946069643
+	Visualization time            : 0.0
+	Summary saved in              : SP1_V10_outputs/2026-04-30_13.18.18.185619/slsqp_summary.out
+	Total callbacks               : 106
+	Reused callbacks              : 0
+	obj callbacks                 : 53
+	grad callbacks                : 53
+	hess callbacks                : 0
+	con callbacks                 : 0
+	jac callbacks                 : 0
+	Optimal variables             : [ 5.         -2.86025412  3.33875164  3.12379544  3.         18.73342589
+  9.00025673  3.68928212 -6.99774789 -6.05478909  5.31794098  1.49857258
+  4.02070728  3.95001317  0.47487899]
+	Optimal obj. gradient         : [-1.25789347e-02  7.69847448e-06 -9.91092530e-06 -2.87190051e-05
+  2.11745941e-02  2.13642921e-06 -3.97109465e-03  1.59322523e-05
+  1.68799150e-03  1.08205837e-02  1.04318674e-05  1.39477596e-03
+  1.13998755e-06 -7.85119690e-06  1.92604601e-05]
+	Optimal constraints           : []
+	Optimal multipliers (constr.) : []
+	Optimal Jacobian              : []
+	----------------------------------------------------------------------------------------------------
