@@ -1,10 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-# failure data
-x1 = np.array([1., -0.5, -0.5, -0.5, -0.5])
-x2 = np.array([-1., -1., -1., -1., -1.])
-
 # success data
 x1_new = np.array([1., 0.375, 0.375, 0.2109375, 0.2109375, 0.11865234, 0.11865234, 0.06674194, 0.06674194, 0.03754234, 0.03754234, 0.02111757, 0.02111757, 0.01187863, 0.01187863, 0.00668173, 0.00668173, 0.00375847, 0.00375847, 0.00211414, 0.00211414, 0.0011892, 0.0011892, 0.00044595, 0.00044595, 0.00016723, 0.00016723, 0.00016723, 0.00016723])
 x2_new = np.array([0.5, 0.5, 0.28125, 0.28125, 0.15820312, 0.15820312, 0.08898926, 0.08898926, 0.05005646, 0.05005646, 0.02815676, 0.02815676, 0.01583818, 0.01583818, 0.00890897, 0.00890897, 0.0050113, 0.0050113, 0.00281886, 0.00281886, 0.00158561, 0.00158561, 0.0008919, 0.0008919, 0.00033446, 0.00033446, 0.00012542, 0.00012542, 0.00012542])
@@ -22,7 +18,7 @@ levels = np.linspace(0, max(Z.flatten()), 30)
 plt.contour(X, Y, Z, levels=levels, cmap='Greens_r', alpha=0.4, linewidths=0.5)
 plt.contourf(X, Y, Z, levels=levels, cmap='Greens_r', alpha=0.5)
 
-plt.plot(x1, x2, 's-', color='tab:red', linewidth=2.5, markersize=6, mec='k', zorder=10)
+# plt.plot(x1, x2, 's-', color='tab:red', linewidth=2.5, markersize=6, mec='k', zorder=10)
 plt.plot(x1_new, x2_new, 'o-', color='tab:blue', linewidth=2.5, markersize=6, mec='k', zorder=10)
 plt.xlim(-1.5, 1.5)
 plt.ylim(-1.5, 1.5)
@@ -30,11 +26,20 @@ plt.xlabel('x')
 plt.ylabel('y')
 
 plt.plot(x, 2*x, '--', color='black', linewidth=2, alpha=0.5)
+plt.plot(x, -2*x, '--', color='black', linewidth=2, alpha=0.5)
 
 plt.fill_between(
     x,
     1.5,        # top of plot
     2*x,        # constraint line
+    color='black',
+    alpha=0.4,
+)
+
+plt.fill_between(
+    x,
+    -1.5,        # bottom of plot
+    -2*x,        # constraint line
     color='black',
     alpha=0.4,
 )
@@ -53,5 +58,5 @@ plt.yticks(ticks)
 
 plt.gca().set_aspect('equal')
 
-plt.savefig('global_constraint_conference_example.pdf', bbox_inches='tight')
+plt.savefig('no_feasible_solution_conference_example.pdf', bbox_inches='tight')
 plt.show()
