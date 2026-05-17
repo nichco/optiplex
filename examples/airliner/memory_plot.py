@@ -10,10 +10,10 @@ distributed_memory = np.array([100.3, 129.6, 173.5, 204.2, 235.0])
 
 
 
-plt.figure(figsize=(4,3))
+plt.figure(figsize=(4,2.5))
 
-plt.semilogy(monolithic_N, monolithic_memory, marker='o', linewidth=1, label='Monolithic')
-plt.semilogy(distributed_N, distributed_memory, marker='s', linewidth=1, label='Distributed')
+plt.semilogy(monolithic_N, monolithic_memory, marker='o', linewidth=1, label='Monolithic', color='tab:purple', mec='k')
+plt.semilogy(distributed_N, distributed_memory, marker='s', linewidth=1, label='Distributed', color='tab:orange', mec='k')
 
 plt.xlabel('Number of Subproblems')
 plt.ylabel('Memory (MB)')
@@ -27,6 +27,8 @@ ax.spines['bottom'].set_color('gray')
 ax.spines['left'].set_color('gray')
 ax.spines['bottom'].set_position(('outward', 6))
 ax.spines['left'].set_position(('outward', 6))
+
+plt.grid(color='blue', alpha=0.1, axis='y')
 
 plt.savefig('bwb_memory_scaling.pdf', bbox_inches='tight')
 plt.show()

@@ -13,15 +13,15 @@ distributed_memory = np.array([5.006, 5.116, 5.33, 5.497, 5.641, 5.864, 6.134, 6
 
 
 
-plt.figure(figsize=(4,3))
+plt.figure(figsize=(4,2.5))
 
-plt.semilogy(copies, monolithic_memory_jax, label='Monolithic', marker='o', markersize=7, linewidth=1, color='tab:gray')
-plt.semilogy(copies, distributed_memory, label='Distributed', marker='s', markersize=7, linewidth=1, color='tab:blue')
+plt.semilogy(copies, monolithic_memory_jax, label='Monolithic', marker='o', markersize=7, linewidth=1, color='tab:purple', mec='k')
+plt.semilogy(copies, distributed_memory, label='Distributed', marker='s', markersize=7, linewidth=1, color='tab:orange', mec='k')
 plt.xlabel('Number of sub-problems')
 plt.ylabel('Memory (MB)')
 plt.legend()
 
-plt.grid(True, linewidth=0.5, alpha=0.3)
+# plt.grid(True, linewidth=0.5, alpha=0.3)
 
 ax = plt.gca()
 ax.spines['top'].set_visible(False)
@@ -30,6 +30,8 @@ ax.spines['bottom'].set_color('gray')
 ax.spines['left'].set_color('gray')
 ax.spines['bottom'].set_position(('outward', 6))
 ax.spines['left'].set_position(('outward', 6))
+
+plt.grid(color='blue', alpha=0.1, axis='y')
 
 plt.savefig('cart_pole_memory.pdf', transparent=True, bbox_inches='tight')
 plt.show()

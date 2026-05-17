@@ -10,10 +10,10 @@ distributed_times = np.array([99.3, 145.9, 194.8, 284.0, 343.8])
 
 
 
-plt.figure(figsize=(4,3))
+plt.figure(figsize=(4,2.5))
 
-plt.semilogy(monolithic_N, monolithic_times, marker='o', linewidth=1, label='Monolithic')
-plt.semilogy(distributed_N, distributed_times, marker='s', linewidth=1, label='Distributed')
+plt.semilogy(monolithic_N, monolithic_times, marker='o', linewidth=1, label='Monolithic', color='tab:purple', mec='k')
+plt.semilogy(distributed_N, distributed_times, marker='s', linewidth=1, label='Distributed', color='tab:orange', mec='k')
 
 plt.xlabel('Number of Subproblems')
 plt.ylabel('Time (s)')
@@ -27,6 +27,8 @@ ax.spines['bottom'].set_color('gray')
 ax.spines['left'].set_color('gray')
 ax.spines['bottom'].set_position(('outward', 6))
 ax.spines['left'].set_position(('outward', 6))
+
+plt.grid(color='blue', alpha=0.1, axis='y')
 
 plt.savefig('bwb_time_scaling.pdf', bbox_inches='tight')
 plt.show()
