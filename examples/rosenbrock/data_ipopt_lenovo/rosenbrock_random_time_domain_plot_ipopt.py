@@ -29,7 +29,7 @@ dims = np.linspace(300, 3000, 5, dtype=int)
 
 plt.figure(figsize=(4,3))
 
-plt.semilogy(dims, monolithic_mean, marker='o', color='tab:gray', linewidth=1, markersize=7,label='Monolithic IPOPT')
+plt.semilogy(dims, monolithic_mean, marker='o', color='tab:gray', linewidth=1, markersize=7,label='Monolithic IPOPT', mec='k')
 
 # plt.fill_between(
 #     np.ravel(dims),
@@ -39,7 +39,7 @@ plt.semilogy(dims, monolithic_mean, marker='o', color='tab:gray', linewidth=1, m
 #     alpha=0.2,
 # )
 
-plt.semilogy(dims, distributed_mean_2, marker='s', color='tab:blue', linewidth=1, markersize=7, label='Dist. (2 subproblems)')
+plt.semilogy(dims, distributed_mean_2, marker='s', color='tab:blue', linewidth=1, markersize=7, label='Dist. (2 subproblems)', mec='k')
 
 # plt.fill_between(
 #     np.ravel(dims),
@@ -49,7 +49,7 @@ plt.semilogy(dims, distributed_mean_2, marker='s', color='tab:blue', linewidth=1
 #     alpha=0.2,
 # )
 
-plt.semilogy(dims, distributed_mean_5, marker='^', color='tab:orange', linewidth=1, markersize=7, label='Dist. (5 subproblems)')
+plt.semilogy(dims, distributed_mean_5, marker='^', color='tab:orange', linewidth=1, markersize=7, label='Dist. (5 subproblems)', mec='k')
 
 # plt.fill_between(
 #     np.ravel(dims),
@@ -59,7 +59,7 @@ plt.semilogy(dims, distributed_mean_5, marker='^', color='tab:orange', linewidth
 #     alpha=0.2,
 # )
 
-plt.semilogy(dims, distributed_mean_10, marker='d', color='tab:green', linewidth=1, markersize=7, label='Dist. (10 subproblems)')
+plt.semilogy(dims, distributed_mean_10, marker='d', color='tab:green', linewidth=1, markersize=7, label='Dist. (10 subproblems)', mec='k')
 
 # plt.fill_between(
 #     np.ravel(dims),
@@ -85,6 +85,8 @@ ax.spines['bottom'].set_position(('outward', 6))
 ax.spines['left'].set_position(('outward', 6))
 
 ax.set_xticks([300, 3000])
+
+plt.grid(color='blue', alpha=0.1, axis='y')
 
 plt.savefig('rosenbrock_time_ipopt.pdf', bbox_inches='tight')
 

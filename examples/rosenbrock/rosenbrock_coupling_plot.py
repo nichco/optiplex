@@ -27,10 +27,10 @@ delta_b300 = distributed_time_5_subp_slsqp_beta_300 / monolithic_time_slsqp_beta
 
 plt.figure(figsize=(4,3))
 
-plt.plot(dimension, delta_b10, marker='o', label=r'$\beta=10$', color='tab:red', linewidth=1, markersize=7)
-plt.semilogy(dimension, delta_b100, marker='o', label=r'$\beta=100$', color='tab:blue', linewidth=1, markersize=7)
-plt.semilogy(dimension, delta_b200, marker='s', label=r'$\beta=200$', color='tab:orange', linewidth=1, markersize=7)
-plt.semilogy(dimension, delta_b300, marker='d', label=r'$\beta=300$', color='tab:green', linewidth=1, markersize=7)
+plt.plot(dimension, delta_b10, marker='o', label=r'$\beta=10$', color='tab:red', linewidth=1, markersize=7, mec='k')
+plt.semilogy(dimension, delta_b100, marker='o', label=r'$\beta=100$', color='tab:blue', linewidth=1, markersize=7, mec='k')
+plt.semilogy(dimension, delta_b200, marker='s', label=r'$\beta=200$', color='tab:orange', linewidth=1, markersize=7, mec='k')
+plt.semilogy(dimension, delta_b300, marker='d', label=r'$\beta=300$', color='tab:green', linewidth=1, markersize=7, mec='k')
 
 # add horizontal line at y=1
 plt.axhline(y=1, color='tab:gray', linestyle='--', linewidth=1)

@@ -17,15 +17,14 @@ distributed_memory_10_subp = np.array([2.98, 2.99, 3.1, 3.3, 3.53, 3.85])
 plt.figure(figsize=(4,3))
 # plt.rcParams.update({'font.size': 12})
 
-plt.semilogy(dimension, monolithic_memory, marker='o', label='Monolithic SLSQP', linewidth=1, markersize=7, color='tab:grey')
-plt.semilogy(dimension, distributed_memory_2_subp, marker='s', label='Dist. SLSQP (2 subproblems)', linewidth=1, markersize=7, color='tab:blue')
-plt.semilogy(dimension, distributed_memory_5_subp, marker='^', label='Dist. SLSQP (5 subproblems)', linewidth=1, markersize=7, color='tab:orange')
-plt.semilogy(dimension, distributed_memory_10_subp, marker='d', label='Dist. SLSQP (10 subproblems)', linewidth=1, markersize=7, color='tab:green')
+plt.semilogy(dimension, monolithic_memory, marker='o', label='Monolithic SLSQP', linewidth=1, markersize=7, color='tab:grey', mec='k')
+plt.semilogy(dimension, distributed_memory_2_subp, marker='s', label='Dist. SLSQP (2 subproblems)', linewidth=1, markersize=7, color='tab:blue', mec='k')
+plt.semilogy(dimension, distributed_memory_5_subp, marker='^', label='Dist. SLSQP (5 subproblems)', linewidth=1, markersize=7, color='tab:orange', mec='k')
+plt.semilogy(dimension, distributed_memory_10_subp, marker='d', label='Dist. SLSQP (10 subproblems)', linewidth=1, markersize=7, color='tab:green', mec='k')
 
 plt.xlabel("Dimension (n)")
 plt.ylabel("Memory (MB)")
 plt.legend(fontsize=10)
-# plt.grid(color='lavender')
 
 ax = plt.gca()
 ax.spines['top'].set_visible(False)
@@ -37,5 +36,7 @@ ax.spines['left'].set_position(('outward', 6))
 
 ax.set_xticks([100, 1000])
 
-# plt.savefig('rosenbrock_memory_scaling.pdf', bbox_inches='tight')
+plt.grid(color='blue', alpha=0.1, axis='y')
+
+plt.savefig('rosenbrock_memory_scaling.pdf', bbox_inches='tight')
 plt.show()
