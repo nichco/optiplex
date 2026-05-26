@@ -4,7 +4,7 @@ jax.config.update("jax_enable_x64", True)
 import modopt as mo
 from beam_jax import Beam, CSTube
 from lifting_line_jax_2 import LiftingLine
-from optiplex import PlexC
+from optiplex import Plex2
 import warnings
 warnings.filterwarnings("ignore")
 import numpy as np
@@ -217,7 +217,7 @@ def struct_subproblem(x, y, mu):
 
 
 
-opt = PlexC(subproblems=[aero_subproblem, struct_subproblem],
+opt = Plex2(subproblems=[aero_subproblem, struct_subproblem],
             x_init=x_init,
             con=con,
             mu=np.ones(N + 3) * 10, # initial penalty parameters for each constraint
@@ -225,7 +225,8 @@ opt = PlexC(subproblems=[aero_subproblem, struct_subproblem],
             rho=1.5,
             tau=0.5,
             tol=1e-3, # outer loop feasibility
-            eps=1e-5, # inner loop convergence
+            eps=1e-2, # inner loop convergence
+            eta=1e-5, # outer loop convergence
             )
 
 opt.solve(max_outer_iter=100, 
@@ -330,10 +331,10 @@ plt.xlabel('Iteration')
 plt.ylabel('CD')
 plt.show()
 
-np.savez('examples/aero_structural/history4_with_y.npz', 
-         error=error, 
-         mu_history=opt.mu_history, 
-         x_time=opt.x_time, 
-         feasibility=opt.feasibility,
-         multipliers=opt.y_history,
-         )
+# np.savez('examples/aero_structural/history4_with_y.npz', 
+#          error=error, 
+#          mu_history=opt.mu_history, 
+#          x_time=opt.x_time, 
+#          feasibility=opt.feasibility,
+#          multipliers=opt.y_history,
+#          )

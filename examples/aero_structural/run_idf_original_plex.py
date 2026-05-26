@@ -4,7 +4,7 @@ jax.config.update("jax_enable_x64", True)
 import modopt as mo
 from beam_jax import Beam, CSTube
 from lifting_line_jax import LiftingLine
-from optiplex import Plex, PlexT
+from optiplex import Plex
 import warnings
 warnings.filterwarnings("ignore")
 import numpy as np
@@ -230,23 +230,7 @@ opt.solve(max_outer_iter=300,
           mu=10, # 10
           )
 
-# opt = PlexT(subproblems=[aero_subproblem, struct_subproblem],
-#            x_init=x_init,
-#            con=con,
-#            )
-
-# opt.solve(max_outer_iter=100,
-#           max_inner_iter=10,
-#           ATOL_out=1e-5, 
-#           RTOL_out=1e-5,
-#           eps=1e-3, # 1e-3
-#           ATOL_feas=1e-3, # 1e-4
-#           rho=1.1, # 1.2
-#           mu=4, # 10
-#           )
-
 solution = opt.x
-
 twist = solution[0]
 thickness = solution[1]
 f_copy = solution[2]
@@ -258,7 +242,6 @@ ax2.plot(thickness)
 plt.tight_layout()
 plt.show()
 
-
 lift = data['Lift']
 weight = data['Weight']
 right_tip_disp = data['right_tip_disp']
@@ -267,7 +250,6 @@ print('Lift: ', lift)
 print('Weight: ', weight)
 print('Right tip displacement: ', right_tip_disp)
 print('Left tip displacement: ', left_tip_disp)
-
 
 solution = np.load('examples/aero_structural/solution.npz')
 x_star = np.concatenate([solution['twist'], solution['thickness']])
@@ -306,4 +288,4 @@ plt.ylabel('Load (N)')
 plt.show()
 
 # save error history and mu history and x_time and mu_time
-np.savez('examples/aero_structural/history_idf_with_feas.npz', error=error, mu_history=opt.mu_history, x_time=opt.x_time, feas_history=opt.feas_history)
+# np.savez('examples/aero_structural/history_idf_with_feas.npz', error=error, mu_history=opt.mu_history, x_time=opt.x_time, feas_history=opt.feas_history)
