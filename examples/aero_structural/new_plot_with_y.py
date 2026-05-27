@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-data = np.load('examples/aero_structural/history4_with_y.npz')
+data = np.load('examples/aero_structural/data/history4_with_y.npz')
 
 time = data['x_time']
 error = data['error']
@@ -41,7 +41,7 @@ for i in range(y.shape[1]):
 plt.xlabel('Outer-loop iteration')
 plt.ylabel('Absolute Lagrange multipliers')
 plt.grid(axis='y', color='lavender')
-plt.savefig('simple_aero_struct_y.pdf', bbox_inches='tight')
+# plt.savefig('simple_aero_struct_y.pdf', bbox_inches='tight')
 plt.show()
 
 

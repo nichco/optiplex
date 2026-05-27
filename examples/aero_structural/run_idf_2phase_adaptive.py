@@ -225,7 +225,7 @@ opt = Plex2(subproblems=[aero_subproblem, struct_subproblem],
             rho=1.5,
             tau=0.5,
             tol=1e-3, # outer loop feasibility
-            eps=1e-2, # inner loop convergence
+            eps=1e-1, # inner loop convergence
             eta=1e-5, # outer loop convergence
             )
 
@@ -331,10 +331,10 @@ plt.xlabel('Iteration')
 plt.ylabel('CD')
 plt.show()
 
-# np.savez('examples/aero_structural/history4_with_y.npz', 
-#          error=error, 
-#          mu_history=opt.mu_history, 
-#          x_time=opt.x_time, 
-#          feasibility=opt.feasibility,
-#          multipliers=opt.y_history,
-#          )
+np.savez('examples/aero_structural/history4_2phase_r1p5_eps_1en1.npz', 
+         error=error, 
+         mu_history=opt.mu_history, 
+         x_time=opt.x_time, 
+         feasibility=opt.feasibility,
+         multipliers=opt.y_history,
+         )

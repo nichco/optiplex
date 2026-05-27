@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-data = np.load('examples/aero_structural/history4_r1p5.npz')
+data = np.load('examples/aero_structural/data/history4_r1p5.npz')
 
 time = data['x_time']
 error = data['error']
@@ -13,7 +13,7 @@ plt.semilogy(time, error, color='tab:blue', label='Error', linewidth=2)
 plt.xlabel('Time (s)')
 plt.ylabel('Error')
 plt.grid(axis='y', color='lavender')
-plt.savefig('simple_aero_struct_error_2.pdf', bbox_inches='tight')
+# plt.savefig('simple_aero_struct_error_2.pdf', bbox_inches='tight')
 plt.show()
 
 
@@ -28,7 +28,7 @@ plt.text(5, 1e-3*1.5, 'Feasibility tolerance', fontsize=8, ha='center')
 plt.xlabel('Outer-loop iteration')
 plt.ylabel('Feasibility')
 plt.grid(axis='y', color='lavender')
-plt.savefig('simple_aero_struct_feasibility.pdf', bbox_inches='tight')
+# plt.savefig('simple_aero_struct_feasibility.pdf', bbox_inches='tight')
 plt.show()
 
 
@@ -42,5 +42,5 @@ for i in range(mu.shape[1]):
 plt.xlabel('Time (s)')
 plt.ylabel('Penalty parameters')
 plt.grid(axis='y', color='lavender')
-plt.savefig('simple_aero_struct_mu_2.pdf', bbox_inches='tight')
+# plt.savefig('simple_aero_struct_mu_2.pdf', bbox_inches='tight')
 plt.show()
