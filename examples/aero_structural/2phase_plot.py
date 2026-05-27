@@ -20,5 +20,5 @@ plt.semilogy(time_2phase, error_2phase, color='tab:orange', label='2-phase adapt
 plt.xlabel('Time (s)')
 plt.ylabel('Error')
 plt.grid(axis='y', color='lavender')
-# plt.savefig('two_phase_aero_struct_error.png', bbox_inches='tight', transparent=True, dpi=600)
+plt.savefig('two_phase_aero_struct_error.png', bbox_inches='tight', transparent=True, dpi=600)
 plt.show()
