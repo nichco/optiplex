@@ -75,8 +75,7 @@ tracemalloc.start()
 
 # opt.solve(max_iter=500, tol=1e-5, itol=1000,)
 opt.solve(max_inner_iter=100,
-          ATOL_in=1e-5, 
-          RTOL_in=1e-5,
+          eps=1e-5
           )
 
 current, peak = tracemalloc.get_traced_memory()

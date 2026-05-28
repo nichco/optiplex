@@ -140,14 +140,11 @@ opt = Plex(subproblems=[subproblem1, subproblem2],
            con=con,
            )
 
-# opt.solve(max_iter=100, tol=1e-5, ctol=1e-3, itol=1e-2, rho=1.1)
 opt.solve(max_outer_iter=100,
           max_inner_iter=10,
-          ATOL_out=1e-5, 
-          RTOL_out=1e-5,
-          ATOL_in=1e-2, 
-          RTOL_in=1e-2,
-          ATOL_feas=1e-5,
+          eps_inner=1e-2, # inner loop tolerance
+          eps_outer=1e-5, # outer loop tolerance
+          tol=1e-5, # feasibility tolerance
           rho=1.1,
           mu=1.0,
           )

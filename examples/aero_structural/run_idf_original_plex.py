@@ -144,7 +144,7 @@ def aero_subproblem(x, y, mu):
     jaxprob = mo.JaxProblem(x0=v0, jax_obj=jax_obj, x_scaler=x_scaler)
     optimizer = mo.SLSQP(jaxprob, solver_options={'maxiter': 300, 'ftol': 1e-8}, turn_off_outputs=True)
     optimizer.solve()
-    optimizer.print_results()
+    # optimizer.print_results()
     twist_solution = optimizer.results['x'] / x_scaler
 
     # update the data dict
@@ -221,13 +221,11 @@ opt = Plex(subproblems=[aero_subproblem, struct_subproblem],
 
 opt.solve(max_outer_iter=300,
           max_inner_iter=10,
-          ATOL_out=1e-5, 
-          RTOL_out=1e-5,
-          ATOL_in=1e-3, # 1e-3
-          RTOL_in=1e-3, # 1e-3
-          ATOL_feas=1e-5, # 1e-4
-          rho=1.2, # 1.2
-          mu=10, # 10
+          eps_inner=1e-1,#1e-3, # inner loop tolerance
+          eps_outer=1e-5, # outer loop tolerance
+          tol=1e-5, # feasibility tolerance
+          rho=1.2,
+          mu=1#10,
           )
 
 solution = opt.x

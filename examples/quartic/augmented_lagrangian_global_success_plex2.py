@@ -117,8 +117,7 @@ opt.solve(max_outer_iter=100,
           max_inner_iter=10,
           ATOL_out=1e-6, 
           RTOL_out=1e-6,
-          ATOL_in=1e-2, 
-          RTOL_in=1e-2,
+          eps=1e-2,
           ATOL_feas=1e-3,
           rho=1.1
           )

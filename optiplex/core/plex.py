@@ -31,11 +31,9 @@ class Plex():
               max_outer_iter: int=100, # maximum number of outer iterations
               max_inner_iter: int=1000, # maximum number of inner iterations
               rho: float=1.2, # penalty increase factor
-              ATOL_in: float=1e-1,
-              RTOL_in: float=1e-1,
-              ATOL_out: float=1e-4,
-              RTOL_out: float=1e-4,
-              ATOL_feas: float=1e-6,
+              eps_inner: float=1e-1, # inner loop convergence tolerance
+              eps_outer: float=1e-4, # outer loop convergence tolerance
+              tol: float=1e-6, # feasibility tolerance
               mu = 1.0, # augmented Lagrangian penalty coefficient
               ) -> None:
         
@@ -59,20 +57,19 @@ class Plex():
                     self.mu_history.append(mu)
                     self.x_time.append(time.perf_counter() - t1)
 
-                eps_inner = np.sqrt(self.n) * ATOL_in + RTOL_in * np.linalg.norm(z_old)
                 z_new = np.concatenate([xi.ravel() for xi in self.x])
-                r_norm_inner = np.linalg.norm(z_new - z_old)
+                step = abs(z_new - z_old)
+                denom = np.maximum(abs(z_old), abs(z_new))
+                denom = np.maximum(denom, 1e-5) # floor
+                rel_step = max(step / denom)
 
-                # Print inner iteration data
-                print(f"pr_itr={j:03d} | "
-                      f"r_i={r_norm_inner:.3e} | "
-                      )
-                
-                # Check inner loop convergence
-                if r_norm_inner <= eps_inner: 
-                    print('-Primal loop converged!-')
+                print(f"pr_itr={j:03d} | "f"rel_stp={rel_step:.3e} | ")
+
+                if rel_step <= eps_inner:
+                    print('-Primal loop converged with rel step: ', rel_step, ' in ', j, ' iterations!-')
                     break
-            
+
+
             # Exit for unconstrained problems
             if self.d == 0: break
 
@@ -83,30 +80,27 @@ class Plex():
             self.feas_time.append(time.perf_counter() - t1)
 
             x_new = np.concatenate([xi.ravel() for xi in self.x])
-            r_norm_outer = np.linalg.norm(x_new - x_old)
+            # r_norm_outer = np.linalg.norm(x_new - x_old)
+            step = abs(x_new - x_old)
+            denom = np.maximum(abs(x_old), abs(x_new))
+            denom = np.maximum(denom, 1e-5) # floor
+            rel_step = max(step / denom)
 
-            # Outer loop convergence tolerance
-            eps_outer = np.sqrt(self.n) * ATOL_out + RTOL_out * np.linalg.norm(x_old)
-            eps_feas = np.sqrt(self.d) * ATOL_feas
-
-            if feas > eps_feas:
+            if feas > tol:
                 self.y = self.y + mu * c # Update the multipliers
                 mu = rho * mu # Update the penalty coefficient
-                # self.mu_history.append(mu)
-                # self.m_time.append(time.perf_counter() - t1)
 
             print(f"du_itr={k:03d} | "
-                  f"r_o={r_norm_outer:.3e} | "
+                  f"r_o={rel_step:.3e} | "
                   f"feas={feas:.3e} | "
                   f"mu={mu:.2f} | "
                   f"y={np.linalg.norm(self.y):.3e}"
                   )
             
             # Check outer loop convergence
-            if r_norm_outer <= eps_outer and feas <= eps_feas:
+            if rel_step <= eps_outer and feas <= tol:
                 print('-Dual loop converged!-')
                 break
-
 
         self.time = time.perf_counter() - t1
 
