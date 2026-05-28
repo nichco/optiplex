@@ -71,9 +71,11 @@ class Plex():
               ) -> None:
         
         self.t0 = time.perf_counter()
-        c_old = self.initial_constraint_values
+        # c_old = self.initial_constraint_values WRONG PLACE????
 
         for k in range(max_outer_iter):
+
+            c_old = self.con(self.x)
 
             for j in range(max_inner_iter):
 

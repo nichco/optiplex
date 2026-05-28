@@ -16,6 +16,8 @@ class Plex():
                  eps: float = 1e-5, # inner loop convergence tolerance
                  eta: float = 1e-3, # outer loop convergence tolerance
                  max_y: float = 1e6, # maximum Lagrange multiplier value
+                 eps_min: float = 1e-5, # minimum inner loop tolerance
+                 c: float = 0.5, # factor for updating inner loop tolerance
                  ):
 
         self.subproblems = subproblems
@@ -43,6 +45,8 @@ class Plex():
         self.eps = eps
         self.eta = eta
         self.max_y = max_y
+        self.eps_min = eps_min
+        self.c = c
 
 
     def _update_mu(self, c_new, c_old) -> int:
@@ -72,14 +76,15 @@ class Plex():
               max_inner_iter: int=10,  # maximum number of inner iterations
               ) -> None:
         
-        phase = 0 # two-phase inner loop tolerance (ALGENCAN)
-        
         self.t0 = time.perf_counter()
-        # c_old = self.initial_constraint_values WRONG PLACE????
+        # c_old = self.initial_constraint_values # WRONG PLACE????
 
         for k in range(max_outer_iter):
 
             c_old = self.con(self.x)
+
+            # monotone adaptive inner loop tolerance based on feasibility
+            eps_k = max(self.eps_min, min(eps_k, self.c * c_old))
 
             for j in range(max_inner_iter):
 
@@ -96,20 +101,13 @@ class Plex():
 
                 print(f"pr_itr={j:03d} | "f"rel_stp={rel_step:.3e} | ")
 
-                if phase == 0 and rel_step <= self.eps:
-                    print('-(Phase 0) primal loop converged with rel step: ', rel_step, ' in ', j, ' iterations!-')
+                if rel_step <= self.eps:
+                    print('-Primal loop converged with rel step: ', rel_step, ' in ', j, ' iterations!-')
                     break
-
-                if phase == 1 and rel_step <= self.eta:
-                    print('-(Phase 1) primal loop converged with rel step: ', rel_step, ' in ', j, ' iterations!-')
-                    break
-
-                # if rel_step <= self.eps:
-                #     print('-Primal loop converged with rel step: ', rel_step, ' in ', j, ' iterations!-')
-                #     break
 
 
             c_new = self.con(self.x)
+            print(abs(c_new))
             feas = np.max(abs(c_new))
             self.feasibility.append(feas)
 
