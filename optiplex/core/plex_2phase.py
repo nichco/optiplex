@@ -13,8 +13,8 @@ class Plex():
                  rho: float = 1.2, # penalty increase factor
                  tau: float = 0.5, # factor for increasing mu based on constraint violation
                  tol: float = 1e-3, # outer loop feasibility tolerance
-                 eps: float = 1e-5, # inner loop convergence tolerance
-                 eta: float = 1e-3, # outer loop convergence tolerance
+                 eps: float = 1e-5, # initial inner loop convergence tolerance
+                 eta: float = 1e-3, # final inner loop convergence tolerance
                  max_y: float = 1e6, # maximum Lagrange multiplier value
                  ):
 
@@ -121,7 +121,6 @@ class Plex():
                 print('-Phase 1 complete. Starting phase 2 with feasibility: ', feas)
                 phase = 1
 
-            # self.y += self.mu * c_new # always update the multipliers
             self.y += np.diag(self.mu) @ c_new # always update the multipliers
             self.y_history.append(self.y.copy())
 

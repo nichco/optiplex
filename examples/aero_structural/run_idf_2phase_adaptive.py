@@ -225,8 +225,8 @@ opt = Plex2(subproblems=[aero_subproblem, struct_subproblem],
             rho=1.5,
             tau=0.5,
             tol=1e-3, # outer loop feasibility
-            eps=1e-1, # inner loop convergence
-            eta=1e-5, # outer loop convergence
+            eps=1e-1, # initial inner loop convergence
+            eta=1e-5, # final inner loop convergence
             )
 
 opt.solve(max_outer_iter=100, 
