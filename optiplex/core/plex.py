@@ -10,7 +10,7 @@ class Plex():
                  con: Callable = lambda v: np.zeros(0),
                  tol: float = 1e-3, # outer loop feasibility tolerance
                  mu: float = None, # positive penalty parameter(s)
-                 max_mu: float = 1e3, # maximum penalty parameter
+                 max_mu: float = 1e6, # maximum penalty parameter
                  rho: float = 1.2, # penalty increase factor
                  ):
 
