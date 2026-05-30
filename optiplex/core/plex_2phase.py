@@ -8,13 +8,13 @@ class Plex():
                  subproblems: List[Callable],
                  x_init: List[np.ndarray],
                  con: Callable = lambda v: np.zeros(0),
-                 mu: np.ndarray = None, # positive penalty parameter(s)
+                 mu: np.ndarray | float = 1.0, # positive penalty parameter(s)
                  max_mu: float = 1e3, # maximum penalty parameter
                  rho: float = 1.2, # penalty increase factor
                  tau: float = 0.5, # factor for increasing mu based on constraint violation
                  tol: float = 1e-3, # outer loop feasibility tolerance
-                 eps: float = 1e-5, # initial inner loop convergence tolerance
-                 eta: float = 1e-3, # final inner loop convergence tolerance
+                 eps: float = 1e-2, # initial inner loop convergence tolerance
+                 eta: float = 1e-5, # final inner loop convergence tolerance
                  max_y: float = 1e6, # maximum Lagrange multiplier value
                  ):
 
@@ -29,10 +29,10 @@ class Plex():
         self.feasibility = [max(abs(self.initial_constraint_values))]
         self.x_time = [0.0]
         self.y_history = [self.y.copy()]
-        self.mu = np.ones_like(self.initial_constraint_values) if mu is None else mu # penalty parameter
+        self.mu = mu # penalty parameter(s)
         assert np.all(self.mu >= 0)
         self.max_mu = max_mu
-        self.mu_history = [self.mu.copy()]
+        self.mu_history = [self.mu]
         self.t0 = None
         self.tf = None
 
@@ -45,16 +45,22 @@ class Plex():
         self.max_y = max_y
 
 
-    def _update_mu(self, c_new, c_old) -> int:
+    def _update_mu(self, c_new, c_old) -> None:
 
-        num = 0
-        for i, (f_new, f_old) in enumerate(zip(abs(c_new), abs(c_old))):
-            if f_new > self.tau * f_old and f_new > self.tol:
-            # if f_new > self.tol:
-                self.mu[i] = min(self.rho * self.mu[i], self.max_mu)
-                num += 1
+        if isinstance(self.mu, np.ndarray):
 
-        return num
+            num = 0
+            for i, (f_new, f_old) in enumerate(zip(abs(c_new), abs(c_old))):
+                if f_new > self.tau * f_old and f_new > self.tol:
+                    self.mu[i] = min(self.rho * self.mu[i], self.max_mu)
+                    num += 1
+
+        elif isinstance(self.mu, (float, int)):
+
+            if max(abs(c_new)) > self.tau * max(abs(c_old)) and max(abs(c_new)) > self.tol:
+                self.mu = min(self.rho * self.mu, self.max_mu)
+
+        return None
     
 
     def _inner_loop(self) -> None:
@@ -63,7 +69,7 @@ class Plex():
 
             self.x = subP(self.x, self.y, self.mu)
             self.history.append(self.x.copy())
-            self.mu_history.append(self.mu.copy())
+            self.mu_history.append(self.mu)
             self.x_time.append(time.perf_counter() - self.t0)
 
 
@@ -121,11 +127,17 @@ class Plex():
                 print('-Phase 1 complete. Starting phase 2 with feasibility: ', feas)
                 phase = 1
 
-            self.y += np.diag(self.mu) @ c_new # always update the multipliers
-            self.y_history.append(self.y.copy())
+            # self.y += np.diag(self.mu) @ c_new # always update the multipliers
+            # self.y_history.append(self.y.copy())
+            if isinstance(self.mu, np.ndarray):
+                self.y += np.diag(self.mu) @ c_new
+            if isinstance(self.mu, (float, int)):
+                self.y += self.mu * c_new
+
+            self.y_history.append(self.y)
 
             # update mu on a per-scalar-constraint basis
-            nc_up = self._update_mu(c_new, c_old)
+            self._update_mu(c_new, c_old)
             c_old = c_new
 
             print(f"du_itr={k:03d} | "
@@ -133,7 +145,6 @@ class Plex():
                   f"max mu={np.max(self.mu):.3e} | "
                   f"min mu={np.min(self.mu):.3e} | "
                   f"y={np.linalg.norm(self.y):.3e} | "
-                  f"updated mu for {nc_up} constraints"
                   )
 
         self.tf = time.perf_counter() - self.t0

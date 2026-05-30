@@ -1,4 +1,4 @@
-from optiplex import Plex
+from optiplex import PlexC
 import numpy as np
 from examples.cart_pole.problem_definition import functions, constraint
 import warnings
@@ -23,19 +23,16 @@ for i in range(N): v_init.append(x0)
 for i in range(N): v_init.append(u0)
 
 
-opt = Plex(subproblems=functions,
+opt = PlexC(subproblems=functions,
            con=constraint,
            tol=1e-5, # feasibility tolerance
            rho=1.1, # penalty increase factor
            mu=1.0, # initial penalty parameter
            max_mu=1e6, # maximum penalty parameter
            x_init=v_init,
+           eps=1e-5, # inner loop tolerance
            )
 
 opt.solve(max_outer_iter=100,
           max_inner_iter=10,
-          eps_inner=1e-2, # inner loop tolerance
-          eps_outer=1e-5, # outer loop tolerance
           )
-
-print('Time (s): ', opt.time)
