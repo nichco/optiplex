@@ -7,34 +7,32 @@ import pyvista as pv
 
 
 class LiftingLine:
-    def __init__(self, le_points, te_points, v_inf, rho, cl_alpha=2 * jnp.pi):
+    def __init__(self, le, te, v_inf, rho, cl_alpha=2 * jnp.pi):
         """
         Parameters
         ----------
-        le_points : np.ndarray, shape (M, 3)
+        le : np.ndarray, shape (M, 3)
             Leading-edge points, one row per spanwise station.
             Stations must be ordered from left wingtip (-y) to the right wingtip (+y)
             (i.e. monotonically increasing or decreasing in y).
-        te_points : np.ndarray, shape (M, 3)
+        te : np.ndarray, shape (M, 3)
             Trailing-edge points corresponding to each LE station.
-        v_inf     : float   Free-stream velocity magnitude.
+        v_inf     : float   Free-stream velocity.
         rho       : float   Air density.
-        cl_alpha  : float   Lift-curve slope (default 2π).
+        cl_alpha  : float   Lift-curve slope.
         """
 
-        self.N = le_points.shape[0] # number of stations
+        self.N = le.shape[0] # number of stations
 
         # Spanwise coordinate at each station (y column)
-        y_mesh = le_points[:, 1] # shape (N,)
-
+        y_mesh = le[:, 1] # shape (N,)
         self.b = y_mesh[-1] - y_mesh[0] # wing span
 
         # Chord at each station
-        chord_mesh = jnp.linalg.norm(te_points - le_points, axis=1)  # shape (N,)
+        chord_mesh = jnp.linalg.norm(te - le, axis=1)  # shape (N,)
 
         # Planform area via trapezoidal integration over the sorted stations
         panel_areas = 0.5 * (chord_mesh[:-1] + chord_mesh[1:]) * jnp.abs(jnp.diff(y_mesh))
-        # self.S = np.trapz(chord_mesh, y_mesh)
         self.S = jnp.sum(panel_areas)
         self.AR = self.b ** 2 / self.S
 
@@ -56,30 +54,25 @@ class LiftingLine:
         self.chord = jnp.array(jnp.interp(self.y, y_mesh, chord_mesh))
 
         #  Store LE x-position interpolated onto cosine stations (for plot_3d)
-        le_x_mesh = le_points[:, 0]
+        le_x_mesh = le[:, 0]
         self._le_x = jnp.array(jnp.interp(self.y, y_mesh, le_x_mesh))
 
         self.alpha = 0.0
 
     def solve_lifting_line_model(self, x):
-        """
-        x : jnp.ndarray, shape (N,)
-            Geometric twist angle (radians) at each collocation station.
-
-        Returns
-        -------
-        coef : jnp.ndarray, shape (N,)
-            Fourier coefficients of the spanwise circulation.
-        """
         A = jnp.zeros((self.N, self.N), dtype=x.dtype)
         b = jnp.zeros(self.N, dtype=x.dtype)
 
         for m in range(self.N):
             for n in range(self.N):
                 cval = 0.25 * (self.chord[m] / self.b) * self.cl_alpha
+                # A = A.at[m, n].set(
+                #     jnp.sin((n + 1) * self.theta[m]) * jnp.sin(self.theta[m])
+                #     + cval * jnp.sin((n + 1) * self.theta[m])
+                # )
                 A = A.at[m, n].set(
                     jnp.sin((n + 1) * self.theta[m]) * jnp.sin(self.theta[m])
-                    + cval * jnp.sin((n + 1) * self.theta[m])
+                    + (n + 1) * cval * jnp.sin((n + 1) * self.theta[m])
                 )
             b = b.at[m].set(
                 0.25
@@ -216,21 +209,22 @@ def build_planform_mesh(N, b, c_root, c_tip):
 
 if __name__ == "__main__":
 
-    N      = 31
-    b      = 15.0
-    c_root = 1.0
-    c_tip  = 0.65
-    v_inf  = 100.0
-    rho    = 1.225
+    v_inf  = 200.0
+    rho    = 0.5
 
-    # Build mesh from the legacy parameters and pass it in
-    le_points, te_points = build_planform_mesh(N, b, c_root, c_tip)
+    from crm_mesh import build_crm_mesh
+
+    # generate the CRM lifting line mesh
+    ns = 33 # num spanwise panels (must be odd)
+    crm_mesh = build_crm_mesh(ns=ns, span_cos_spacing=0)
+    le_points = crm_mesh[0, :, :]
+    te_points = crm_mesh[1, :, :]
 
     lifting_line = LiftingLine(le_points, te_points, v_inf, rho)
 
-    x = jnp.ones(lifting_line.N) * jnp.deg2rad(5)
+    twist = jnp.ones(lifting_line.N) * jnp.deg2rad(5)
 
-    sol = lifting_line.solve_lifting_line_model(x)
+    sol = lifting_line.solve_lifting_line_model(twist)
     CD = sol["CD"]
     CL = sol["CL"]
     coef = sol["coef"]
@@ -241,7 +235,7 @@ if __name__ == "__main__":
     print("CD:", sol["CD"])
 
     fig, ax = plt.subplots(1, 2, figsize=(12, 4))
-    ax[0].plot(lifting_line.y, x, linewidth=2)
+    ax[0].plot(lifting_line.y, twist, linewidth=2)
     ax[0].set_title("Twist")
     ax[1].plot(lifting_line.y, Gamma, linewidth=2)
     ax[1].set_title("Gamma")

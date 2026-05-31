@@ -30,10 +30,10 @@ beam_mesh = (le + te) / 2.0
 chord = np.linalg.norm(te - le, axis=1)
 # interpolate chord on a per-element basis (ns - 1)
 interp_chord = 0.5 * (chord[:-1] + chord[1:])
-beam_radius = 0.2 * interp_chord / 2
+beam_radius = 0.25 * interp_chord / 2
 E, G = 69e9, 26e9
 rho_mat = 3000
-m0 = 2e5
+m0 = 1e5
 load_factor = 3
 safety_factor = 1.5
 tip_disp_target = 0.1
@@ -41,7 +41,7 @@ tip_disp_target = 0.1
 
 
 
-num = 10 # number of operating conditions
+num = 20 # number of operating conditions
 sampler = LatinHypercube(d=2, seed=42)
 samples = scale(sampler.random(num), l_bounds=[0.4, 180], u_bounds=[0.6, 220])
 # samples = [(0.4135, 210), (0.4135, 190)]
@@ -95,7 +95,7 @@ def objective(x):
     obj = 0.0
     for i in range(num):
         rho_atm_i, v_inf_i = samples[i]
-        effective_twist = twist + alphas[i]  # no mutation via +=
+        effective_twist = twist + alphas[i]
         ll = LiftingLine(le, te, v_inf_i, rho_atm_i)
         sol = ll.solve_lifting_line_model(effective_twist)
         obj += sol["CD"]
@@ -132,12 +132,15 @@ thickness0 = np.ones(ns - 1) * 0.002
 twist0 = np.ones(ns) * np.deg2rad(5)
 x0 = np.concatenate([alpha0, twist0, thickness0])
 
-alpha_lower = -1 * np.ones(num) * np.deg2rad(10)
+alpha_lower = -1 * np.ones(num) * np.deg2rad(5)
 alpha_upper = np.ones(num) * np.deg2rad(10)
 thickness_lower = np.ones(ns - 1) * 0.001 # min gauge
-thickness_upper = np.ones(ns - 1) * np.inf
-twist_lower = -1 * np.ones(ns) * np.inf
-twist_upper = np.ones(ns) * np.inf
+# thickness_upper = np.ones(ns - 1) * 0.3 # np.inf
+thickness_upper = beam_radius # max thickness is when the inner radius goes to zero
+# twist_lower = -1 * np.ones(ns) * np.inf
+# twist_upper = np.ones(ns) * np.inf
+twist_lower = -1 * np.ones(ns) * np.deg2rad(15)
+twist_upper = np.ones(ns) * np.deg2rad(15)
 xl = np.concatenate([alpha_lower, twist_lower, thickness_lower])
 xu = np.concatenate([alpha_upper, twist_upper, thickness_upper])
 
@@ -164,7 +167,7 @@ x_scaler = np.concatenate([100 * np.ones(num),      # alpha scaler
 jaxprob = JaxProblem(x0=x0, jax_obj=objective, jax_con=constraints, 
                      cl=cl, cu=cu, xl=xl, xu=xu, x_scaler=x_scaler, c_scaler=c_scaler, o_scaler=1e2)
 
-optimizer = SLSQP(jaxprob, solver_options={'maxiter': 600, 'ftol': 1e-7}, turn_off_outputs=True)
+optimizer = SLSQP(jaxprob, solver_options={'maxiter': 1000, 'ftol': 1e-7}, turn_off_outputs=True)
 optimizer.solve()
 optimizer.print_results()
 x = optimizer.results['x'] / x_scaler

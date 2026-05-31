@@ -33,11 +33,13 @@ plt.show()
 chord = np.linalg.norm(te - le, axis=1)
 # interpolate chord on a per-element basis (ns - 1)
 chord = 0.5 * (chord[:-1] + chord[1:])
-beam_radius = 0.2 * chord / 2
+beam_radius = 0.25 * chord / 2
+print("Beam radius at each element:\n", beam_radius)
+# exit()
 E = 69e9
 G = 26e9
 rho_mat = 3000
-m0 = 2e5
+m0 = 1e5
 load_factor = 3
 safety_factor = 1.5
 tip_disp_target = 0.1
@@ -101,7 +103,8 @@ twist0 = np.ones(ns) * np.deg2rad(5)
 x0 = np.concatenate([twist0, thickness0])
 
 thickness_lower = np.ones(ns - 1) * 0.001 # min gauge
-thickness_upper = np.ones(ns - 1) * np.inf
+# thickness_upper = np.ones(ns - 1) * 0.3 # np.inf
+thickness_upper = beam_radius # max thickness is when the inner radius goes to zero
 twist_lower = -1 * np.ones(ns) * np.inf
 twist_upper = np.ones(ns) * np.inf
 xl = np.concatenate([twist_lower, thickness_lower])
