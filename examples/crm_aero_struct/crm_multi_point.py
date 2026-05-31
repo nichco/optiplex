@@ -41,9 +41,9 @@ tip_disp_target = 0.1
 
 
 
-num = 3 # number of operating conditions
+num = 10 # number of operating conditions
 sampler = LatinHypercube(d=2, seed=42)
-samples = scale(sampler.random(num), l_bounds=[0.4, 190], u_bounds=[0.5, 220])
+samples = scale(sampler.random(num), l_bounds=[0.4, 180], u_bounds=[0.6, 220])
 # samples = [(0.4135, 210), (0.4135, 190)]
 print(samples)
 
@@ -91,17 +91,7 @@ def objective(x):
 
     alphas = x[:num]
     twist = x[num:num + ns]
-    # thickness = x[num + ns:]
 
-    # obj = 0
-
-    # for i in range(num):
-
-    #     rho_atm, v_inf = samples[i]
-    #     alpha_i = alphas[i]
-
-    #     CD_i, _ = condition(rho_atm, v_inf, alpha_i, twist, thickness)
-    #     obj += CD_i
     obj = 0.0
     for i in range(num):
         rho_atm_i, v_inf_i = samples[i]
@@ -163,9 +153,9 @@ c_i_scaler = np.array([10, 10, 1e-4])
 c_scaler = np.concatenate([c_i_scaler for _ in range(num)])
 
 
-x_scaler = np.concatenate([10 * np.ones(num),      # alpha scaler
+x_scaler = np.concatenate([100 * np.ones(num),      # alpha scaler
                            10 * np.ones(ns),       # twist scaler
-                           100 * np.ones(ns - 1)]) # thickness scaler
+                           10 * np.ones(ns - 1)]) # thickness scaler
 
 
 
