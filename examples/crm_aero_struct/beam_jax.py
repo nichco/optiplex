@@ -1,0 +1,368 @@
+import numpy as np
+import jax
+jax.config.update("jax_enable_x64", True)
+import jax.numpy as jnp
+import matplotlib.pyplot as plt
+import pyvista as pv
+
+class CSTube:
+    def __init__(self, radius, thickness):
+        r_i = radius - thickness
+        r_o4_minus_r_i4 = radius**4 - r_i**4
+        self.area = jnp.pi * (radius**2 - r_i**2)
+        self.J  = jnp.pi * r_o4_minus_r_i4 / 2   # polar moment
+        self.Iy = jnp.pi * r_o4_minus_r_i4 / 4   # 2nd moment about y
+        self.Iz = jnp.pi * r_o4_minus_r_i4 / 4   # 2nd moment about z
+
+    def stress_func(self, M, r):
+        pass
+
+
+class Beam:
+
+    def __init__(self,
+                 mesh,
+                 E:           float,
+                 G:           float,
+                 rho:         float,
+                 A,
+                 J,
+                 Iy,
+                 Iz,
+                 F,
+                 fixed_nodes: list[int] | None = None,
+                 fixed_dofs:  list[int] | None = None):
+
+        self.num_nodes    = len(mesh)
+        self.num_elements = self.num_nodes - 1
+        n = self.num_elements
+
+        self.connectivity = np.array([[i, i + 1] for i in range(n)])
+
+        # Precompute the 12 global DOF indices for every element
+        self.elem_dofs = np.array([
+            np.r_[6*n1 : 6*n1+6, 6*n2 : 6*n2+6]
+            for n1, n2 in self.connectivity
+        ])  # (num_elements, 12)
+
+        if fixed_nodes is None:
+            fixed_nodes = [0]
+        if fixed_dofs is None:
+            fixed_dofs = list(range(6))
+        self.fixed_dofs = np.array([6 * nd + d for nd in fixed_nodes for d in fixed_dofs])
+        self.free_dofs  = np.setdiff1d(np.arange(self.num_nodes * 6), self.fixed_dofs)
+
+
+        self.mesh = jnp.asarray(mesh, dtype=float)
+        self.E    = jnp.asarray(E,   dtype=float)
+        self.G    = jnp.asarray(G,   dtype=float)
+        self.rho  = jnp.asarray(rho, dtype=float)
+        self.F    = jnp.asarray(F,   dtype=float)
+
+        # Broadcast scalar -> (num_elements,); works with traced values too
+        to_elem = lambda x: jnp.broadcast_to(jnp.atleast_1d(jnp.asarray(x, dtype=float)), (n,))
+        self.A  = to_elem(A)
+        self.J  = to_elem(J)
+        self.Iy = to_elem(Iy)
+        self.Iz = to_elem(Iz)
+
+        # Element lengths and unit axes (JAX, so mesh is differentiable too)
+        p1   = self.mesh[self.connectivity[:, 0]]
+        p2   = self.mesh[self.connectivity[:, 1]]
+        diff = p2 - p1
+        self.L   = jnp.linalg.norm(diff, axis=1) # (n,)
+        self.e_x = diff / self.L[:, None] # (n, 3)
+
+        # calculate the beam's mass
+        self.mass = jnp.sum(self.rho * self.A * self.L)
+
+
+    def _local_stiffness(self) -> jnp.ndarray:
+        """
+        Build local-frame stiffness matrices for every element.
+
+        The 12 DOFs are ordered as:
+          node 1: [u1, v1, w1, thx1, thy1, thz1]
+          node 2: [u2, v2, w2, thx2, thy2, thz2]
+        where x is the element axis, y/z are the two transverse directions.
+
+        Returns
+        -------
+        K_local : (num_elements, 12, 12)
+        """
+        L = self.L
+        A, E, G = self.A, self.E, self.G
+
+        AEL      =  A * E / L
+        GJL      =  G * self.J  / L
+        EIzL3_12 =  12 * E * self.Iz / L**3
+        EIzL2_6  =   6 * E * self.Iz / L**2
+        EIzL_4   =   4 * E * self.Iz / L
+        EIzL_2   =   2 * E * self.Iz / L
+        EIyL3_12 =  12 * E * self.Iy / L**3
+        EIyL2_6  =   6 * E * self.Iy / L**2
+        EIyL_4   =   4 * E * self.Iy / L
+        EIyL_2   =   2 * E * self.Iy / L
+
+        # (row, col, value-array) -- upper triangle; symmetry filled below
+        entries = [
+            # diagonal
+            ( 0,  0,  AEL),
+            ( 1,  1,  EIzL3_12),
+            ( 2,  2,  EIyL3_12),
+            ( 3,  3,  GJL),
+            ( 4,  4,  EIyL_4),
+            ( 5,  5,  EIzL_4),
+            ( 6,  6,  AEL),
+            ( 7,  7,  EIzL3_12),
+            ( 8,  8,  EIyL3_12),
+            ( 9,  9,  GJL),
+            (10, 10,  EIyL_4),
+            (11, 11,  EIzL_4),
+            # off-diagonal
+            ( 1,  5,  EIzL2_6),
+            ( 2,  4, -EIyL2_6),
+            ( 0,  6, -AEL),
+            ( 1,  7, -EIzL3_12),
+            ( 1, 11,  EIzL2_6),
+            ( 2,  8, -EIyL3_12),
+            ( 2, 10, -EIyL2_6),
+            ( 3,  9, -GJL),
+            ( 4,  8,  EIyL2_6),
+            ( 4, 10,  EIyL_2),
+            ( 5,  7, -EIzL2_6),
+            ( 5, 11,  EIzL_2),
+            ( 7, 11, -EIzL2_6),
+            ( 8, 10,  EIyL2_6),
+        ]
+
+        K = jnp.zeros((self.num_elements, 12, 12))
+        for i, j, val in entries:
+            K = K.at[:, i, j].add(val)
+            if i != j:
+                K = K.at[:, j, i].add(val)   # symmetric
+        return K
+
+
+    @staticmethod
+    def _rotation_matrix(ex: jnp.ndarray) -> jnp.ndarray:
+        """
+        Build the 3x3 rotation matrix for one element.
+
+        We use jnp.where (not a Python if) so this function is safe to
+        call on traced values -- JAX evaluates both branches and blends,
+        rather than branching at trace time.
+        """
+        z_axis = jnp.array([0., 0., 1.])
+        x_axis = jnp.array([1., 0., 0.])
+
+        # Pick whichever reference axis is least parallel to the element
+        ref = jnp.where(jnp.abs(jnp.dot(ex, z_axis)) > 0.9, x_axis, z_axis)
+
+        ez = jnp.cross(ex, ref)
+        ez = ez / jnp.linalg.norm(ez)
+        ey = jnp.cross(ez, ex)           # right-hand rule
+
+        return jnp.stack([ex, ey, ez])   # rows = local axes in global frame
+
+
+    def _transform_stiffness(self, K_local: jnp.ndarray) -> jnp.ndarray:
+        """
+        Rotate every element's 12x12 stiffness from local -> global frame.
+
+        The 12x12 transformation matrix T is block-diagonal: four copies of
+        the 3x3 rotation matrix R (one per node/DOF-triplet).  We build T
+        efficiently as a Kronecker product:
+
+            T = I_4 (x) R   ->   jnp.kron(jnp.eye(4), R)
+
+        then apply  K_global = T^T K_local T  via vmap over all elements.
+        """
+        def transform_one(K_e, ex):
+            R = Beam._rotation_matrix(ex)
+            T = jnp.kron(jnp.eye(4), R)    # (12, 12) block-diagonal
+            return T.T @ K_e @ T
+
+        return jax.vmap(transform_one)(K_local, self.e_x)
+
+
+    def _assemble(self, K_elem: jnp.ndarray) -> jnp.ndarray:
+        """
+        Scatter element matrices into the global (num_nodes*6)^2 matrix.
+
+        Index arrays (elem_dofs) are plain NumPy -> static constants in JAX.
+        The scatter is a Python loop that unrolls at trace time; for large
+        meshes consider replacing with jax.lax.scan.
+        """
+        n_dofs = self.num_nodes * 6
+        K = jnp.zeros((n_dofs, n_dofs))
+
+        for e, dofs in enumerate(self.elem_dofs):
+            # dofs[:, None] and dofs[None, :] broadcast to a (12, 12) index grid
+            K = K.at[dofs[:, None], dofs[None, :]].add(K_elem[e])
+
+        return K
+
+
+    def solve(self) -> jnp.ndarray:
+        """
+        Solve K u = f for the free DOFs.
+
+        Returns
+        -------
+        u : (num_nodes, 6)  nodal displacements / rotations in global frame
+        """
+        K_local = self._local_stiffness()
+        K_elem  = self._transform_stiffness(K_local)
+        K       = self._assemble(K_elem)
+
+        f = self.F.flatten()
+
+        # np.ix_ with static NumPy index arrays -> safe inside jit/grad
+        K_ff = K[np.ix_(self.free_dofs, self.free_dofs)]
+        f_f  = f[self.free_dofs]
+        u_f  = jnp.linalg.solve(K_ff, f_f)
+
+        # Scatter free-DOF solution back into the full vector
+        u = jnp.zeros(self.num_nodes * 6).at[self.free_dofs].set(u_f)
+        return u.reshape(self.num_nodes, 6)
+    
+    def recover_stresses(self, u: jnp.ndarray, c: float | jnp.ndarray) -> jnp.ndarray:
+        """
+        Recover maximum bending stress at both ends of every element.
+ 
+        Transforms nodal displacements back to the local frame, computes
+        internal moments via  f_local = K_local @ u_local, then applies
+        the elastic bending formula  sigma = M * c / I.
+ 
+        For a biaxial case the stress is the sum of both
+        bending contributions (conservative, valid for a circular section):
+            sigma = |Mz| / Iz * c  +  |My| / Iy * c
+ 
+        Parameters
+        ----------
+        u : (num_nodes, 6)  nodal displacements from solve()
+        c : distance from the neutral axis
+ 
+        Returns
+        -------
+        sigma : (num_elements, 2)  bending stress at [node-1, node-2] for each element
+        """
+        K_local   = self._local_stiffness()
+        u_flat    = u.reshape(-1)
+        elem_dofs = jnp.asarray(self.elem_dofs)  # (num_elements, 12)
+
+        # Expand c to (num_nodes,) then pick the two per-element values
+        c_nodes = jnp.broadcast_to(jnp.asarray(c, dtype=float), (self.num_nodes,))
+        c1 = c_nodes[self.connectivity[:, 0]]  # (num_elements,) start nodes
+        c2 = c_nodes[self.connectivity[:, 1]]  # (num_elements,) end nodes
+ 
+        def one_element(K_e, ex, dofs, Iy_e, Iz_e, c1_e, c2_e):
+            R       = Beam._rotation_matrix(ex)
+            T       = jnp.kron(jnp.eye(4), R)   # local <- global
+            u_local = T @ u_flat[dofs]           # 12 local DOFs
+            f_local = K_e @ u_local              # 12 local forces / moments
+ 
+            # Local-frame bending moments at each end of the element:
+            #   DOF 4 / 10 : My  (bending about local y)
+            #   DOF 5 / 11 : Mz  (bending about local z)
+            My1, Mz1 = f_local[4],  f_local[5]
+            My2, Mz2 = f_local[10], f_local[11]
+ 
+            sigma1 = (jnp.abs(Mz1) / Iz_e + jnp.abs(My1) / Iy_e) * c1_e
+            sigma2 = (jnp.abs(Mz2) / Iz_e + jnp.abs(My2) / Iy_e) * c2_e
+            return jnp.stack([sigma1, sigma2])
+ 
+        # sigma_elem[e, 0] = start node of element e
+        # sigma_elem[e, 1] = end node   of element e  (== start of element e+1)
+        # So take every start-node value and append the tip once.
+
+        sigma_elem = jax.vmap(one_element)(
+            K_local, self.e_x, elem_dofs, self.Iy, self.Iz, c1, c2
+        )
+        # return jnp.append(sigma_elem[:, 0], sigma_elem[-1, 1])  # (num_nodes,)
+    
+        from_start = jnp.append(sigma_elem[:, 0], 0.0)  # stress as start of element; 0 for last node
+        from_end   = jnp.append(0.0, sigma_elem[:, 1])  # stress as end of element;   0 for first node
+        return jnp.maximum(from_start, from_end)         # (num_nodes,)
+
+
+    def plot_3d(self,
+                u:      jnp.ndarray,
+                radius: float | np.ndarray,
+                plotter: pv.Plotter,
+                scale:  float = 1.0,
+                cmap:   str   = "plasma") -> None:
+
+        orig     = np.array(self.mesh)
+        disp     = np.array(u[:, :3])
+        deformed = orig + scale * disp
+        mag      = np.linalg.norm(disp, axis=1)
+        radii    = np.broadcast_to(np.asarray(radius, dtype=float), (self.num_elements,)).copy()
+
+
+        for i, (n1, n2) in enumerate(self.connectivity):
+            p1, p2    = deformed[n1], deformed[n2]
+            center    = 0.5 * (p1 + p2)
+            direction = p2 - p1
+            length    = np.linalg.norm(direction)
+            scalar    = 0.5 * (mag[n1] + mag[n2])
+
+            cyl = pv.Cylinder(center=center, direction=direction, radius=radii[i], height=length, resolution=30, capping=False)
+            cyl.point_data["Displacement"] = np.full(cyl.n_points, scalar)
+            plotter.add_mesh(cyl, scalars="Displacement", cmap=cmap,
+                        clim=[mag.min(), mag.max()], smooth_shading=True,
+                        show_scalar_bar=False, show_edges=False, opacity=0.8)
+
+
+
+if __name__ == "__main__":
+
+    num_nodes = 21
+    length    = 10.0
+    mesh      = np.zeros((num_nodes, 3))
+    mesh[:, 1] = np.linspace(0, length, num_nodes)
+
+    E   = 69e9
+    G   = 26e9
+    rho = 2700
+    P = 10_000.0 # tip load in N
+
+    F = np.zeros((num_nodes, 6))
+    F[-1, 2] = P # load in the global Z direction
+
+    radius = 0.5
+    thickness = 0.001
+    cs   = CSTube(radius=radius, thickness=thickness)
+    beam = Beam(mesh=mesh, E=E, G=G, rho=rho,
+                A=cs.area, J=cs.J, Iy=cs.Iy, Iz=cs.Iz, F=F)
+
+    u = beam.solve()
+
+    I     = cs.Iz
+    delta = P * length**3 / (3 * E * I)
+
+    print(f"  Tip displacement (FEA):      {u[-1, 2]:.6e} m")
+    print(f"  Tip displacement (analytic): {delta:.6e} m")
+    print(f"  Relative error:              {abs(u[-1, 2] - delta) / delta * 100:.4f} %")
+
+    sigma = beam.recover_stresses(u, c=radius)   # (num_elements, 2)
+    # print('Bending stress: ', sigma)
+ 
+    # Root moment = P * L  =>  sigma_root = P * L * c / I
+    sigma_root_analytic = P * length * radius / float(I)
+    sigma_root_fea      = float(sigma[0])   # element 0, node-1 end (fixed root)
+ 
+    print(f"  Root stress (FEA):      {sigma_root_fea:.6e} Pa")
+    print(f"  Root stress (analytic): {sigma_root_analytic:.6e} Pa")
+    print(f"  Error:                  {abs(sigma_root_fea - sigma_root_analytic) / sigma_root_analytic * 100:.4f} %")
+
+
+    radius = np.linspace(0.1, 0.5, num_nodes - 1)  # variable radius for visualization
+
+    plotter = pv.Plotter()
+    beam.plot_3d(u, radius=radius, plotter=plotter, scale=10)
+    plotter.view_isometric()
+    plotter.add_axes()
+    plotter.set_background("white")
+    plotter.show()
