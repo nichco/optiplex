@@ -39,6 +39,14 @@ def combo(variables: list) -> jnp.ndarray:
     indices = list(range(num_blocks))
     pairs = list(combinations(indices, 2))
 
+#     print(pairs)
+    # remove an arbitrary pair so the constraints are linearly independent
+    # (e.g. remove the last pair)
+    if len(pairs) > 1:
+        pairs = pairs[:-1]
+#     print(pairs)
+
+
     c = jnp.array([variables[i] - variables[j] for i, j in pairs])
 
     return c.flatten()

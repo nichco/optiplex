@@ -10,6 +10,31 @@ jax.config.update("jax_enable_x64", True)
 from modopt import JaxProblem, SLSQP
 from scipy.stats.qmc import LatinHypercube, scale
 import gc
+from optiplex import combo
+
+
+
+# generate the CRM lifting line mesh
+ns = 33 # num spanwise panels (must be odd)
+crm_mesh = build_crm_mesh(ns=ns, span_cos_spacing=0)
+
+# generate a beam mesh from the CRM lifting line mesh
+le = crm_mesh[0, :, :]
+te = crm_mesh[1, :, :]
+beam_mesh = (le + te) / 2.0
+
+# beam model parameters
+chord = np.linalg.norm(te - le, axis=1)
+# interpolate chord on a per-element basis (ns - 1)
+interp_chord = 0.5 * (chord[:-1] + chord[1:])
+beam_radius = 0.25 * interp_chord / 2
+E, G = 69e9, 26e9
+rho_mat = 3000
+m0 = 1e5
+load_factor = 3
+safety_factor = 1.5
+tip_disp_target = 0.1
+
 
 
 def make_subproblem(subP, rho_atm_i, v_inf_i, num):
@@ -33,11 +58,16 @@ def make_subproblem(subP, rho_atm_i, v_inf_i, num):
             twists[subP] = twist_i
             thicknesses[subP] = thickness_i
 
-            effective_twist = twist_i + alpha_i
+            effective_twist = twist_i + alpha_i # add the trim aoa to the twist distribution
 
             ll = LiftingLine(le, te, v_inf_i, rho_atm_i)
             sol = ll.solve_lifting_line_model(effective_twist)
             CD = sol["CD"]
+
+            twist_constraint = combo(twists) # modified combo to remove one pair
+            thickness_constraint = combo(thicknesses) # modified combo to remove one pair
+        
+            c = jnp.concatenate((twist_constraint, thickness_constraint))
 
             L = 1e2 * CD + y.T @ c + 0.5 * mu * jnp.sum(c**2)
             return L
@@ -53,12 +83,91 @@ def make_subproblem(subP, rho_atm_i, v_inf_i, num):
             twists[subP] = twist_i
             thicknesses[subP] = thickness_i
 
-            _, con_i = condition(rho_atm, v_inf, alpha_i, twist, thickness)
+            effective_twist = twist_i + alpha_i # add the trim aoa to the twist distribution
+
+            ll = LiftingLine(le, te, v_inf_i, rho_atm_i)
+            sol = ll.solve_lifting_line_model(effective_twist)
+            CD = sol["CD"]
+            CL = sol["CL"]
+            forces = sol["F"]
+
+            forces *= load_factor * safety_factor
+            F = jnp.zeros((ns, 6))
+            F = F.at[:, :3].set(forces)
+
+            cs = CSTube(radius=beam_radius, thickness=thickness_i)
+            beam = Beam(mesh=beam_mesh, E=E, G=G, rho=rho_mat,
+                        A=cs.area, J=cs.J, Iy=cs.Iy, Iz=cs.Iz, F=F, 
+                        fixed_nodes=[ns // 2])
+            u = beam.solve()
+            u = jnp.linalg.norm(u[:, :3], axis=1)
+            right_tip_disp, left_tip_disp = u[-1], u[0]
+
+            crm_weight = (beam.mass + m0) * 9.81
+
+            q = 0.5 * rho_atm_i * v_inf_i**2
+            lift = CL * q * ll.S
+
+            con_i = jnp.zeros(3)
+            con_i = con_i.at[0].set(left_tip_disp - tip_disp_target)
+            con_i = con_i.at[1].set(right_tip_disp - tip_disp_target)
+            con_i = con_i.at[2].set(lift - crm_weight)
 
             return con_i
+        
+
+
+
+        alpha_i_0 = alphas[subP]
+        thickness_i_0 = thicknesses[subP]
+        twist_i_0 = twists[subP]
+        x0 = np.concatenate([alpha_i_0, twist_i_0, thickness_i_0])
+
+        alpha_lower = -1 * np.ones(num) * np.deg2rad(5)
+        alpha_upper = np.ones(num) * np.deg2rad(10)
+        thickness_lower = np.ones(ns - 1) * 0.001 # min gauge
+        thickness_upper = beam_radius # max thickness is when the inner radius goes to zero
+        twist_lower = -1 * np.ones(ns) * np.deg2rad(15)
+        twist_upper = np.ones(ns) * np.deg2rad(15)
+        xl = np.concatenate([alpha_lower, twist_lower, thickness_lower])
+        xu = np.concatenate([alpha_upper, twist_upper, thickness_upper])
+
+        cl_i = np.concatenate([-np.inf * np.ones(2), np.zeros(1)])
+        cu_i = np.concatenate([ np.zeros(2),         np.zeros(1)])
+
+        cl = np.concatenate([cl_i for _ in range(num)])
+        cu = np.concatenate([cu_i for _ in range(num)])
+
+        c_i_scaler = np.array([10, 10, 1e-4])
+        c_scaler = np.concatenate([c_i_scaler for _ in range(num)])
+
+
+        x_scaler = np.concatenate([100 * np.ones(num),    # alpha scaler
+                                   10 * np.ones(ns),      # twist scaler
+                                   10 * np.ones(ns - 1)]) # thickness scaler
+        
+        jaxprob = JaxProblem(x0=x0, jax_obj=objective, jax_con=constraints, 
+                     cl=cl, cu=cu, xl=xl, xu=xu, x_scaler=x_scaler, c_scaler=c_scaler, o_scaler=1e2)
+
+        optimizer = SLSQP(jaxprob, solver_options={'maxiter': 1000, 'ftol': 1e-7}, turn_off_outputs=True)
+        optimizer.solve()
+        optimizer.print_results()
+        x = optimizer.results['x'] / x_scaler
+
+        alpha_i = x[0] # trim angle for this condition
+        twist_i = x[1:1 + ns] # twist distribution for this condition
+        thickness_i = x[1 + ns:] # thickness distribution for this condition
+
+        alphas[subP] = alpha_i
+        twists[subP] = twist_i
+        thicknesses[subP] = thickness_i
+
+        v_init[0] = alphas
+        v_init[1] = twists
+        v_init[2] = thicknesses
 
         gc.collect()
-        return []
+        return v_init
 
 
 

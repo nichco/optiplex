@@ -41,7 +41,7 @@ tip_disp_target = 0.1
 
 
 
-num = 20 # number of operating conditions
+num = 50 # 20 # number of operating conditions
 sampler = LatinHypercube(d=2, seed=42)
 samples = scale(sampler.random(num), l_bounds=[0.4, 180], u_bounds=[0.6, 220])
 # samples = [(0.4135, 210), (0.4135, 190)]
