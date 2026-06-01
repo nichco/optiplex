@@ -3,15 +3,13 @@ from beam_jax import Beam, CSTube
 import numpy as np
 from crm_mesh import build_crm_mesh
 import jax.numpy as jnp
-import matplotlib.pyplot as plt
-import pyvista as pv
 import jax
 jax.config.update("jax_enable_x64", True)
 from modopt import JaxProblem, SLSQP
-from scipy.stats.qmc import LatinHypercube, scale
 import gc
 from optiplex import combo
-
+import warnings
+warnings.filterwarnings("ignore")
 
 
 # generate the CRM lifting line mesh

@@ -68,6 +68,6 @@ opt = PlexC(subproblems=subPfuns,
             eps=1e-3, # inner loop convergence
             )
 
-opt.solve(max_outer_iter=2, 
-          max_inner_iter=10,
+opt.solve(max_outer_iter=100, 
+          max_inner_iter=20,
           )
