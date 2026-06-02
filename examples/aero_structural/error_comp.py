@@ -1,44 +1,45 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-data = np.load('examples/aero_structural/history4_r3p0.npz')
+# data = np.load('examples/aero_structural/history4_r3p0.npz')
+data = np.load('examples/aero_structural/history4_2phase_r1p5_eps_1en1.npz')
 
 time = data['x_time']
 error = data['error']
 
-data_pen_1e2 = np.load('examples/aero_structural/history_pen_1e2.npz')
+data_pen_1e2 = np.load('examples/aero_structural/data/history_pen_1e2.npz')
 error_pen_1e2 = data_pen_1e2['error']
 time_pen_1e2 = data_pen_1e2['x_time']
 
-data_pen_5e2 = np.load('examples/aero_structural/history_pen_5e2.npz')
+data_pen_5e2 = np.load('examples/aero_structural/data/history_pen_5e2.npz')
 error_pen_5e2 = data_pen_5e2['error']
 time_pen_5e2 = data_pen_5e2['x_time']
 
-data_pen_9e2 = np.load('examples/aero_structural/history_pen_9e2.npz')
+data_pen_9e2 = np.load('examples/aero_structural/data/history_pen_9e2.npz')
 error_pen_9e2 = data_pen_9e2['error']
 time_pen_9e2 = data_pen_9e2['x_time']
 
-data_pen_1e3 = np.load('examples/aero_structural/history_pen_1e3.npz')
+data_pen_1e3 = np.load('examples/aero_structural/data/history_pen_1e3.npz')
 error_pen_1e3 = data_pen_1e3['error']
 time_pen_1e3 = data_pen_1e3['x_time']
 
-data_pen_2e3 = np.load('examples/aero_structural/history_pen_2e3.npz')
+data_pen_2e3 = np.load('examples/aero_structural/data/history_pen_2e3.npz')
 error_pen_2e3 = data_pen_2e3['error']
 time_pen_2e3 = data_pen_2e3['x_time']
 
-data_pen_3e3 = np.load('examples/aero_structural/history_pen_3e3.npz')
+data_pen_3e3 = np.load('examples/aero_structural/data/history_pen_3e3.npz')
 error_pen_3e3 = data_pen_3e3['error']
 time_pen_3e3 = data_pen_3e3['x_time']
 
-data_pen_4e3 = np.load('examples/aero_structural/history_pen_4e3.npz')
+data_pen_4e3 = np.load('examples/aero_structural/data/history_pen_4e3.npz')
 error_pen_4e3 = data_pen_4e3['error']
 time_pen_4e3 = data_pen_4e3['x_time']
 
-data_pen_5e3 = np.load('examples/aero_structural/history_pen_5e3.npz')
+data_pen_5e3 = np.load('examples/aero_structural/data/history_pen_5e3.npz')
 error_pen_5e3 = data_pen_5e3['error']
 time_pen_5e3 = data_pen_5e3['x_time']
 
-data_pen_1e4 = np.load('examples/aero_structural/history_pen_1e4.npz')
+data_pen_1e4 = np.load('examples/aero_structural/data/history_pen_1e4.npz')
 error_pen_1e4 = data_pen_1e4['error']
 time_pen_1e4 = data_pen_1e4['x_time']
 
@@ -80,5 +81,6 @@ plt.ylabel('Error')
 plt.legend(loc='upper right')
 # plt.grid(axis='y', color='lavender', zorder=0)
 
-plt.savefig('simple_aero_struct_penalty_comp.pdf', bbox_inches='tight')
+# plt.savefig('simple_aero_struct_penalty_comp.pdf', bbox_inches='tight')
+plt.savefig('simple_aero_struct_penalty_comp.png', bbox_inches='tight')
 plt.show()

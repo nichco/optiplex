@@ -36,7 +36,7 @@ tip_disp_target = 0.1
 
 
 
-def make_subproblem(subP, rho_atm_i, v_inf_i, num):
+def make_subproblem(subP, rho_atm_i, v_inf_i, num, si, cs):
 
     def subP_i(v_init: list,
                y: np.ndarray = None, # lagrange multipliers
@@ -47,7 +47,7 @@ def make_subproblem(subP, rho_atm_i, v_inf_i, num):
         twists = []
         thicknesses = []
         for i in range(num):
-            x_init_i = v_init[i]
+            x_init_i = v_init[i] / si # unscale the decision variables
             alphas.append(x_init_i[0])
             twists.append(x_init_i[1:1 + ns])
             thicknesses.append(x_init_i[1 + ns:])
@@ -71,7 +71,7 @@ def make_subproblem(subP, rho_atm_i, v_inf_i, num):
             twist_constraint = combo(twists) # modified combo to remove one pair
             thickness_constraint = combo(thicknesses) # modified combo to remove one pair
         
-            c = jnp.concatenate((twist_constraint, thickness_constraint * 10)) * 1e-1
+            c = jnp.concatenate((twist_constraint, thickness_constraint * 10)) * cs
 
             L = 1e2 * CD + y.T @ c + 0.5 * mu * jnp.sum(c**2)
             return L
@@ -167,7 +167,8 @@ def make_subproblem(subP, rho_atm_i, v_inf_i, num):
         # v_init[2] = thicknesses
 
         ans_i = np.concatenate([np.array([alpha_i]), np.array(twist_i), np.array(thickness_i)])
-        v_init[subP] = ans_i
+        # v_init[subP] = ans_i
+        v_init[subP] = ans_i * si # scale the decision variables for the next iteration
 
         gc.collect()
         return v_init
