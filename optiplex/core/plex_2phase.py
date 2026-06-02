@@ -97,7 +97,7 @@ class Plex():
                 z_new = np.concatenate([xi.ravel() for xi in self.x])
                 step = abs(z_new - z_old)
                 denom = np.maximum(abs(z_old), abs(z_new))
-                denom = np.maximum(denom, 1e-5) # floor
+                denom = np.maximum(denom, 1e-8) # floor
                 rel_step = max(step / denom)
 
                 print(f"pr_itr={j:03d} | "f"rel_stp={rel_step:.3e} | ")

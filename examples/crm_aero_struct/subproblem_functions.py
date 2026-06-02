@@ -42,18 +42,6 @@ def make_subproblem(subP, rho_atm_i, v_inf_i, num):
                y: np.ndarray = None, # lagrange multipliers
                mu: float = 1, # penalty parameter
                ) -> list:
-        
-        # alphas = v_init[0] # trim angles for all conditions
-        # twists = v_init[1] # twist distributions for all conditions
-        # thicknesses = v_init[2] # thickness distributions for all conditions
-
-        # alpha_i_init = np.array([0])
-        # twist_i_init = np.ones(ns) * np.deg2rad(5)
-        # thickness_i_init = np.ones(ns - 1) * 0.002
-
-        # x_i_init = np.concatenate([alpha_i_init, twist_i_init, thickness_i_init])
-
-        # x_init = [x_i_init for _ in range(num)]
 
         alphas = []
         twists = []
@@ -83,7 +71,7 @@ def make_subproblem(subP, rho_atm_i, v_inf_i, num):
             twist_constraint = combo(twists) # modified combo to remove one pair
             thickness_constraint = combo(thicknesses) # modified combo to remove one pair
         
-            c = jnp.concatenate((twist_constraint, thickness_constraint)) * 1e1
+            c = jnp.concatenate((twist_constraint, thickness_constraint * 10)) * 1e-1
 
             L = 1e2 * CD + y.T @ c + 0.5 * mu * jnp.sum(c**2)
             return L

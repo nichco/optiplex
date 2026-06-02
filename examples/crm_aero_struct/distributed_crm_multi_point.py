@@ -13,9 +13,9 @@ from optiplex import PlexC, Plex2, combo
 
 
 num = 2 # number of operating conditions
-# sampler = LatinHypercube(d=2, seed=42)
-# samples = scale(sampler.random(num), l_bounds=[0.4, 180], u_bounds=[0.6, 220])
-samples = [(0.4135, 210), (0.4135, 200)]
+sampler = LatinHypercube(d=2, seed=42)
+samples = scale(sampler.random(num), l_bounds=[0.4, 180], u_bounds=[0.6, 220])
+# samples = [(0.4135, 210), (0.4135, 200)]
 print(samples)
 
 # generate subproblem functions
@@ -54,25 +54,36 @@ def con(v_init):
     twist_constraint = combo(twists) # modified combo to remove one pair
     thickness_constraint = combo(thicknesses) # modified combo to remove one pair
 
-    c = jnp.concatenate((twist_constraint, thickness_constraint)) * 1e1
+    c = jnp.concatenate((twist_constraint, thickness_constraint * 10)) * 1e-1
 
     return c
 
 
 
-opt = PlexC(subproblems=subPfuns,
+# opt = PlexC(subproblems=subPfuns,
+#             x_init=x_init,
+#             con=con,
+#             mu=0.1,#1,#10,
+#             max_mu=1e5,
+#             rho=1.5,
+#             tau=0.5,
+#             tol=1e-3, # outer loop feasibility
+#             eps=1e-4, # inner loop convergence
+#             )
+opt = Plex2(subproblems=subPfuns,
             x_init=x_init,
             con=con,
             mu=1,#10,
-            max_mu=1e6,
+            max_mu=1e5,
             rho=1.5,
             tau=0.5,
             tol=1e-3, # outer loop feasibility
-            eps=1e-3, # inner loop convergence
+            eps=1e-2, # inner loop convergence
+            eta=1e-4, # final inner loop convergence
             )
 
 opt.solve(max_outer_iter=100, 
-          max_inner_iter=30,
+          max_inner_iter=100,
           )
 
 
