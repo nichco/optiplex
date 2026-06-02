@@ -1,4 +1,5 @@
-from lifting_line_jax_3 import LiftingLine
+# from lifting_line_jax_3 import LiftingLine
+from lifting_line_jax_4 import LiftingLine
 from beam_jax import Beam, CSTube
 import numpy as np
 from crm_mesh import build_crm_mesh
@@ -23,11 +24,11 @@ le = crm_mesh[0, :, :]
 te = crm_mesh[1, :, :]
 beam_mesh = (le + te) / 2.0
 
-# plot both meshes
-plt.scatter(crm_mesh[:, :, 0], crm_mesh[:, :, 1], color='tab:blue')
-plt.scatter(beam_mesh[:, 0], beam_mesh[:, 1], color='tab:orange')
-plt.axis('equal')
-plt.show()
+# # plot both meshes
+# plt.scatter(crm_mesh[:, :, 0], crm_mesh[:, :, 1], color='tab:blue')
+# plt.scatter(beam_mesh[:, 0], beam_mesh[:, 1], color='tab:orange')
+# plt.axis('equal')
+# plt.show()
 
 # beam model parameters
 chord = np.linalg.norm(te - le, axis=1)

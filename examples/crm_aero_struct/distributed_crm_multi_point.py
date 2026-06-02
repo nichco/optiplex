@@ -13,8 +13,9 @@ from optiplex import PlexC, Plex2, combo
 
 
 num = 2 # number of operating conditions
-sampler = LatinHypercube(d=2, seed=42)
-samples = scale(sampler.random(num), l_bounds=[0.4, 180], u_bounds=[0.6, 220])
+# sampler = LatinHypercube(d=2, seed=42)
+# samples = scale(sampler.random(num), l_bounds=[0.4, 180], u_bounds=[0.6, 220])
+samples = [(0.4135, 210), (0.4135, 200)]
 print(samples)
 
 # generate subproblem functions
@@ -53,14 +54,16 @@ def con(v_init):
     twist_constraint = combo(twists) # modified combo to remove one pair
     thickness_constraint = combo(thicknesses) # modified combo to remove one pair
 
-    return jnp.concatenate((twist_constraint, thickness_constraint))
+    c = jnp.concatenate((twist_constraint, thickness_constraint)) * 1e1
+
+    return c
 
 
 
 opt = PlexC(subproblems=subPfuns,
             x_init=x_init,
             con=con,
-            mu=10,
+            mu=1,#10,
             max_mu=1e6,
             rho=1.5,
             tau=0.5,
@@ -69,5 +72,34 @@ opt = PlexC(subproblems=subPfuns,
             )
 
 opt.solve(max_outer_iter=100, 
-          max_inner_iter=20,
+          max_inner_iter=30,
           )
+
+
+x = opt.x
+alphas = []
+twists = []
+thicknesses = []
+for i in range(num):
+    x_i = x[i]
+    alphas.append(x_i[0])
+    twists.append(x_i[1:1 + ns])
+    thicknesses.append(x_i[1 + ns:])
+
+
+print('alphas: ', alphas)
+print('twists: ', twists)
+print('thicknesses: ', thicknesses)
+
+
+for i in range(num):
+    plt.plot(twists[i], label=f'twist {i}')
+plt.legend()
+plt.title('Twist')
+plt.show()
+
+for i in range(num):
+    plt.plot(thicknesses[i], label=f'thickness {i}')
+plt.legend()
+plt.title('Thickness')
+plt.show()

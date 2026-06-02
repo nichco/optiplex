@@ -179,34 +179,6 @@ class LiftingLine:
 
 
 
-
-#  Helper: build LE/TE arrays from legacy scalar parameters
-def build_planform_mesh(N, b, c_root, c_tip):
-    """
-    Reconstruct the (N, 3) LE and TE arrays that a simple tapered wing would
-    produce, using the same cosine spacing as LiftingLine.
-
-    Returns
-    -------
-    le_points : np.ndarray, shape (N, 3)
-    te_points : np.ndarray, shape (N, 3)
-    """
-    delta = 0.5 * np.pi / N
-    theta = np.linspace(delta, np.pi - delta, N)
-    y = 0.5 * b * np.cos(theta) # tip-to-tip, cosine spaced
-
-    u = np.abs(2.0 * y / b)
-    chord = (1.0 - u) * c_root + u * c_tip
-
-    # LE at x = -c/4 (quarter-chord convention), TE at x = +3c/4
-    le_points = np.stack([-0.25 * chord, y, np.zeros(N)], axis=1)
-    te_points = np.stack([ 0.75 * chord, y, np.zeros(N)], axis=1)
-
-    return le_points[::-1], te_points[::-1] # reverse to go from left wingtip to right wingtip
-
-
-
-
 if __name__ == "__main__":
 
     v_inf  = 200.0
@@ -246,7 +218,7 @@ if __name__ == "__main__":
     plotter.view_isometric()
     plotter.show()
 
-    print("Forces (F_x, F_y, F_z) at each panel:\n", forces)
+    # print("Forces (F_x, F_y, F_z) at each panel:\n", forces)
 
     q_inf      = 0.5 * rho * v_inf ** 2
     CL_panels  = jnp.sum(forces[:, 2]) / (q_inf * lifting_line.S)

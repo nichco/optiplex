@@ -1,4 +1,5 @@
-from lifting_line_jax_3 import LiftingLine
+# from lifting_line_jax_3 import LiftingLine
+from lifting_line_jax_4 import LiftingLine
 from beam_jax import Beam, CSTube
 import numpy as np
 from crm_mesh import build_crm_mesh
@@ -82,7 +83,7 @@ def make_subproblem(subP, rho_atm_i, v_inf_i, num):
             twist_constraint = combo(twists) # modified combo to remove one pair
             thickness_constraint = combo(thicknesses) # modified combo to remove one pair
         
-            c = jnp.concatenate((twist_constraint, thickness_constraint))
+            c = jnp.concatenate((twist_constraint, thickness_constraint)) * 1e1
 
             L = 1e2 * CD + y.T @ c + 0.5 * mu * jnp.sum(c**2)
             return L
@@ -160,7 +161,7 @@ def make_subproblem(subP, rho_atm_i, v_inf_i, num):
         jaxprob = JaxProblem(x0=x0, jax_obj=objective, jax_con=constraints, 
                      cl=cl, cu=cu, xl=xl, xu=xu, x_scaler=x_scaler, c_scaler=c_scaler, o_scaler=1e2)
 
-        optimizer = SLSQP(jaxprob, solver_options={'maxiter': 1000, 'ftol': 1e-7}, turn_off_outputs=True)
+        optimizer = SLSQP(jaxprob, solver_options={'maxiter': 1000, 'ftol': 1e-8}, turn_off_outputs=True)
         optimizer.solve()
         # optimizer.print_results()
         x = optimizer.results['x'] / x_scaler
