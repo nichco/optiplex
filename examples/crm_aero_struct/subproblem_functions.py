@@ -11,6 +11,7 @@ import gc
 from optiplex import combo
 import warnings
 warnings.filterwarnings("ignore")
+import time
 
 
 # generate the CRM lifting line mesh
@@ -36,7 +37,7 @@ tip_disp_target = 0.1
 
 
 
-def make_subproblem(subP, rho_atm_i, v_inf_i, num, si, cs):
+def make_subproblem(subP, rho_atm_i, v_inf_i, num, si, cs, opt_time):
 
     def subP_i(v_init: list,
                y: np.ndarray = None, # lagrange multipliers
@@ -71,7 +72,7 @@ def make_subproblem(subP, rho_atm_i, v_inf_i, num, si, cs):
             twist_constraint = combo(twists) # modified combo to remove one pair
             thickness_constraint = combo(thicknesses) # modified combo to remove one pair
         
-            c = jnp.concatenate((twist_constraint, thickness_constraint * 10)) * cs
+            c = jnp.concatenate((twist_constraint, thickness_constraint)) * cs
 
             L = 1e2 * CD + y.T @ c + 0.5 * mu * jnp.sum(c**2)
             return L
@@ -150,7 +151,14 @@ def make_subproblem(subP, rho_atm_i, v_inf_i, num, si, cs):
                      cl=cl, cu=cu, xl=xl, xu=xu, x_scaler=x_scaler, c_scaler=c_scaler, o_scaler=1e2)
 
         optimizer = SLSQP(jaxprob, solver_options={'maxiter': 1000, 'ftol': 1e-8}, turn_off_outputs=True)
+
+        t0 = time.perf_counter()
         optimizer.solve()
+        t1 = time.perf_counter()
+
+        elapsed_time = t1 - t0
+        opt_time.append(elapsed_time + (opt_time[-1] if len(opt_time)>0 else 0))
+
         # optimizer.print_results()
         x = optimizer.results['x'] / x_scaler
 

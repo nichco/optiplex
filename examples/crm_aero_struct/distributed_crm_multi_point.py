@@ -21,12 +21,13 @@ print(samples)
 
 ns = 33 # number of spanwise panels
 si = np.concatenate(([10], np.ones(ns), np.ones(ns - 1) * 100))
-cs = 2e-1 # constraint scaling for better conditioning of the dual updates
+
+cs = np.concatenate((np.ones(ns) * 10, np.ones(ns - 1) * 20)) * 1e-2 # 2e-1 # constraint scaling for better conditioning of the dual updates
 
 # generate subproblem functions
-subPfuns = []
+subPfuns, opt_time = [], []
 for i, (rho_atm, v_inf) in enumerate(samples): 
-    subPfuns.append(make_subproblem(i, rho_atm, v_inf, num, si, cs))
+    subPfuns.append(make_subproblem(i, rho_atm, v_inf, num, si, cs, opt_time))
 
 
 
@@ -55,7 +56,7 @@ def con(v_init):
     twist_constraint = combo(twists) # modified combo to remove one pair
     thickness_constraint = combo(thicknesses) # modified combo to remove one pair
 
-    c = jnp.concatenate((twist_constraint, thickness_constraint * 10)) * cs
+    c = jnp.concatenate((twist_constraint, thickness_constraint)) * cs
 
     return c
 
@@ -71,6 +72,7 @@ def con(v_init):
 #             tol=1e-3, # outer loop feasibility
 #             eps=1e-4, # inner loop convergence
 #             )
+
 opt = Plex2(subproblems=subPfuns,
             x_init=x_init,
             con=con,
@@ -83,10 +85,9 @@ opt = Plex2(subproblems=subPfuns,
             eta=1e-4, # final inner loop convergence
             )
 
-opt.solve(max_outer_iter=100, 
+opt.solve(max_outer_iter=300, 
           max_inner_iter=100,
           )
-
 
 x = opt.x
 alphas = []
@@ -102,6 +103,9 @@ for i in range(num):
 print('alphas: ', alphas)
 print('twists: ', twists)
 print('thicknesses: ', thicknesses)
+
+# print the total optimization time
+print('Total optimization time (s): ', opt_time[-1])
 
 
 for i in range(num):
