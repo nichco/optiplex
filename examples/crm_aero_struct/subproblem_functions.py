@@ -72,7 +72,7 @@ def make_subproblem(subP, rho_atm_i, v_inf_i, num, si, cs, opt_time):
             twist_constraint = combo(twists) # modified combo to remove one pair
             thickness_constraint = combo(thicknesses) # modified combo to remove one pair
         
-            c = jnp.concatenate((twist_constraint, thickness_constraint)) * cs
+            c = jnp.concatenate((twist_constraint, 10 * thickness_constraint)) * cs
 
             L = 1e2 * CD + y.T @ c + 0.5 * mu * jnp.sum(c**2)
             return L

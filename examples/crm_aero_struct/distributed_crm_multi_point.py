@@ -12,7 +12,7 @@ from optiplex import PlexC, Plex2, combo
 
 
 
-num = 3 # number of operating conditions
+num = 2 # number of operating conditions
 sampler = LatinHypercube(d=2, seed=42)
 samples = scale(sampler.random(num), l_bounds=[0.4, 190], u_bounds=[0.6, 220])
 # samples = [(0.4135, 210), (0.4135, 190)]
@@ -22,7 +22,7 @@ print(samples)
 ns = 33 # number of spanwise panels
 si = np.concatenate(([10], np.ones(ns), np.ones(ns - 1) * 100))
 
-cs = 2e-1 # constraint scaling for better conditioning of the dual updates
+cs = 6e-2 # constraint scaling for better conditioning of the dual updates
 
 # generate subproblem functions
 subPfuns, opt_time = [], []
@@ -56,7 +56,7 @@ def con(v_init):
     twist_constraint = combo(twists) # modified combo to remove one pair
     thickness_constraint = combo(thicknesses) # modified combo to remove one pair
 
-    c = jnp.concatenate((twist_constraint, thickness_constraint)) * cs
+    c = jnp.concatenate((twist_constraint, 10 * thickness_constraint)) * cs
 
     return c
 
@@ -78,15 +78,15 @@ opt = Plex2(subproblems=subPfuns,
             con=con,
             mu=10,
             max_mu=1e5,
-            rho=1.1,
+            rho=1.5,
             tau=0.5,
             tol=1e-3, # outer loop feasibility
             eps=1e-2, # inner loop convergence
             eta=1e-4, # final inner loop convergence
             )
 
-opt.solve(max_outer_iter=300, 
-          max_inner_iter=100,
+opt.solve(max_outer_iter=100, 
+          max_inner_iter=30,
           )
 
 x = opt.x
@@ -118,4 +118,21 @@ for i in range(num):
     plt.plot(thicknesses[i], label=f'thickness {i}')
 plt.legend()
 plt.title('Thickness')
+plt.show()
+
+
+vars = np.array(opt.history)
+print('vars shape: ', vars.shape) # should be (n, num, len(x_i))
+vars = vars.reshape(vars.shape[0], -1) # reshape to (n, num * len(x_i)) for easier plotting
+
+# plt.plot(vars)
+# plt.show()
+
+# vars = np.abs(vars)
+# plt.semilogy(vars)
+# plt.show()
+
+# normalize vars for better visualization
+vars_norm = vars / np.max(vars, axis=0)
+plt.plot(vars_norm)
 plt.show()
