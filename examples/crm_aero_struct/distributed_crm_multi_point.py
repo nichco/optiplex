@@ -69,8 +69,8 @@ opt = PlexC(subproblems=subPfuns,
             max_mu=1e5,
             rho=1.5,
             tau=0.5,
-            tol=1e-3, # outer loop feasibility
-            eps=1e-4, # inner loop convergence
+            tol=1e-4, # outer loop feasibility
+            eps=1e-2, # inner loop convergence
             )
 
 # opt = Plex2(subproblems=subPfuns,
