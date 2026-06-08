@@ -142,6 +142,15 @@ plt.show()
 
 
 solution = np.load('examples/crm_aero_struct/solution.npz')
+alphas = solution['alphas']
+twist = solution['twist']
+thickness = solution['thickness']
+samples = solution['samples']
+
+for i in range(num):
+    x_i_star = np.concatenate(([alphas[i]], twist, thickness))
+
+    
 # x_star = np.concatenate([solution['twist'], solution['thickness']])
 
 # history_vecs = [np.concatenate(h[:2]) for h in opt.history]
