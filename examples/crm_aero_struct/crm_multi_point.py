@@ -42,7 +42,7 @@ tip_disp_target = 0.1
 
 
 
-num = 50 # 20 # number of operating conditions
+num = 2 # 20 # number of operating conditions
 sampler = LatinHypercube(d=2, seed=42)
 samples = scale(sampler.random(num), l_bounds=[0.4, 180], u_bounds=[0.6, 220])
 # samples = [(0.4135, 210), (0.4135, 190)]
@@ -168,7 +168,7 @@ x_scaler = np.concatenate([100 * np.ones(num),      # alpha scaler
 jaxprob = JaxProblem(x0=x0, jax_obj=objective, jax_con=constraints, 
                      cl=cl, cu=cu, xl=xl, xu=xu, x_scaler=x_scaler, c_scaler=c_scaler, o_scaler=1e2)
 
-optimizer = SLSQP(jaxprob, solver_options={'maxiter': 1000, 'ftol': 1e-7}, turn_off_outputs=True)
+optimizer = SLSQP(jaxprob, solver_options={'maxiter': 1000, 'ftol': 1e-8}, turn_off_outputs=True)
 optimizer.solve()
 optimizer.print_results()
 x = optimizer.results['x'] / x_scaler
@@ -190,3 +190,9 @@ b = np.linalg.norm(te[0] - te[-1])
 ax[1].plot(np.linspace(-b/2, b/2, ns - 1), thickness, linewidth=2)
 ax[1].set_title("Thickness")
 plt.show()
+
+
+
+
+# save the solution to an npz file
+# np.savez('solution.npz', alphas=alphas, twist=twist, thickness=thickness, samples=samples)

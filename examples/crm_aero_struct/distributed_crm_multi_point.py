@@ -62,31 +62,31 @@ def con(v_init):
 
 
 
-# opt = PlexC(subproblems=subPfuns,
-#             x_init=x_init,
-#             con=con,
-#             mu=0.1,#1,#10,
-#             max_mu=1e5,
-#             rho=1.5,
-#             tau=0.5,
-#             tol=1e-3, # outer loop feasibility
-#             eps=1e-4, # inner loop convergence
-#             )
-
-opt = Plex2(subproblems=subPfuns,
+opt = PlexC(subproblems=subPfuns,
             x_init=x_init,
             con=con,
-            mu=10,
+            mu=1,#10,
             max_mu=1e5,
             rho=1.5,
             tau=0.5,
             tol=1e-3, # outer loop feasibility
-            eps=1e-2, # inner loop convergence
-            eta=1e-4, # final inner loop convergence
+            eps=1e-4, # inner loop convergence
             )
 
-opt.solve(max_outer_iter=100, 
-          max_inner_iter=30,
+# opt = Plex2(subproblems=subPfuns,
+#             x_init=x_init,
+#             con=con,
+#             mu=10,
+#             max_mu=1e5,
+#             rho=1.5,
+#             tau=0.5,
+#             tol=1e-3, # outer loop feasibility
+#             eps=1e-2, # inner loop convergence
+#             eta=1e-4, # final inner loop convergence
+#             )
+
+opt.solve(max_outer_iter=4, 
+          max_inner_iter=3,
           )
 
 x = opt.x
@@ -136,3 +136,25 @@ vars = vars.reshape(vars.shape[0], -1) # reshape to (n, num * len(x_i)) for easi
 vars_norm = vars / np.max(vars, axis=0)
 plt.plot(vars_norm)
 plt.show()
+
+
+
+
+
+solution = np.load('examples/crm_aero_struct/solution.npz')
+# x_star = np.concatenate([solution['twist'], solution['thickness']])
+
+# history_vecs = [np.concatenate(h[:2]) for h in opt.history]
+# error = [np.linalg.norm((x - x_star) / x_star) for x in history_vecs]
+
+# print('CD: ', cd_history[-1])
+
+# # plt.semilogy(error)
+# # plt.xlabel('Iteration')
+# # plt.ylabel('Relative error')
+# # plt.show()
+
+# plt.semilogy(opt.x_time, error)
+# plt.xlabel('Time (s)')
+# plt.ylabel('Relative error')
+# plt.show()

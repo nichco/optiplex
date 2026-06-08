@@ -159,7 +159,7 @@ def make_subproblem(subP, rho_atm_i, v_inf_i, num, si, cs, opt_time):
         elapsed_time = t1 - t0
         opt_time.append(elapsed_time + (opt_time[-1] if len(opt_time)>0 else 0))
 
-        # optimizer.print_results()
+        optimizer.print_results()
         x = optimizer.results['x'] / x_scaler
 
         alpha_i = x[0] # trim angle for this condition
