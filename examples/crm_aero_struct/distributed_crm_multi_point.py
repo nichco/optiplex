@@ -62,28 +62,28 @@ def con(v_init):
 
 
 
-# opt = PlexC(subproblems=subPfuns,
+opt = PlexC(subproblems=subPfuns,
+            x_init=x_init,
+            con=con,
+            mu=1,#10,
+            max_mu=1e5,
+            rho=1.5,
+            tau=0.5,
+            tol=1e-4, # outer loop feasibility
+            eps=1e-2, # inner loop convergence
+            )
+
+# opt = Plex2(subproblems=subPfuns,
 #             x_init=x_init,
 #             con=con,
-#             mu=0.1,#1,#10,
+#             mu=10,
 #             max_mu=1e5,
 #             rho=1.5,
 #             tau=0.5,
 #             tol=1e-3, # outer loop feasibility
-#             eps=1e-4, # inner loop convergence
+#             eps=1e-2, # inner loop convergence
+#             eta=1e-4, # final inner loop convergence
 #             )
-
-opt = Plex2(subproblems=subPfuns,
-            x_init=x_init,
-            con=con,
-            mu=10,
-            max_mu=1e5,
-            rho=1.5,
-            tau=0.5,
-            tol=1e-3, # outer loop feasibility
-            eps=1e-2, # inner loop convergence
-            eta=1e-4, # final inner loop convergence
-            )
 
 opt.solve(max_outer_iter=100, 
           max_inner_iter=30,
