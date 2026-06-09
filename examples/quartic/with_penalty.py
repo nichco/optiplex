@@ -9,6 +9,8 @@ warnings.filterwarnings("ignore")
 v_init = [np.array([1.0]), np.array([-1.0])]
 # v_init = [np.array([1.0]), np.array([0.5])]
 
+coef = 3
+
 x1_history = [v_init[0]]
 x2_history = [v_init[1]]
 
@@ -21,13 +23,13 @@ def subproblem1(v_init, y, mu):
     def jax_obj(v):
         x1 = v[0]
         beta = 1.5 # beta in [0, 2)
-        return jnp.squeeze(x1**2 + x2**2 - beta * x1 * x2)
+        return jnp.squeeze(x1**2 + x2**2 - beta * x1 * x2) + coef * jnp.squeeze(jnp.maximum(0, x1 - 0.5*x2)**2)
     
-    def jax_con(v):
-        x1 = v[0]
-        return x1 - 0.5*x2
+    # def jax_con(v):
+    #     x1 = v[0]
+    #     return x1 - 0.5*x2
     
-    jaxprob = mo.JaxProblem(x0=v0, jax_obj=jax_obj, jax_con=jax_con, cl=0., cu=np.inf, order=1)
+    jaxprob = mo.JaxProblem(x0=v0, jax_obj=jax_obj, order=1)
 
     optimizer = mo.SLSQP(jaxprob, solver_options={'maxiter': 100, 'ftol': 1e-7}, turn_off_outputs=True)
     optimizer.solve()
@@ -48,13 +50,13 @@ def subproblem2(v_init, y, mu):
     def jax_obj(v):
         x2 = v[0]
         beta = 1.5 # beta in [0, 2)
-        return jnp.squeeze(x1**2 + x2**2 - beta * x1 * x2)
+        return jnp.squeeze(x1**2 + x2**2 - beta * x1 * x2) + coef * jnp.squeeze(jnp.maximum(0, x1 - 0.5*x2)**2)
     
-    def jax_con(v):
-        x2 = v[0]
-        return x1 - 0.5*x2
+    # def jax_con(v):
+    #     x2 = v[0]
+    #     return x1 - 0.5*x2
     
-    jaxprob = mo.JaxProblem(x0=v0, jax_obj=jax_obj, jax_con=jax_con, cl=0, cu=np.inf, order=1)
+    jaxprob = mo.JaxProblem(x0=v0, jax_obj=jax_obj, order=1)
 
     optimizer = mo.SLSQP(jaxprob, solver_options={'maxiter': 100, 'ftol': 1e-7}, turn_off_outputs=True)
     optimizer.solve()
@@ -71,7 +73,7 @@ opt = Plex(subproblems=[subproblem1, subproblem2],
            x_init=v_init)
 
 opt.solve(max_inner_iter=100,
-          eps_inner=1e-4, 
+          eps_inner=1e-4,
           )
 
 print('Solution: ', opt.x)
@@ -84,10 +86,11 @@ plt.rcParams.update({'font.size': 14})
 x = np.linspace(-1.5, 1.5, 200)
 y = np.linspace(-1.5, 1.5, 200)
 X, Y = np.meshgrid(x, y)
-Z = X**2 + Y**2 - 1.5 * X * Y
-levels = np.linspace(0, max(Z.flatten()), 30)
-# plt.contour(X, Y, Z, levels=levels, cmap='Blues_r', alpha=0.4, linewidths=0.5)
-# plt.contourf(X, Y, Z, levels=levels, cmap='Blues_r', alpha=0.5)
+# Z = X**2 + Y**2 - 1.5 * X * Y + coef * jnp.squeeze(jnp.maximum(0, X - 0.5*Y)**2)
+Z = X**2 + Y**2 - 1.5 * X * Y + coef * jnp.squeeze(jnp.maximum(0, 0.5*Y - X)**2)
+# print('Max Z: ', np.max(Z))
+# levels = np.linspace(0, max(Z.flatten()), 50)
+levels = np.linspace(0, 7.875, 30)
 plt.contour(X, Y, Z, levels=levels, cmap='Greens_r', alpha=0.4, linewidths=0.5)
 plt.contourf(X, Y, Z, levels=levels, cmap='Greens_r', alpha=0.5)
 
@@ -122,5 +125,5 @@ plt.yticks(ticks)
 
 plt.gca().set_aspect('equal')
 
-plt.savefig('global_constraint_example_green.pdf', bbox_inches='tight')
+plt.savefig('global_constraint_penalty_example.pdf', bbox_inches='tight')
 plt.show()
