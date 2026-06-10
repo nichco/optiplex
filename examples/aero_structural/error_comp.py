@@ -48,7 +48,7 @@ plt.figure(figsize=(4,3))
 plt.grid(axis='y', color='lavender', zorder=-10)
 
 # plt.semilogy(time, error, label='AL-BCD', linewidth=1.5, marker='o', markersize=4, markevery=12)
-plt.semilogy(time, error, label='ALBCD-G', linewidth=2)
+plt.semilogy(time, error, label='ALBCD', linewidth=2)
 
 # plt.semilogy(time_pen_1e2, error_pen_1e2, label='Penalty (1e2)', linewidth=1.5)
 
@@ -82,5 +82,5 @@ plt.legend(loc='upper right')
 # plt.grid(axis='y', color='lavender', zorder=0)
 
 # plt.savefig('simple_aero_struct_penalty_comp.pdf', bbox_inches='tight')
-plt.savefig('simple_aero_struct_penalty_comp.png', bbox_inches='tight')
+plt.savefig('simple_aero_struct_penalty_comp.png', bbox_inches='tight', dpi=500)
 plt.show()
