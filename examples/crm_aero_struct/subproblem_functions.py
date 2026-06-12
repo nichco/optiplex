@@ -37,18 +37,21 @@ tip_disp_target = 0.1
 
 
 
-def make_subproblem(subP, rho_atm_i, v_inf_i, num, si, cs, opt_time):
+# def make_subproblem(subP, rho_atm_i, v_inf_i, num, si, cs, opt_time, samples):
+def make_subproblem(subP, num, cs, opt_time, samples):
 
     def subP_i(v_init: list,
                y: np.ndarray = None, # lagrange multipliers
                mu: float = 1, # penalty parameter
                ) -> list:
+        
+        print(f"Solving subproblem {subP}")
 
         alphas = []
         twists = []
         thicknesses = []
         for i in range(num):
-            x_init_i = v_init[i] / si # unscale the decision variables
+            x_init_i = v_init[i]
             alphas.append(x_init_i[0])
             twists.append(x_init_i[1:1 + ns])
             thicknesses.append(x_init_i[1 + ns:])
@@ -59,22 +62,40 @@ def make_subproblem(subP, rho_atm_i, v_inf_i, num, si, cs, opt_time):
             twist_i = x[1:1 + ns] # twist distribution for this condition
             thickness_i = x[1 + ns:] # thickness distribution for this condition
 
-            alphas[subP] = alpha_i
-            twists[subP] = twist_i
-            thicknesses[subP] = thickness_i
+            alpha_list = alphas.copy()
+            twist_list = twists.copy()
+            thickness_list = thicknesses.copy()
 
-            effective_twist = twist_i + alpha_i # add the trim aoa to the twist distribution
+            # alphas[subP] = alpha_i
+            # twists[subP] = twist_i
+            # thicknesses[subP] = thickness_i
+            alpha_list[subP] = alpha_i
+            twist_list[subP] = twist_i
+            thickness_list[subP] = thickness_i
 
-            ll = LiftingLine(le, te, v_inf_i, rho_atm_i)
-            sol = ll.solve_lifting_line_model(effective_twist)
-            CD = sol["CD"]
+            # effective_twist = twist_i + alpha_i # add the trim aoa to the twist distribution
 
-            twist_constraint = combo(twists) # modified combo to remove one pair
-            thickness_constraint = combo(thicknesses) # modified combo to remove one pair
+            # ll = LiftingLine(le, te, v_inf_i, rho_atm_i)
+            # sol = ll.solve_lifting_line_model(effective_twist)
+            # CD = sol["CD"]
+            obj = 0.0
+            for i in range(num):
+                rho_atm_i, v_inf_i = samples[i]
+                effective_twist = twist_list[i] + alpha_list[i]
+                ll = LiftingLine(le, te, v_inf_i, rho_atm_i)
+                sol = ll.solve_lifting_line_model(effective_twist)
+                obj += sol["CD"]
+
+            obj = obj / num # minimize the average CD across all conditions
+            obj += jnp.sum(jnp.array(alpha_list)**2) * 1e-2 # remove the differential flatness in the trim solution
+
+            twist_constraint = combo(twist_list) # modified combo to remove one pair
+            thickness_constraint = combo(thickness_list) # modified combo to remove one pair
         
-            c = jnp.concatenate((twist_constraint, 10 * thickness_constraint)) * cs
+            c = jnp.concatenate((twist_constraint, thickness_constraint)) * cs
 
-            L = 1e2 * CD + y.T @ c + 0.5 * mu * jnp.sum(c**2)
+            # L = 1e2 * obj #+ y.T @ c + 0.5 * mu * jnp.sum(c**2)
+            L = 1e2 * obj + y.T @ c + 0.5 * mu * jnp.sum(c**2)
             return L
 
 
@@ -84,12 +105,9 @@ def make_subproblem(subP, rho_atm_i, v_inf_i, num, si, cs, opt_time):
             twist_i = x[1:1 + ns] # twist distribution for this condition
             thickness_i = x[1 + ns:] # thickness distribution for this condition
 
-            alphas[subP] = alpha_i
-            twists[subP] = twist_i
-            thicknesses[subP] = thickness_i
-
             effective_twist = twist_i + alpha_i # add the trim aoa to the twist distribution
 
+            rho_atm_i, v_inf_i = samples[subP]
             ll = LiftingLine(le, te, v_inf_i, rho_atm_i)
             sol = ll.solve_lifting_line_model(effective_twist)
             CD = sol["CD"]
@@ -148,9 +166,9 @@ def make_subproblem(subP, rho_atm_i, v_inf_i, num, si, cs, opt_time):
                                    10 * np.ones(ns - 1)]) # thickness scaler
         
         jaxprob = JaxProblem(x0=x0, jax_obj=objective, jax_con=constraints, 
-                     cl=cl, cu=cu, xl=xl, xu=xu, x_scaler=x_scaler, c_scaler=c_scaler, o_scaler=1e2)
+                     cl=cl, cu=cu, xl=xl, xu=xu, x_scaler=x_scaler, c_scaler=c_scaler)
 
-        optimizer = SLSQP(jaxprob, solver_options={'maxiter': 1000, 'ftol': 1e-8}, turn_off_outputs=True)
+        optimizer = SLSQP(jaxprob, solver_options={'maxiter': 1000, 'ftol': 1e-9}, turn_off_outputs=True)
 
         t0 = time.perf_counter()
         optimizer.solve()
@@ -159,7 +177,7 @@ def make_subproblem(subP, rho_atm_i, v_inf_i, num, si, cs, opt_time):
         elapsed_time = t1 - t0
         opt_time.append(elapsed_time + (opt_time[-1] if len(opt_time)>0 else 0))
 
-        optimizer.print_results()
+        # optimizer.print_results()
         x = optimizer.results['x'] / x_scaler
 
         alpha_i = x[0] # trim angle for this condition
@@ -176,10 +194,11 @@ def make_subproblem(subP, rho_atm_i, v_inf_i, num, si, cs, opt_time):
 
         ans_i = np.concatenate([np.array([alpha_i]), np.array(twist_i), np.array(thickness_i)])
         # v_init[subP] = ans_i
-        v_init[subP] = ans_i * si # scale the decision variables for the next iteration
+        ans = v_init.copy()
+        ans[subP] = ans_i
 
-        gc.collect()
-        return v_init
+        # gc.collect()
+        return ans
 
 
 

@@ -5,7 +5,6 @@ import numpy as np
 from crm_mesh import build_crm_mesh
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
-import pyvista as pv
 import jax
 jax.config.update("jax_enable_x64", True)
 from modopt import JaxProblem, SLSQP
@@ -43,9 +42,9 @@ tip_disp_target = 0.1
 
 
 num = 2 # 20 # number of operating conditions
-sampler = LatinHypercube(d=2, seed=42)
-samples = scale(sampler.random(num), l_bounds=[0.4, 180], u_bounds=[0.6, 220])
-# samples = [(0.4135, 210), (0.4135, 190)]
+# sampler = LatinHypercube(d=2, seed=42)
+# samples = scale(sampler.random(num), l_bounds=[0.4, 180], u_bounds=[0.6, 220])
+samples = [(0.4135, 210), (0.4135, 207)]
 print(samples)
 
 
@@ -101,7 +100,11 @@ def objective(x):
         sol = ll.solve_lifting_line_model(effective_twist)
         obj += sol["CD"]
 
-    return obj / num # minimize the average CD across all conditions
+    obj = obj / num # minimize the average CD across all conditions
+
+    obj += jnp.sum(alphas**2) * 1e-2 # remove the differential flatness in the trim solution
+
+    return obj
 
 
 def constraints(x):
@@ -195,4 +198,4 @@ plt.show()
 
 
 # save the solution to an npz file
-# np.savez('solution.npz', alphas=alphas, twist=twist, thickness=thickness, samples=samples)
+np.savez('test_solution_a.npz', alphas=alphas, twist=twist, thickness=thickness, samples=samples)
