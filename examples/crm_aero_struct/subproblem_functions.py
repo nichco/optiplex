@@ -95,7 +95,7 @@ def make_subproblem(subP, num, cs, opt_time, samples):
             c = jnp.concatenate((twist_constraint, thickness_constraint)) * cs
 
             # L = 1e2 * obj #+ y.T @ c + 0.5 * mu * jnp.sum(c**2)
-            L = 1e2 * obj + y.T @ c + 0.5 * mu * jnp.sum(c**2)
+            L = 1e3 * obj + y.T @ c + 0.5 * mu * jnp.sum(c**2)
             return L
 
 
