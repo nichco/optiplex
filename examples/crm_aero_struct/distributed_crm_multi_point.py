@@ -5,7 +5,7 @@ jax.config.update("jax_enable_x64", True)
 import matplotlib.pyplot as plt
 from scipy.stats.qmc import LatinHypercube, scale
 from subproblem_functions import make_subproblem
-from optiplex import PlexC, Plex2, combo
+from optiplex import Plex, PlexC, Plex2, combo
 
 
 
@@ -62,16 +62,16 @@ def con(v_init):
 
 
 
-opt = PlexC(subproblems=subPfuns,
-            x_init=x_init,
-            con=con,
-            mu=10,
-            max_mu=1e5,
-            rho=1.5,
-            tau=0.5,
-            tol=1e-4, # outer loop feasibility
-            eps=1e-4, # inner loop convergence
-            )
+# opt = PlexC(subproblems=subPfuns,
+#             x_init=x_init,
+#             con=con,
+#             mu=10,
+#             max_mu=1e5,
+#             rho=1.5,
+#             tau=0.5,
+#             tol=1e-4, # outer loop feasibility
+#             eps=1e-4, # inner loop convergence
+#             )
 
 # opt = Plex2(subproblems=subPfuns,
 #             x_init=x_init,
@@ -85,8 +85,23 @@ opt = PlexC(subproblems=subPfuns,
 #             eta=1e-4, # final inner loop convergence
 #             )
 
-opt.solve(max_outer_iter=50, 
-          max_inner_iter=30,
+# opt.solve(max_outer_iter=50, 
+#           max_inner_iter=30,
+#           )
+
+opt = Plex(subproblems=subPfuns,
+           x_init=x_init,
+           con=con,
+           tol=1e-4, # outer loop feasibility
+           mu=10,
+           max_mu=1e5,
+           rho=1.5,
+           )
+
+opt.solve(max_inner_iter=20, 
+          max_outer_iter=100,
+          eps_inner=1e-2,
+          eps_outer=1e-4,
           )
 
 x = opt.x
