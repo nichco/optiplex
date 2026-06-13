@@ -22,7 +22,7 @@ print(samples)
 
 ns = 33 # number of spanwise panels
 
-cs = 1.0e-1 # constraint scaling for better conditioning of the dual updates
+cs = 1e-1 # constraint scaling for better conditioning of the dual updates
 
 # generate subproblem functions
 subPfuns, opt_time = [], []
@@ -54,6 +54,10 @@ def con(v_init):
         thicknesses.append(x_init_i[1 + ns:])
 
     twist_constraint = combo(twists) # modified combo to remove one pair
+
+    # offset all thicknesses
+    thicknesses = [thickness + 0.1 for thickness in thicknesses]
+
     thickness_constraint = combo(thicknesses) # modified combo to remove one pair
 
     c = jnp.concatenate((twist_constraint, thickness_constraint)) * cs
@@ -73,36 +77,39 @@ def con(v_init):
 #             eps=1e-4, # inner loop convergence
 #             )
 
-# opt = Plex2(subproblems=subPfuns,
-#             x_init=x_init,
-#             con=con,
-#             mu=10,
-#             max_mu=1e5,
-#             rho=1.5,
-#             tau=0.5,
-#             tol=1e-4, # outer loop feasibility
-#             eps=1e-2, # inner loop convergence
-#             eta=1e-4, # final inner loop convergence
-#             )
+opt = Plex2(subproblems=subPfuns,
+            x_init=x_init,
+            con=con,
+            mu=1,
+            # mu=np.ones(ns + ns - 1) * 1,
+            max_mu=1e5,
+            rho=1.5,
+            tau=0.5,
+            tol=1e-4, # outer loop feasibility
+            eps=1e-2, # initial inner loop convergence
+            eta=1e-4, # final inner loop convergence
+            )
 
-# opt.solve(max_outer_iter=50, 
-#           max_inner_iter=30,
-#           )
-
-opt = Plex(subproblems=subPfuns,
-           x_init=x_init,
-           con=con,
-           tol=1e-4, # outer loop feasibility
-           mu=10,
-           max_mu=1e5,
-           rho=1.5,
-           )
-
-opt.solve(max_inner_iter=20, 
-          max_outer_iter=100,
-          eps_inner=1e-2,
-          eps_outer=1e-4,
+opt.solve(max_outer_iter=100, 
+          max_inner_iter=100,
           )
+
+print('Total time (s): ', opt.tf)
+
+# opt = Plex(subproblems=subPfuns,
+#            x_init=x_init,
+#            con=con,
+#            tol=1e-5, # outer loop feasibility
+#            mu=1,#10,
+#            max_mu=1e5,
+#            rho=1.5,
+#            )
+
+# opt.solve(max_inner_iter=100, 
+#           max_outer_iter=100,
+#           eps_inner=1e-3,
+#           eps_outer=1e-5,
+#           )
 
 x = opt.x
 alphas = []
