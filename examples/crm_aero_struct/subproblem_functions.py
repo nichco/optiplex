@@ -87,7 +87,8 @@ def make_subproblem(subP, num, cs, opt_time, samples):
                 obj += sol["CD"]
 
             obj = obj / num # minimize the average CD across all conditions
-            obj += jnp.sum(jnp.array(alpha_list)**2) * 1e-2 # remove the differential flatness in the trim solution
+            # obj += jnp.sum(jnp.array(alpha_list)**2) * 1e-2 # remove the differential flatness in the trim solution
+            obj += jnp.sum(jnp.array(alpha_list)**2) * 1e0 # remove the differential flatness in the trim solution
 
             twist_constraint = combo(twist_list) # modified combo to remove one pair
 
@@ -98,7 +99,7 @@ def make_subproblem(subP, num, cs, opt_time, samples):
             c = jnp.concatenate((twist_constraint, thickness_constraint)) * cs
 
             # L = 1e2 * obj #+ y.T @ c + 0.5 * mu * jnp.sum(c**2)
-            L = 1e3 * obj + y.T @ c + 0.5 * mu * jnp.sum(c**2)
+            L = 1e2 * obj + y.T @ c + 0.5 * mu * jnp.sum(c**2)
             # L = 1e3 * obj + y.T @ c + 0.5 * c.T @ jnp.diag(mu) @ c
             return L
 
@@ -163,7 +164,7 @@ def make_subproblem(subP, num, cs, opt_time, samples):
         cu = np.concatenate([ np.zeros(2),         np.zeros(1)])
 
         # c_scaler = np.array([10, 10, 1e-4])
-        c_scaler = np.array([10, 10, 1e-4])
+        c_scaler = np.array([10, 10, 1e-5])
 
 
         x_scaler = np.concatenate([np.array([100]),    # alpha scaler
@@ -173,7 +174,7 @@ def make_subproblem(subP, num, cs, opt_time, samples):
         jaxprob = JaxProblem(x0=x0, jax_obj=objective, jax_con=constraints, 
                      cl=cl, cu=cu, xl=xl, xu=xu, x_scaler=x_scaler, c_scaler=c_scaler)
 
-        optimizer = SLSQP(jaxprob, solver_options={'maxiter': 1000, 'ftol': 1e-9}, turn_off_outputs=True)
+        optimizer = SLSQP(jaxprob, solver_options={'maxiter': 1000, 'ftol': 1e-8}, turn_off_outputs=True)
 
         t0 = time.perf_counter()
         optimizer.solve()

@@ -203,6 +203,8 @@ plt.xlabel('Time (s)')
 plt.ylabel('Error')
 plt.show()
 
+print('Final error: ', error[-1])
+
     
 # x_star = np.concatenate([solution['twist'], solution['thickness']])
 
