@@ -13,9 +13,9 @@ from optiplex import Plex, PlexC, Plex2, combo
 
 
 num = 2 # number of operating conditions
-# sampler = LatinHypercube(d=2, seed=42)
-# samples = scale(sampler.random(num), l_bounds=[0.4, 190], u_bounds=[0.6, 220])
-samples = [(0.4135, 210), (0.4135, 207)] # test solution a
+sampler = LatinHypercube(d=2, seed=42)
+samples = scale(sampler.random(num), l_bounds=[0.4, 190], u_bounds=[0.6, 220])
+# samples = [(0.4135, 210), (0.4135, 207)] # test solution a
 # samples = [(0.4135, 210), (0.4135, 210)] # test solution b
 print(samples)
 
@@ -23,6 +23,7 @@ print(samples)
 ns = 33 # number of spanwise panels
 
 cs = 1e-1 # constraint scaling for better conditioning of the dual updates
+# cs = 2e-1 # constraint scaling for better conditioning of the dual updates
 
 # generate subproblem functions
 subPfuns, opt_time = [], []
@@ -82,12 +83,12 @@ opt = Plex2(subproblems=subPfuns,
             con=con,
             mu=1,
             # mu=np.ones(ns + ns - 1) * 1,
-            max_mu=1e5,
-            rho=1.5,
+            max_mu=1e7,
+            rho=1.2,
             tau=0.5,
-            tol=1e-4, # outer loop feasibility
+            tol=1e-3, # outer loop feasibility
             eps=1e-2, # initial inner loop convergence
-            eta=1e-4, # final inner loop convergence
+            eta=0.5e-4, # final inner loop convergence
             )
 
 opt.solve(max_outer_iter=100, 
@@ -100,16 +101,18 @@ print('Total time (s): ', opt.tf)
 #            x_init=x_init,
 #            con=con,
 #            tol=1e-5, # outer loop feasibility
-#            mu=1,#10,
+#            mu=1,
 #            max_mu=1e5,
 #            rho=1.5,
 #            )
 
-# opt.solve(max_inner_iter=100, 
+# opt.solve(max_inner_iter=100,
 #           max_outer_iter=100,
 #           eps_inner=1e-3,
 #           eps_outer=1e-5,
 #           )
+
+# print('Total time (s): ', opt.time)
 
 x = opt.x
 alphas = []
@@ -131,7 +134,8 @@ print('Total optimization time (s): ', opt_time[-1])
 
 
 
-solution = np.load('examples/crm_aero_struct/test_solution_a.npz')
+# solution = np.load('examples/crm_aero_struct/test_solution_a.npz')
+solution = np.load('examples/crm_aero_struct/test_solution_lhs_num_2.npz')
 alphas_star = solution['alphas']
 twist_star = solution['twist']
 thickness_star = solution['thickness']

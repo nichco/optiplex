@@ -37,7 +37,6 @@ tip_disp_target = 0.1
 
 
 
-# def make_subproblem(subP, rho_atm_i, v_inf_i, num, si, cs, opt_time, samples):
 def make_subproblem(subP, num, cs, opt_time, samples):
 
     def subP_i(v_init: list,
@@ -66,29 +65,26 @@ def make_subproblem(subP, num, cs, opt_time, samples):
             twist_list = twists.copy()
             thickness_list = thicknesses.copy()
 
-            # alphas[subP] = alpha_i
-            # twists[subP] = twist_i
-            # thicknesses[subP] = thickness_i
             alpha_list[subP] = alpha_i
             twist_list[subP] = twist_i
             thickness_list[subP] = thickness_i
 
-            # effective_twist = twist_i + alpha_i # add the trim aoa to the twist distribution
+            rho_atm_i, v_inf_i = samples[subP]
+            effective_twist = twist_i + alpha_i # add the trim aoa to the twist distribution
+            ll = LiftingLine(le, te, v_inf_i, rho_atm_i)
+            sol = ll.solve_lifting_line_model(effective_twist)
+            obj = sol["CD"]
+            # obj = 0.0
+            # for i in range(num):
+            #     rho_atm_i, v_inf_i = samples[i]
+            #     effective_twist = twist_list[i] + alpha_list[i]
+            #     ll = LiftingLine(le, te, v_inf_i, rho_atm_i)
+            #     sol = ll.solve_lifting_line_model(effective_twist)
+            #     obj += sol["CD"]
 
-            # ll = LiftingLine(le, te, v_inf_i, rho_atm_i)
-            # sol = ll.solve_lifting_line_model(effective_twist)
-            # CD = sol["CD"]
-            obj = 0.0
-            for i in range(num):
-                rho_atm_i, v_inf_i = samples[i]
-                effective_twist = twist_list[i] + alpha_list[i]
-                ll = LiftingLine(le, te, v_inf_i, rho_atm_i)
-                sol = ll.solve_lifting_line_model(effective_twist)
-                obj += sol["CD"]
+            # obj = obj / num # minimize the average CD across all conditions
 
-            obj = obj / num # minimize the average CD across all conditions
-            # obj += jnp.sum(jnp.array(alpha_list)**2) * 1e-2 # remove the differential flatness in the trim solution
-            obj += jnp.sum(jnp.array(alpha_list)**2) * 1e0 # remove the differential flatness in the trim solution
+            obj += jnp.sum(jnp.array(alpha_list)**2) * 1e1 # remove the differential flatness in the trim solution
 
             twist_constraint = combo(twist_list) # modified combo to remove one pair
 
@@ -98,7 +94,6 @@ def make_subproblem(subP, num, cs, opt_time, samples):
         
             c = jnp.concatenate((twist_constraint, thickness_constraint)) * cs
 
-            # L = 1e2 * obj #+ y.T @ c + 0.5 * mu * jnp.sum(c**2)
             L = 1e2 * obj + y.T @ c + 0.5 * mu * jnp.sum(c**2)
             # L = 1e3 * obj + y.T @ c + 0.5 * c.T @ jnp.diag(mu) @ c
             return L
@@ -149,7 +144,6 @@ def make_subproblem(subP, num, cs, opt_time, samples):
         thickness_i_0 = thicknesses[subP]
         twist_i_0 = twists[subP]
         x0 = np.concatenate([np.array([alpha_i_0]), np.array(twist_i_0), np.array(thickness_i_0)])
-        # print(x0)
 
         alpha_lower = -1 * np.ones(1) * np.deg2rad(5)
         alpha_upper = np.ones(1) * np.deg2rad(10)
@@ -163,9 +157,7 @@ def make_subproblem(subP, num, cs, opt_time, samples):
         cl = np.concatenate([-np.inf * np.ones(2), np.zeros(1)])
         cu = np.concatenate([ np.zeros(2),         np.zeros(1)])
 
-        # c_scaler = np.array([10, 10, 1e-4])
-        c_scaler = np.array([10, 10, 1e-5])
-
+        c_scaler = np.array([10, 10, 1e-4])
 
         x_scaler = np.concatenate([np.array([100]),    # alpha scaler
                                    10 * np.ones(ns),      # twist scaler

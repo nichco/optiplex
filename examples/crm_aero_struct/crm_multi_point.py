@@ -41,10 +41,10 @@ tip_disp_target = 0.1
 
 
 
-num = 2 # 20 # number of operating conditions
-# sampler = LatinHypercube(d=2, seed=42)
-# samples = scale(sampler.random(num), l_bounds=[0.4, 180], u_bounds=[0.6, 220])
-samples = [(0.4135, 210), (0.4135, 207)]
+num = 100 # 20 # number of operating conditions
+sampler = LatinHypercube(d=2, seed=42)
+samples = scale(sampler.random(num), l_bounds=[0.4, 180], u_bounds=[0.6, 220])
+# samples = [(0.4135, 210), (0.4135, 207)]
 print(samples)
 
 
@@ -102,7 +102,7 @@ def objective(x):
 
     obj = obj / num # minimize the average CD across all conditions
 
-    obj += jnp.sum(alphas**2) * 1e-2 # remove the differential flatness in the trim solution
+    obj += jnp.sum(alphas**2) * 1e1 # remove the differential flatness in the trim solution
 
     return obj
 
@@ -198,4 +198,12 @@ plt.show()
 
 
 # save the solution to an npz file
-np.savez('test_solution_a.npz', alphas=alphas, twist=twist, thickness=thickness, samples=samples)
+np.savez('test_solution_lhs_num_100.npz', alphas=alphas, twist=twist, thickness=thickness, samples=samples)
+
+
+
+
+# lhs num 2 time: 9.374
+# lhs num 5 time: 14.595
+# lhs num 10 time: 19.39
+# lhs num 100 time: 444.273
