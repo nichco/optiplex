@@ -14,16 +14,17 @@ from optiplex import Plex, PlexC, Plex2, combo
 
 num = 2 # number of operating conditions
 sampler = LatinHypercube(d=2, seed=42)
-samples = scale(sampler.random(num), l_bounds=[0.4, 190], u_bounds=[0.6, 220])
+samples = scale(sampler.random(num), l_bounds=[0.4, 180], u_bounds=[0.6, 220])
 # samples = [(0.4135, 210), (0.4135, 207)] # test solution a
 # samples = [(0.4135, 210), (0.4135, 210)] # test solution b
 print(samples)
+# exit()
 
 
 ns = 33 # number of spanwise panels
 
-cs = 1e-1 # constraint scaling for better conditioning of the dual updates
-# cs = 2e-1 # constraint scaling for better conditioning of the dual updates
+# cs = 1e-1 # constraint scaling for better conditioning of the dual updates
+cs = 3e-1 # constraint scaling for better conditioning of the dual updates
 
 # generate subproblem functions
 subPfuns, opt_time = [], []

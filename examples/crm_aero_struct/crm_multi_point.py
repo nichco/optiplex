@@ -41,12 +41,12 @@ tip_disp_target = 0.1
 
 
 
-num = 100 # 20 # number of operating conditions
+num = 2 # number of operating conditions
 sampler = LatinHypercube(d=2, seed=42)
 samples = scale(sampler.random(num), l_bounds=[0.4, 180], u_bounds=[0.6, 220])
 # samples = [(0.4135, 210), (0.4135, 207)]
 print(samples)
-
+exit()
 
 
 def condition(rho_atm, v_inf, alpha, twist, thickness):
