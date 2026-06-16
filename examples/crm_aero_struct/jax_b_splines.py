@@ -75,6 +75,13 @@ def get_bspline_mtx(num_cp, num_pt, order=4):
 
 #         return self.jac @ ycp
 
+def bspline_comp(bspline_mtx, ycp):
+    jac_dense = jnp.asarray(bspline_mtx.toarray())
+
+    y_interp = jac_dense @ ycp
+
+    return y_interp
+
 
 
 if __name__ == "__main__":
@@ -84,17 +91,16 @@ if __name__ == "__main__":
     jac = get_bspline_mtx(num_cp, num_interp)
     jac_dense = jnp.asarray(jac.toarray())
 
-    y_cp = np.linspace(0, 1, num_cp)
+    y_cp = jnp.linspace(0, 1, num_cp)
 
-    def y_interp_fn(ycp):
-        return jac_dense @ ycp
+    bspline_mtx = get_bspline_mtx(num_cp, num_interp)
 
-    y_cp_jax = jnp.asarray(y_cp)
-    y_interp = np.asarray(y_interp_fn(y_cp_jax))
-    y_interp_jac = np.asarray(jax.jacobian(y_interp_fn)(y_cp_jax))
+    y_interp = bspline_comp(bspline_mtx, y_cp)
+    y_interp_jac = jax.jacobian(lambda ycp: bspline_comp(bspline_mtx, ycp))(y_cp)
+    jac_error = np.asarray(y_interp_jac - jac_dense)
+
+    print("max abs jacobian error:", np.max(np.abs(jac_error)))
 
     plt.plot(y_interp)
-    plt.scatter(np.linspace(0, num_interp, num_cp), y_cp)
+    plt.scatter(np.linspace(0, num_interp, num_cp), np.asarray(y_cp))
     plt.show()
-
-    print(y_interp_jac)
