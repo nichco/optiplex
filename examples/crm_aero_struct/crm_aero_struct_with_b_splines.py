@@ -191,9 +191,13 @@ ax[4].plot(beam_mesh[:, 1], u[:, 2], linewidth=2, label='z-displacement')
 ax[4].set_title("Displacement")
 ax[4].legend()
 
-# plot loads magnitude F on ax[5]
-load_magnitude = jnp.linalg.norm(aero_forces, axis=1)
-ax[5].plot(lifting_line.y, load_magnitude, linewidth=2)
+# plot loads F on ax[5]
+# load_magnitude = jnp.linalg.norm(aero_forces, axis=1)
+# ax[5].plot(lifting_line.y, load_magnitude, linewidth=2)
+ax[5].plot(lifting_line.y, aero_forces[:, 0], label='x-force')
+ax[5].plot(lifting_line.y, aero_forces[:, 1], label='y-force')
+ax[5].plot(lifting_line.y, aero_forces[:, 2], label='z-force')
+ax[5].legend()
 ax[5].set_title("Load Magnitude")
 
 plt.show()
