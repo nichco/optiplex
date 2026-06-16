@@ -156,7 +156,7 @@ print("CL:", CL)
 print("CD:", CD)
 
 
-fig, ax = plt.subplots(2, 2, figsize=(10, 6))
+fig, ax = plt.subplots(2, 3, figsize=(12, 6))
 ax = ax.flatten()
 ax[0].plot(lifting_line.y, twist, linewidth=2)
 ax[0].plot(np.linspace(lifting_line.y[0], lifting_line.y[-1], n_twist_cp), twist_cp, marker='o', linestyle='--')
@@ -168,10 +168,33 @@ ax[1].set_title("Gamma")
 panel_centers = 0.5 * (beam_mesh[:-1, 1] + beam_mesh[1:, 1])
 thickness_cp_span = np.linspace(panel_centers[0], panel_centers[-1], n_thickness_cp)
 
-ax[2].plot(panel_centers, thickness, linewidth=2)
-ax[2].plot(thickness_cp_span, thickness_cp, marker='o', linestyle='--')
-ax[2].grid()
-ax[2].set_title("Thickness")
+ax[3].plot(panel_centers, thickness, linewidth=2)
+ax[3].plot(thickness_cp_span, thickness_cp, marker='o', linestyle='--')
+ax[3].grid()
+ax[3].set_title("Thickness")
+
+aero_forces = sol["F"] * load_factor * safety_factor
+F = jnp.zeros((ns, 6))
+F = F.at[:, :3].set(aero_forces)
+
+cs = CSTube(radius=beam_radius, thickness=thickness)
+beam = Beam(mesh=beam_mesh, E=E, G=G, rho=rho_mat,
+            A=cs.area, J=cs.J, Iy=cs.Iy, Iz=cs.Iz, F=F, 
+            fixed_nodes=[ns // 2])
+u = beam.solve()
+# u = jnp.linalg.norm(u[:, :3], axis=1)
+# right_tip_disp, left_tip_disp = u[-1], u[0]
+
+ax[4].plot(beam_mesh[:, 1], u[:, 0], linewidth=2, label='x-displacement')
+ax[4].plot(beam_mesh[:, 1], u[:, 1], linewidth=2, label='y-displacement')
+ax[4].plot(beam_mesh[:, 1], u[:, 2], linewidth=2, label='z-displacement')
+ax[4].set_title("Displacement")
+ax[4].legend()
+
+# plot loads magnitude F on ax[5]
+load_magnitude = jnp.linalg.norm(aero_forces, axis=1)
+ax[5].plot(lifting_line.y, load_magnitude, linewidth=2)
+ax[5].set_title("Load Magnitude")
 
 plt.show()
 
