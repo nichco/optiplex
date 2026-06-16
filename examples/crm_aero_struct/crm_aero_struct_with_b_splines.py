@@ -19,6 +19,8 @@ q       = 0.5 * rho_atm * v_inf**2
 # generate the CRM lifting line mesh
 ns = 33 # num spanwise panels (must be odd)
 crm_mesh = build_crm_mesh(ns=ns, span_cos_spacing=0)
+# print("CRM mesh shape:", crm_mesh.shape)
+# exit()
 
 # generate a beam mesh from the CRM lifting line mesh
 le = crm_mesh[0, :, :]
@@ -51,10 +53,10 @@ tip_disp_target = 0.1
 lifting_line = LiftingLine(le, te, v_inf, rho_atm)
 
 
-n_twist_cp = 7 # must be odd
+n_twist_cp = 7
 twist_bspline_mtx = get_bspline_mtx(n_twist_cp, ns)
 
-n_thickness_cp = 6
+n_thickness_cp = 10
 thickness_bspline_mtx = get_bspline_mtx(n_thickness_cp, ns - 1)
 
 
@@ -155,42 +157,63 @@ forces = sol["F"]
 print("CL:", CL)
 print("CD:", CD)
 
-fig, ax = plt.subplots(1, 2, figsize=(12, 4))
+
+fig, ax = plt.subplots(2, 2, figsize=(10, 6))
+ax = ax.flatten()
 ax[0].plot(lifting_line.y, twist, linewidth=2)
-ax[0].scatter(np.linspace(lifting_line.y[0], lifting_line.y[-1], n_twist_cp), twist_cp, color='red')
+ax[0].plot(np.linspace(lifting_line.y[0], lifting_line.y[-1], n_twist_cp), twist_cp, marker='o', linestyle='--')
 ax[0].set_title("Twist")
+ax[0].grid()
 ax[1].plot(lifting_line.y, Gamma, linewidth=2)
 ax[1].set_title("Gamma")
-plt.show()
 
-plotter = pv.Plotter()
-lifting_line.plot_3d(Gamma, forces, plotter)
-plotter.view_isometric()
-plotter.show()
+panel_centers = 0.5 * (beam_mesh[:-1, 1] + beam_mesh[1:, 1])
+thickness_cp_span = np.linspace(panel_centers[0], panel_centers[-1], n_thickness_cp)
 
-b = np.linalg.norm(te[0] - te[-1])
-plt.plot(np.linspace(-b/2, b/2, ns - 1), thickness)
-plt.xlabel('Spanwise Position')
-plt.ylabel('Thickness')
-plt.title('Thickness Distribution')
-plt.grid()
+ax[2].plot(panel_centers, thickness, linewidth=2)
+ax[2].plot(thickness_cp_span, thickness_cp, marker='o', linestyle='--')
+ax[2].grid()
+ax[2].set_title("Thickness")
+
 plt.show()
 
 
-aero_forces = sol["F"] * load_factor * safety_factor
-F = jnp.zeros((ns, 6))
-F = F.at[:, :3].set(aero_forces)
+# fig, ax = plt.subplots(1, 2, figsize=(12, 4))
+# ax[0].plot(lifting_line.y, twist, linewidth=2)
+# ax[0].scatter(np.linspace(lifting_line.y[0], lifting_line.y[-1], n_twist_cp), twist_cp, color='red')
+# ax[0].set_title("Twist")
+# ax[1].plot(lifting_line.y, Gamma, linewidth=2)
+# ax[1].set_title("Gamma")
+# plt.show()
 
-cs = CSTube(radius=beam_radius, thickness=thickness)
-beam = Beam(mesh=beam_mesh, E=E, G=G, rho=rho_mat,
-            A=cs.area, J=cs.J, Iy=cs.Iy, Iz=cs.Iz, F=F, 
-            fixed_nodes=[ns // 2])
-u = beam.solve()
-u = jnp.linalg.norm(u[:, :3], axis=1)
-right_tip_disp, left_tip_disp = u[-1], u[0]
+# plotter = pv.Plotter()
+# lifting_line.plot_3d(Gamma, forces, plotter)
+# plotter.view_isometric()
+# plotter.show()
 
-crm_mass = beam.mass + m0
-print("CRM Mass:", crm_mass)
+# b = np.linalg.norm(te[0] - te[-1])
+# plt.plot(np.linspace(-b/2, b/2, ns - 1), thickness)
+# plt.xlabel('Spanwise Position')
+# plt.ylabel('Thickness')
+# plt.title('Thickness Distribution')
+# plt.grid()
+# plt.show()
 
-print("Left Tip Displacement:", left_tip_disp)
-print("Right Tip Displacement:", right_tip_disp)
+
+# aero_forces = sol["F"] * load_factor * safety_factor
+# F = jnp.zeros((ns, 6))
+# F = F.at[:, :3].set(aero_forces)
+
+# cs = CSTube(radius=beam_radius, thickness=thickness)
+# beam = Beam(mesh=beam_mesh, E=E, G=G, rho=rho_mat,
+#             A=cs.area, J=cs.J, Iy=cs.Iy, Iz=cs.Iz, F=F, 
+#             fixed_nodes=[ns // 2])
+# u = beam.solve()
+# u = jnp.linalg.norm(u[:, :3], axis=1)
+# right_tip_disp, left_tip_disp = u[-1], u[0]
+
+# crm_mass = beam.mass + m0
+# print("CRM Mass:", crm_mass)
+
+# print("Left Tip Displacement:", left_tip_disp)
+# print("Right Tip Displacement:", right_tip_disp)
