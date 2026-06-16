@@ -19,8 +19,6 @@ q       = 0.5 * rho_atm * v_inf**2
 # generate the CRM lifting line mesh
 ns = 33 # num spanwise panels (must be odd)
 crm_mesh = build_crm_mesh(ns=ns, span_cos_spacing=0)
-# print("CRM mesh shape:", crm_mesh.shape)
-# exit()
 
 # generate a beam mesh from the CRM lifting line mesh
 le = crm_mesh[0, :, :]
@@ -38,8 +36,8 @@ chord = np.linalg.norm(te - le, axis=1)
 # interpolate chord on a per-element basis (ns - 1)
 chord = 0.5 * (chord[:-1] + chord[1:])
 beam_radius = 0.25 * chord / 2
-print("Beam radius at each element:\n", beam_radius)
-# exit()
+# print("Beam radius at each element:\n", beam_radius)
+
 E = 69e9
 G = 26e9
 rho_mat = 3000
