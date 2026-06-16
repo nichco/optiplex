@@ -117,7 +117,8 @@ thickness_lower = np.ones(n_thickness_cp) * 0.001 # min gauge
 
 thickness_upper = np.ones(n_thickness_cp) * min(beam_radius) # max thickness is when the inner radius goes to zero
 
-twist_lower = -1 * np.ones(n_twist_cp) * np.inf
+# twist_lower = -1 * np.ones(n_twist_cp) * np.inf
+twist_lower = -1 * np.ones(n_twist_cp) * np.deg2rad(0)
 twist_upper = np.ones(n_twist_cp) * np.inf
 xl = np.concatenate([twist_lower, thickness_lower])
 xu = np.concatenate([twist_upper, thickness_upper])
