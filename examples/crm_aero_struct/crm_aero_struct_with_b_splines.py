@@ -177,6 +177,8 @@ aero_forces = sol["F"] * load_factor * safety_factor
 F = jnp.zeros((ns, 6))
 F = F.at[:, :3].set(aero_forces)
 
+# F = F.at[:, 2].set(jnp.abs(F[:, 2])) # take abs of vertical forces for better visualization
+
 cs = CSTube(radius=beam_radius, thickness=thickness)
 beam = Beam(mesh=beam_mesh, E=E, G=G, rho=rho_mat,
             A=cs.area, J=cs.J, Iy=cs.Iy, Iz=cs.Iz, F=F, 
@@ -190,6 +192,7 @@ ax[4].plot(beam_mesh[:, 1], u[:, 1], linewidth=2, label='y-displacement')
 ax[4].plot(beam_mesh[:, 1], u[:, 2], linewidth=2, label='z-displacement')
 ax[4].set_title("Displacement")
 ax[4].legend()
+ax[4].grid()
 
 # plot loads F on ax[5]
 # load_magnitude = jnp.linalg.norm(aero_forces, axis=1)
