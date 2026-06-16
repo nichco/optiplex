@@ -74,97 +74,97 @@ class Beam:
         self.mass = jnp.sum(self.rho * self.A * self.L)
 
 
-    # def _local_stiffness(self) -> jnp.ndarray:
-    #     """
-    #     Build local-frame stiffness matrices for every element.
-
-    #     The 12 DOFs are ordered as:
-    #       node 1: [u1, v1, w1, thx1, thy1, thz1]
-    #       node 2: [u2, v2, w2, thx2, thy2, thz2]
-    #     where x is the element axis, y/z are the two transverse directions.
-
-    #     Returns
-    #     -------
-    #     K_local : (num_elements, 12, 12)
-    #     """
-    #     L = self.L
-    #     A, E, G = self.A, self.E, self.G
-
-    #     AEL      =  A * E / L
-    #     GJL      =  G * self.J  / L
-    #     EIzL3_12 =  12 * E * self.Iz / L**3
-    #     EIzL2_6  =   6 * E * self.Iz / L**2
-    #     EIzL_4   =   4 * E * self.Iz / L
-    #     EIzL_2   =   2 * E * self.Iz / L
-    #     EIyL3_12 =  12 * E * self.Iy / L**3
-    #     EIyL2_6  =   6 * E * self.Iy / L**2
-    #     EIyL_4   =   4 * E * self.Iy / L
-    #     EIyL_2   =   2 * E * self.Iy / L
-
-    #     # (row, col, value-array) -- upper triangle; symmetry filled below
-    #     entries = [
-    #         # diagonal
-    #         ( 0,  0,  AEL),
-    #         ( 1,  1,  EIzL3_12),
-    #         ( 2,  2,  EIyL3_12),
-    #         ( 3,  3,  GJL),
-    #         ( 4,  4,  EIyL_4),
-    #         ( 5,  5,  EIzL_4),
-    #         ( 6,  6,  AEL),
-    #         ( 7,  7,  EIzL3_12),
-    #         ( 8,  8,  EIyL3_12),
-    #         ( 9,  9,  GJL),
-    #         (10, 10,  EIyL_4),
-    #         (11, 11,  EIzL_4),
-    #         # off-diagonal
-    #         ( 1,  5,  EIzL2_6),
-    #         ( 2,  4, -EIyL2_6),
-    #         ( 0,  6, -AEL),
-    #         ( 1,  7, -EIzL3_12),
-    #         ( 1, 11,  EIzL2_6),
-    #         ( 2,  8, -EIyL3_12),
-    #         ( 2, 10, -EIyL2_6),
-    #         ( 3,  9, -GJL),
-    #         ( 4,  8,  EIyL2_6),
-    #         ( 4, 10,  EIyL_2),
-    #         ( 5,  7, -EIzL2_6),
-    #         ( 5, 11,  EIzL_2),
-    #         ( 7, 11, -EIzL2_6),
-    #         ( 8, 10,  EIyL2_6),
-    #     ]
-
-    #     K = jnp.zeros((self.num_elements, 12, 12))
-    #     for i, j, val in entries:
-    #         K = K.at[:, i, j].add(val)
-    #         if i != j:
-    #             K = K.at[:, j, i].add(val)   # symmetric
-    #     return K
     def _local_stiffness(self) -> jnp.ndarray:
-        L, A, E, G = self.L, self.A, self.E, self.G
-        z        = jnp.zeros_like(L)
-        AEL      = A * E / L
-        GJL      = G * self.J  / L
-        c12z, c6z, c4z, c2z = (12*E*self.Iz/L**3, 6*E*self.Iz/L**2,
-                                4*E*self.Iz/L, 2*E*self.Iz/L)
-        c12y, c6y, c4y, c2y = (12*E*self.Iy/L**3, 6*E*self.Iy/L**2,
-                                4*E*self.Iy/L, 2*E*self.Iy/L)
+        """
+        Build local-frame stiffness matrices for every element.
 
-        # Each row_i is (n_elem, 12); stack into (n_elem, 12, 12)
-        rows = [
-            jnp.stack([ AEL,  z,   z,   z,   z,   z,  -AEL,  z,   z,   z,   z,   z  ], 1),  # 0
-            jnp.stack([ z, c12z,  z,   z,   z,  c6z,  z, -c12z, z,   z,   z,  c6z  ], 1),  # 1
-            jnp.stack([ z,  z, c12y,  z, -c6y,  z,   z,   z, -c12y, z, -c6y,  z    ], 1),  # 2
-            jnp.stack([ z,  z,  z,  GJL,  z,   z,   z,   z,   z, -GJL, z,   z      ], 1),  # 3
-            jnp.stack([ z,  z, -c6y, z,  c4y,  z,   z,   z,  c6y,  z,  c2y,  z     ], 1),  # 4
-            jnp.stack([ z, c6z, z,   z,   z,  c4z,  z, -c6z,  z,   z,   z,  c2z   ], 1),  # 5
-            jnp.stack([-AEL, z,  z,   z,   z,   z,  AEL,  z,   z,   z,   z,   z   ], 1),  # 6
-            jnp.stack([ z,-c12z, z,   z,   z, -c6z,  z,  c12z, z,   z,   z, -c6z  ], 1),  # 7
-            jnp.stack([ z,  z,-c12y, z,  c6y,  z,   z,   z,  c12y, z,  c6y,  z    ], 1),  # 8
-            jnp.stack([ z,  z,  z, -GJL,  z,   z,   z,   z,   z,  GJL, z,   z     ], 1),  # 9
-            jnp.stack([ z,  z, -c6y, z,  c2y,  z,   z,   z,  c6y,  z,  c4y,  z    ], 1),  # 10
-            jnp.stack([ z, c6z, z,   z,   z,  c2z,  z, -c6z,  z,   z,   z,  c4z   ], 1),  # 11
+        The 12 DOFs are ordered as:
+          node 1: [u1, v1, w1, thx1, thy1, thz1]
+          node 2: [u2, v2, w2, thx2, thy2, thz2]
+        where x is the element axis, y/z are the two transverse directions.
+
+        Returns
+        -------
+        K_local : (num_elements, 12, 12)
+        """
+        L = self.L
+        A, E, G = self.A, self.E, self.G
+
+        AEL      =  A * E / L
+        GJL      =  G * self.J  / L
+        EIzL3_12 =  12 * E * self.Iz / L**3
+        EIzL2_6  =   6 * E * self.Iz / L**2
+        EIzL_4   =   4 * E * self.Iz / L
+        EIzL_2   =   2 * E * self.Iz / L
+        EIyL3_12 =  12 * E * self.Iy / L**3
+        EIyL2_6  =   6 * E * self.Iy / L**2
+        EIyL_4   =   4 * E * self.Iy / L
+        EIyL_2   =   2 * E * self.Iy / L
+
+        # (row, col, value-array) -- upper triangle; symmetry filled below
+        entries = [
+            # diagonal
+            ( 0,  0,  AEL),
+            ( 1,  1,  EIzL3_12),
+            ( 2,  2,  EIyL3_12),
+            ( 3,  3,  GJL),
+            ( 4,  4,  EIyL_4),
+            ( 5,  5,  EIzL_4),
+            ( 6,  6,  AEL),
+            ( 7,  7,  EIzL3_12),
+            ( 8,  8,  EIyL3_12),
+            ( 9,  9,  GJL),
+            (10, 10,  EIyL_4),
+            (11, 11,  EIzL_4),
+            # off-diagonal
+            ( 1,  5,  EIzL2_6),
+            ( 2,  4, -EIyL2_6),
+            ( 0,  6, -AEL),
+            ( 1,  7, -EIzL3_12),
+            ( 1, 11,  EIzL2_6),
+            ( 2,  8, -EIyL3_12),
+            ( 2, 10, -EIyL2_6),
+            ( 3,  9, -GJL),
+            ( 4,  8,  EIyL2_6),
+            ( 4, 10,  EIyL_2),
+            ( 5,  7, -EIzL2_6),
+            ( 5, 11,  EIzL_2),
+            ( 7, 11, -EIzL2_6),
+            ( 8, 10,  EIyL2_6),
         ]
-        return jnp.stack(rows, axis=1)   # (n_elem, 12, 12)
+
+        K = jnp.zeros((self.num_elements, 12, 12))
+        for i, j, val in entries:
+            K = K.at[:, i, j].add(val)
+            if i != j:
+                K = K.at[:, j, i].add(val)   # symmetric
+        return K
+    # def _local_stiffness(self) -> jnp.ndarray:
+    #     L, A, E, G = self.L, self.A, self.E, self.G
+    #     z        = jnp.zeros_like(L)
+    #     AEL      = A * E / L
+    #     GJL      = G * self.J  / L
+    #     c12z, c6z, c4z, c2z = (12*E*self.Iz/L**3, 6*E*self.Iz/L**2,
+    #                             4*E*self.Iz/L, 2*E*self.Iz/L)
+    #     c12y, c6y, c4y, c2y = (12*E*self.Iy/L**3, 6*E*self.Iy/L**2,
+    #                             4*E*self.Iy/L, 2*E*self.Iy/L)
+
+    #     # Each row_i is (n_elem, 12); stack into (n_elem, 12, 12)
+    #     rows = [
+    #         jnp.stack([ AEL,  z,   z,   z,   z,   z,  -AEL,  z,   z,   z,   z,   z  ], 1),  # 0
+    #         jnp.stack([ z, c12z,  z,   z,   z,  c6z,  z, -c12z, z,   z,   z,  c6z  ], 1),  # 1
+    #         jnp.stack([ z,  z, c12y,  z, -c6y,  z,   z,   z, -c12y, z, -c6y,  z    ], 1),  # 2
+    #         jnp.stack([ z,  z,  z,  GJL,  z,   z,   z,   z,   z, -GJL, z,   z      ], 1),  # 3
+    #         jnp.stack([ z,  z, -c6y, z,  c4y,  z,   z,   z,  c6y,  z,  c2y,  z     ], 1),  # 4
+    #         jnp.stack([ z, c6z, z,   z,   z,  c4z,  z, -c6z,  z,   z,   z,  c2z   ], 1),  # 5
+    #         jnp.stack([-AEL, z,  z,   z,   z,   z,  AEL,  z,   z,   z,   z,   z   ], 1),  # 6
+    #         jnp.stack([ z,-c12z, z,   z,   z, -c6z,  z,  c12z, z,   z,   z, -c6z  ], 1),  # 7
+    #         jnp.stack([ z,  z,-c12y, z,  c6y,  z,   z,   z,  c12y, z,  c6y,  z    ], 1),  # 8
+    #         jnp.stack([ z,  z,  z, -GJL,  z,   z,   z,   z,   z,  GJL, z,   z     ], 1),  # 9
+    #         jnp.stack([ z,  z, -c6y, z,  c2y,  z,   z,   z,  c6y,  z,  c4y,  z    ], 1),  # 10
+    #         jnp.stack([ z, c6z, z,   z,   z,  c2z,  z, -c6z,  z,   z,   z,  c4z   ], 1),  # 11
+    #     ]
+    #     return jnp.stack(rows, axis=1)   # (n_elem, 12, 12)
 
 
     @staticmethod
@@ -366,10 +366,16 @@ if __name__ == "__main__":
     radius = 0.5
     thickness = 0.001
     cs   = CSTube(radius=radius, thickness=thickness)
-    beam = Beam(mesh=mesh, E=E, G=G, rho=rho,
-                A=cs.area, J=cs.J, Iy=cs.Iy, Iz=cs.Iz, F=F)
+    beam = Beam(mesh=mesh, E=E, G=G, rho=rho, A=cs.area, 
+                J=cs.J, Iy=cs.Iy, Iz=cs.Iz, F=F, fixed_nodes=[num_nodes // 2])
 
     u = beam.solve()
+
+    plt.plot(mesh[:, 1], u[:, 2], marker='o')
+    plt.title("Vertical displacement along the beam")
+    plt.xlabel("Spanwise position (m)")
+    plt.ylabel("Vertical displacement (m)")
+    plt.show()
 
     I     = cs.Iz
     delta = P * length**3 / (3 * E * I)
