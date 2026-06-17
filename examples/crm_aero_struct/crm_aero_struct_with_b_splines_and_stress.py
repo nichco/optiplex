@@ -103,6 +103,9 @@ def constraints(x):
     con = con.at[0].set(left_tip_disp - tip_disp_target)
     con = con.at[1].set(right_tip_disp - tip_disp_target)
     con = con.at[2].set(lift - crm_weight)
+    # con = jnp.zeros(2)
+    # con = con.at[0].set(max_sigma - 500e6)
+    # con = con.at[1].set(lift - crm_weight)
     return con
 
 
@@ -121,8 +124,11 @@ xu = np.concatenate([twist_upper, thickness_upper])
 
 cl = np.concatenate([-np.inf * np.ones(2), np.zeros(1)])
 cu = np.concatenate([ np.zeros(2),         np.zeros(1)])
+# cl = np.concatenate([-np.inf * np.ones(1), np.zeros(1)])
+# cu = np.concatenate([ np.zeros(1),         np.zeros(1)])
 
 c_scaler = np.array([10, 10, 1e-4])
+# c_scaler = np.array([1e-5, 1e-4])
 
 x_scaler = np.concatenate([10 * np.ones(n_twist_cp),       # twist scaler
                            100 * np.ones(n_thickness_cp)]) # thickness scaler
@@ -130,7 +136,7 @@ x_scaler = np.concatenate([10 * np.ones(n_twist_cp),       # twist scaler
 jaxprob = JaxProblem(x0=x0, jax_obj=objective, jax_con=constraints, 
                      cl=cl, cu=cu, xl=xl, xu=xu, x_scaler=x_scaler, c_scaler=c_scaler, o_scaler=1e2)
 
-optimizer = SLSQP(jaxprob, solver_options={'maxiter': 300, 'ftol': 1e-7}, turn_off_outputs=True)
+optimizer = SLSQP(jaxprob, solver_options={'maxiter': 200, 'ftol': 1e-7}, turn_off_outputs=True)
 optimizer.solve()
 optimizer.print_results()
 x = optimizer.results['x'] / x_scaler
@@ -216,6 +222,8 @@ ax[2].plot(beam_mesh[:, 1], sigma, label='Bending Stress', color='red')
 ax[2].set_title("Bending Stress")
 ax[2].set_xlabel("Spanwise Position (m)")
 ax[2].set_ylabel("Bending Stress (Pa)")
+# add a horizontal line for the allowable stress
+ax[2].axhline(500e6, linestyle='--', label='Allowable Stress')
 ax[2].grid()
 
 plt.show()

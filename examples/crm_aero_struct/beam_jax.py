@@ -368,6 +368,8 @@ if __name__ == "__main__":
     cs   = CSTube(radius=radius, thickness=thickness)
     beam = Beam(mesh=mesh, E=E, G=G, rho=rho, A=cs.area, 
                 J=cs.J, Iy=cs.Iy, Iz=cs.Iz, F=F, fixed_nodes=[num_nodes // 2])
+    # beam = Beam(mesh=mesh, E=E, G=G, rho=rho, A=cs.area, 
+    #             J=cs.J, Iy=cs.Iy, Iz=cs.Iz, F=F, fixed_nodes=[0])
 
     u = beam.solve()
 
@@ -386,6 +388,14 @@ if __name__ == "__main__":
 
     sigma = beam.recover_stresses(u, c=radius)   # (num_elements, 2)
     # print('Bending stress: ', sigma)
+
+    # plot the stress distribution along the beam
+    plt.plot(mesh[:, 1], sigma, marker='o')
+    plt.title("Bending stress along the beam")
+    plt.xlabel("Spanwise position (m)")
+    plt.ylabel("Bending stress (Pa)")
+    plt.grid()
+    plt.show()
  
     # Root moment = P * L  =>  sigma_root = P * L * c / I
     sigma_root_analytic = P * length * radius / float(I)
