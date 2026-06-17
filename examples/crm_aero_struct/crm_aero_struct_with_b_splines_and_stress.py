@@ -93,18 +93,20 @@ def constraints(x):
     c = np.linalg.norm(te - le, axis=1)
     c = 0.25 * c / 2
     sigma = beam.recover_stresses(u, c=c)
-    max_sigma = ks_max(sigma, rho=1e-6)
+    sigma_mpa = sigma / 1e6
+    soft_max_sigma_mpa = ks_max(sigma_mpa, rho=1e-3)
 
     crm_weight = (beam.mass + m0) * 9.81
 
     lift = sol['CL'] * q * lifting_line.S
 
-    con = jnp.zeros(3)
+    con = jnp.zeros(4)
     con = con.at[0].set(left_tip_disp - tip_disp_target)
     con = con.at[1].set(right_tip_disp - tip_disp_target)
     con = con.at[2].set(lift - crm_weight)
+    con = con.at[3].set(soft_max_sigma_mpa)
     # con = jnp.zeros(2)
-    # con = con.at[0].set(max_sigma - 500e6)
+    # con = con.at[0].set(max_sigma)
     # con = con.at[1].set(lift - crm_weight)
     return con
 
@@ -122,13 +124,15 @@ twist_upper = np.ones(n_twist_cp) * np.deg2rad(15)
 xl = np.concatenate([twist_lower, thickness_lower])
 xu = np.concatenate([twist_upper, thickness_upper])
 
-cl = np.concatenate([-np.inf * np.ones(2), np.zeros(1)])
-cu = np.concatenate([ np.zeros(2),         np.zeros(1)])
+cl = np.concatenate([-np.inf * np.ones(2), np.zeros(1), np.ones(1) * np.inf * -1])
+cu = np.concatenate([ np.zeros(2),         np.zeros(1), np.ones(1) * 800])
 # cl = np.concatenate([-np.inf * np.ones(1), np.zeros(1)])
 # cu = np.concatenate([ np.zeros(1),         np.zeros(1)])
+# cl = np.array([-np.inf, 0])
+# cu = np.array([500e6, 0])
 
-c_scaler = np.array([10, 10, 1e-4])
-# c_scaler = np.array([1e-5, 1e-4])
+c_scaler = np.array([10, 10, 1e-4, 1e-2])
+# c_scaler = np.array([1e-6, 1e-4])
 
 x_scaler = np.concatenate([10 * np.ones(n_twist_cp),       # twist scaler
                            100 * np.ones(n_thickness_cp)]) # thickness scaler
@@ -191,10 +195,11 @@ u = beam.solve()
 c = np.linalg.norm(te - le, axis=1)
 c = 0.25 * c / 2
 sigma = beam.recover_stresses(u, c=c)
+sigma_mpa = sigma / 1e6
+soft_max_sigma_mpa = ks_max(sigma_mpa, rho=1e-3)
 
-print('max stress:', np.max(sigma))
-soft_max_stress = ks_max(sigma, rho=1e-6)
-print('soft max stress:', soft_max_stress)
+print('max stress (MPa):', np.max(sigma_mpa))
+print('soft max stress (MPa):', soft_max_sigma_mpa)
 
 ax[4].plot(beam_mesh[:, 1], u[:, 0], linewidth=2, label='x-displacement')
 ax[4].plot(beam_mesh[:, 1], u[:, 1], linewidth=2, label='y-displacement')
