@@ -17,7 +17,7 @@ rho_atm = 0.4135 # (30 kft altitude)
 q       = 0.5 * rho_atm * v_inf**2
 
 # generate the CRM lifting line mesh
-ns = 33 # num spanwise panels (must be odd)
+ns = 45 # num spanwise panels (must be odd)
 crm_mesh = build_crm_mesh(ns=ns, span_cos_spacing=0)
 
 # generate a beam mesh from the CRM lifting line mesh
@@ -36,7 +36,6 @@ chord = np.linalg.norm(te - le, axis=1)
 # interpolate chord on a per-element basis (ns - 1)
 chord = 0.5 * (chord[:-1] + chord[1:])
 beam_radius = 0.25 * chord / 2
-# print("Beam radius at each element:\n", beam_radius)
 
 E = 69e9
 G = 26e9
@@ -51,7 +50,7 @@ tip_disp_target = 0.1
 lifting_line = LiftingLine(le, te, v_inf, rho_atm)
 
 
-n_twist_cp = 7
+n_twist_cp = 17
 twist_bspline_mtx = get_bspline_mtx(n_twist_cp, ns)
 
 n_thickness_cp = 10
@@ -102,24 +101,15 @@ def constraints(x):
 
 
 
-
-
-
-# thickness0 = np.ones(ns - 1) * 0.002
 thickness_cp0 = np.ones(n_thickness_cp) * 0.002
-# twist0 = np.ones(ns) * np.deg2rad(5)
 twist_cp0 = np.ones(n_twist_cp) * np.deg2rad(5)
 x0 = np.concatenate([twist_cp0, thickness_cp0])
 
 thickness_lower = np.ones(n_thickness_cp) * 0.001 # min gauge
-# thickness_upper = np.ones(n_thickness_cp) * 0.3 # np.inf
-# thickness_upper = beam_radius # max thickness is when the inner radius goes to zero
-
 thickness_upper = np.ones(n_thickness_cp) * min(beam_radius) # max thickness is when the inner radius goes to zero
-
-# twist_lower = -1 * np.ones(n_twist_cp) * np.inf
-twist_lower = -1 * np.ones(n_twist_cp) * np.deg2rad(0)
-twist_upper = np.ones(n_twist_cp) * np.inf
+twist_lower = -1 * np.ones(n_twist_cp) * np.deg2rad(0) # prevent negative loads maybe???
+# twist_lower = -1 * np.ones(n_twist_cp) * np.deg2rad(15) # prevent negative loads maybe???
+twist_upper = np.ones(n_twist_cp) * np.deg2rad(15)
 xl = np.concatenate([twist_lower, thickness_lower])
 xu = np.concatenate([twist_upper, thickness_upper])
 
@@ -128,8 +118,6 @@ cu = np.concatenate([ np.zeros(2),         np.zeros(1)])
 
 c_scaler = np.array([10, 10, 1e-4])
 
-# x_scaler = np.concatenate([10 * np.ones(n_twist_cp),       # twist scaler
-#                            100 * np.ones(ns - 1)]) # thickness scaler
 x_scaler = np.concatenate([10 * np.ones(n_twist_cp),       # twist scaler
                            100 * np.ones(n_thickness_cp)]) # thickness scaler
 
@@ -146,6 +134,8 @@ thickness_cp = x[n_twist_cp:]
 
 twist = bspline_comp(twist_bspline_mtx, twist_cp)
 thickness = bspline_comp(thickness_bspline_mtx, thickness_cp)
+print('min thickness:', np.min(thickness))
+print('max thickness:', np.max(thickness))
 
 sol = lifting_line.solve_lifting_line_model(twist)
 CD = sol["CD"]
@@ -178,8 +168,6 @@ aero_forces = sol["F"] * load_factor * safety_factor
 F = jnp.zeros((ns, 6))
 F = F.at[:, :3].set(aero_forces)
 
-# F = F.at[:, 2].set(jnp.abs(F[:, 2])) # take abs of vertical forces for better visualization
-
 cs = CSTube(radius=beam_radius, thickness=thickness)
 beam = Beam(mesh=beam_mesh, E=E, G=G, rho=rho_mat,
             A=cs.area, J=cs.J, Iy=cs.Iy, Iz=cs.Iz, F=F, 
@@ -203,6 +191,12 @@ ax[5].plot(lifting_line.y, aero_forces[:, 1], label='y-force')
 ax[5].plot(lifting_line.y, aero_forces[:, 2], label='z-force')
 ax[5].legend()
 ax[5].set_title("Load Magnitude")
+
+deformed_beam_mesh = beam_mesh + u[:, :3]
+
+ax[2].plot(deformed_beam_mesh[:, 1], deformed_beam_mesh[:, 2], label='Deformed Beam', color='red')
+ax[2].set_title("Deformed Beam Mesh")
+ax[2].grid()
 
 plt.show()
 
