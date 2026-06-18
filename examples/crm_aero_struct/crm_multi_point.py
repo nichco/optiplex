@@ -1,6 +1,6 @@
 # from lifting_line_jax_3 import LiftingLine
 from lifting_line_jax_4 import LiftingLine
-from beam_jax import Beam, CSTube
+from beam_jax_2 import Beam, CSTube
 import numpy as np
 from crm_mesh import build_crm_mesh
 import jax.numpy as jnp
@@ -46,7 +46,6 @@ sampler = LatinHypercube(d=2, seed=42)
 samples = scale(sampler.random(num), l_bounds=[0.4, 180], u_bounds=[0.6, 220])
 # samples = [(0.4135, 210), (0.4135, 207)]
 print(samples)
-exit()
 
 
 def condition(rho_atm, v_inf, alpha, twist, thickness):
@@ -65,9 +64,7 @@ def condition(rho_atm, v_inf, alpha, twist, thickness):
     F = F.at[:, :3].set(forces)
 
     cs = CSTube(radius=beam_radius, thickness=thickness)
-    beam = Beam(mesh=beam_mesh, E=E, G=G, rho=rho_mat,
-                A=cs.area, J=cs.J, Iy=cs.Iy, Iz=cs.Iz, F=F, 
-                fixed_nodes=[ns // 2])
+    beam = Beam(mesh=beam_mesh, E=E, G=G, rho=rho_mat, cs=cs, F=F, fixed_nodes=[ns // 2])
     u = beam.solve()
     u = jnp.linalg.norm(u[:, :3], axis=1)
     right_tip_disp, left_tip_disp = u[-1], u[0]
@@ -198,7 +195,7 @@ plt.show()
 
 
 # save the solution to an npz file
-np.savez('test_solution_lhs_num_100.npz', alphas=alphas, twist=twist, thickness=thickness, samples=samples)
+# np.savez('test_solution_lhs_num_100.npz', alphas=alphas, twist=twist, thickness=thickness, samples=samples)
 
 
 

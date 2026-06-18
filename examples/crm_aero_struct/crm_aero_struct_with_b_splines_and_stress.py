@@ -1,6 +1,5 @@
-# from lifting_line_jax_3 import LiftingLine
 from lifting_line_jax_4 import LiftingLine
-from beam_jax import Beam, CSTube
+from beam_jax_2 import Beam, CSTube
 import numpy as np
 from crm_mesh import build_crm_mesh
 import jax.numpy as jnp
@@ -10,7 +9,6 @@ import jax
 jax.config.update("jax_enable_x64", True)
 from modopt import JaxProblem, SLSQP
 from jax_b_splines import get_bspline_mtx, bspline_comp
-from softmax import ks_max
 
 # aero parameters
 v_inf   = 210 # (Mach 0.7)
@@ -25,12 +23,6 @@ crm_mesh = build_crm_mesh(ns=ns, span_cos_spacing=0)
 le = crm_mesh[0, :, :]
 te = crm_mesh[1, :, :]
 beam_mesh = (le + te) / 2.0
-
-# # plot both meshes
-# plt.scatter(crm_mesh[:, :, 0], crm_mesh[:, :, 1], color='tab:blue')
-# plt.scatter(beam_mesh[:, 0], beam_mesh[:, 1], color='tab:orange')
-# plt.axis('equal')
-# plt.show()
 
 # beam model parameters
 chord = np.linalg.norm(te - le, axis=1)
@@ -66,7 +58,10 @@ def objective(x):
     sol = lifting_line.solve_lifting_line_model(twist)
     CD = sol["CD"]
 
-    return CD
+    delta_twist_cp = twist_cp[1:] - twist_cp[:-1] # variation in twist_cp
+
+    # return CD
+    return CD + jnp.sum(delta_twist_cp**2) * 1e-2
 
 
 def constraints(x):
@@ -83,31 +78,21 @@ def constraints(x):
     F = F.at[:, :3].set(aero_forces)
 
     cs = CSTube(radius=beam_radius, thickness=thickness)
-    beam = Beam(mesh=beam_mesh, E=E, G=G, rho=rho_mat,
-                A=cs.area, J=cs.J, Iy=cs.Iy, Iz=cs.Iz, F=F, 
-                fixed_nodes=[ns // 2])
+    beam = Beam(mesh=beam_mesh, E=E, G=G, rho=rho_mat, cs=cs, F=F, fixed_nodes=[ns // 2])
     u = beam.solve()
-    u = jnp.linalg.norm(u[:, :3], axis=1)
-    right_tip_disp, left_tip_disp = u[-1], u[0]
 
-    c = np.linalg.norm(te - le, axis=1)
-    c = 0.25 * c / 2
-    sigma = beam.recover_stresses(u, c=c)
+    sigma = beam.recover_stress(u)
     sigma_mpa = sigma / 1e6
-    soft_max_sigma_mpa = ks_max(sigma_mpa, rho=1e-3)
+    rho = 2e-1
+    max_sigma_mpa = jnp.log(jnp.sum(jnp.exp(rho * (sigma_mpa)))) / rho
 
     crm_weight = (beam.mass + m0) * 9.81
 
     lift = sol['CL'] * q * lifting_line.S
 
-    con = jnp.zeros(4)
-    con = con.at[0].set(left_tip_disp - tip_disp_target)
-    con = con.at[1].set(right_tip_disp - tip_disp_target)
-    con = con.at[2].set(lift - crm_weight)
-    con = con.at[3].set(soft_max_sigma_mpa)
-    # con = jnp.zeros(2)
-    # con = con.at[0].set(max_sigma)
-    # con = con.at[1].set(lift - crm_weight)
+    con = jnp.zeros(2)
+    con = con.at[0].set(max_sigma_mpa)
+    con = con.at[1].set(lift - crm_weight)
     return con
 
 
@@ -118,21 +103,15 @@ x0 = np.concatenate([twist_cp0, thickness_cp0])
 
 thickness_lower = np.ones(n_thickness_cp) * 0.001 # min gauge
 thickness_upper = np.ones(n_thickness_cp) * min(beam_radius) # max thickness is when the inner radius goes to zero
-twist_lower = -1 * np.ones(n_twist_cp) * np.deg2rad(0) # prevent negative loads maybe???
-# twist_lower = -1 * np.ones(n_twist_cp) * np.deg2rad(15) # prevent negative loads maybe???
-twist_upper = np.ones(n_twist_cp) * np.deg2rad(15)
+twist_lower = -1 * np.ones(n_twist_cp) * np.deg2rad(10)
+twist_upper = np.ones(n_twist_cp) * np.deg2rad(10)
 xl = np.concatenate([twist_lower, thickness_lower])
 xu = np.concatenate([twist_upper, thickness_upper])
 
-cl = np.concatenate([-np.inf * np.ones(2), np.zeros(1), np.ones(1) * np.inf * -1])
-cu = np.concatenate([ np.zeros(2),         np.zeros(1), np.ones(1) * 800])
-# cl = np.concatenate([-np.inf * np.ones(1), np.zeros(1)])
-# cu = np.concatenate([ np.zeros(1),         np.zeros(1)])
-# cl = np.array([-np.inf, 0])
-# cu = np.array([500e6, 0])
+cl = np.concatenate([-np.inf * np.ones(1), np.zeros(1)])
+cu = np.concatenate([500 * np.ones(1),         np.zeros(1)])
 
-c_scaler = np.array([10, 10, 1e-4, 1e-2])
-# c_scaler = np.array([1e-6, 1e-4])
+c_scaler = np.array([1e-3, 1e-4])
 
 x_scaler = np.concatenate([10 * np.ones(n_twist_cp),       # twist scaler
                            100 * np.ones(n_thickness_cp)]) # thickness scaler
@@ -162,6 +141,22 @@ forces = sol["F"]
 print("CL:", CL)
 print("CD:", CD)
 
+aero_forces = sol["F"] * load_factor * safety_factor
+F = jnp.zeros((ns, 6))
+F = F.at[:, :3].set(aero_forces)
+
+cs = CSTube(radius=beam_radius, thickness=thickness)
+beam = Beam(mesh=beam_mesh, E=E, G=G, rho=rho_mat, cs=cs, F=F, fixed_nodes=[ns // 2])
+u = beam.solve()
+u_mag = jnp.linalg.norm(u[:, :3], axis=1)
+right_tip_disp, left_tip_disp = u_mag[-1], u_mag[0]
+
+sigma = beam.recover_stress(u)
+sigma_mpa = sigma / 1e6
+rho = 2e-1
+max_sigma_mpa = jnp.log(jnp.sum(jnp.exp(rho * (sigma_mpa)))) / rho
+print('max sigma (MPa):', np.max(sigma_mpa))
+print('soft max sigma (MPa):', max_sigma_mpa)
 
 fig, ax = plt.subplots(2, 3, figsize=(12, 6))
 ax = ax.flatten()
@@ -180,27 +175,6 @@ ax[3].plot(thickness_cp_span, thickness_cp, marker='o', linestyle='--')
 ax[3].grid()
 ax[3].set_title("Thickness")
 
-aero_forces = sol["F"] * load_factor * safety_factor
-F = jnp.zeros((ns, 6))
-F = F.at[:, :3].set(aero_forces)
-
-cs = CSTube(radius=beam_radius, thickness=thickness)
-beam = Beam(mesh=beam_mesh, E=E, G=G, rho=rho_mat,
-            A=cs.area, J=cs.J, Iy=cs.Iy, Iz=cs.Iz, F=F, 
-            fixed_nodes=[ns // 2])
-u = beam.solve()
-# u = jnp.linalg.norm(u[:, :3], axis=1)
-# right_tip_disp, left_tip_disp = u[-1], u[0]
-
-c = np.linalg.norm(te - le, axis=1)
-c = 0.25 * c / 2
-sigma = beam.recover_stresses(u, c=c)
-sigma_mpa = sigma / 1e6
-soft_max_sigma_mpa = ks_max(sigma_mpa, rho=1e-3)
-
-print('max stress (MPa):', np.max(sigma_mpa))
-print('soft max stress (MPa):', soft_max_sigma_mpa)
-
 ax[4].plot(beam_mesh[:, 1], u[:, 0], linewidth=2, label='x-displacement')
 ax[4].plot(beam_mesh[:, 1], u[:, 1], linewidth=2, label='y-displacement')
 ax[4].plot(beam_mesh[:, 1], u[:, 2], linewidth=2, label='z-displacement')
@@ -208,68 +182,24 @@ ax[4].set_title("Displacement")
 ax[4].legend()
 ax[4].grid()
 
-# plot loads F on ax[5]
-# load_magnitude = jnp.linalg.norm(aero_forces, axis=1)
-# ax[5].plot(lifting_line.y, load_magnitude, linewidth=2)
-ax[5].plot(lifting_line.y, aero_forces[:, 0], label='x-force')
-ax[5].plot(lifting_line.y, aero_forces[:, 1], label='y-force')
-ax[5].plot(lifting_line.y, aero_forces[:, 2], label='z-force')
-ax[5].legend()
-ax[5].set_title("Load Magnitude")
-
 deformed_beam_mesh = beam_mesh + u[:, :3]
 
-# ax[2].plot(deformed_beam_mesh[:, 1], deformed_beam_mesh[:, 2], label='Deformed Beam', color='red')
-# ax[2].set_title("Deformed Beam Mesh")
-# ax[2].grid()
-
-ax[2].plot(beam_mesh[:, 1], sigma, label='Bending Stress', color='red')
-ax[2].set_title("Bending Stress")
-ax[2].set_xlabel("Spanwise Position (m)")
-ax[2].set_ylabel("Bending Stress (Pa)")
-# add a horizontal line for the allowable stress
-ax[2].axhline(500e6, linestyle='--', label='Allowable Stress')
+ax[2].plot(deformed_beam_mesh[:, 1], deformed_beam_mesh[:, 2], linewidth=2)
+ax[2].set_title("Deformed Beam Mesh")
 ax[2].grid()
+
+ax[5].plot(sigma_mpa, linewidth=2)
+ax[5].set_title("Bending Stress")
+ax[5].set_xlabel("Spanwise Position (m)")
+ax[5].set_ylabel("Bending Stress (MPa)")
+# add a horizontal line for the allowable stress
+ax[5].axhline(500, linestyle='--', label='Allowable Stress')
+ax[5].grid()
 
 plt.show()
 
 
-# fig, ax = plt.subplots(1, 2, figsize=(12, 4))
-# ax[0].plot(lifting_line.y, twist, linewidth=2)
-# ax[0].scatter(np.linspace(lifting_line.y[0], lifting_line.y[-1], n_twist_cp), twist_cp, color='red')
-# ax[0].set_title("Twist")
-# ax[1].plot(lifting_line.y, Gamma, linewidth=2)
-# ax[1].set_title("Gamma")
-# plt.show()
-
-# plotter = pv.Plotter()
-# lifting_line.plot_3d(Gamma, forces, plotter)
-# plotter.view_isometric()
-# plotter.show()
-
-# b = np.linalg.norm(te[0] - te[-1])
-# plt.plot(np.linspace(-b/2, b/2, ns - 1), thickness)
-# plt.xlabel('Spanwise Position')
-# plt.ylabel('Thickness')
-# plt.title('Thickness Distribution')
-# plt.grid()
-# plt.show()
-
-
-# aero_forces = sol["F"] * load_factor * safety_factor
-# F = jnp.zeros((ns, 6))
-# F = F.at[:, :3].set(aero_forces)
-
-# cs = CSTube(radius=beam_radius, thickness=thickness)
-# beam = Beam(mesh=beam_mesh, E=E, G=G, rho=rho_mat,
-#             A=cs.area, J=cs.J, Iy=cs.Iy, Iz=cs.Iz, F=F, 
-#             fixed_nodes=[ns // 2])
-# u = beam.solve()
-# u = jnp.linalg.norm(u[:, :3], axis=1)
-# right_tip_disp, left_tip_disp = u[-1], u[0]
-
-# crm_mass = beam.mass + m0
-# print("CRM Mass:", crm_mass)
-
-# print("Left Tip Displacement:", left_tip_disp)
-# print("Right Tip Displacement:", right_tip_disp)
+plotter = pv.Plotter()
+lifting_line.plot_3d(Gamma, forces, plotter)
+plotter.view_isometric()
+plotter.show()

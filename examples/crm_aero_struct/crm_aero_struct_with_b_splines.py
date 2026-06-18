@@ -1,6 +1,6 @@
 # from lifting_line_jax_3 import LiftingLine
 from lifting_line_jax_4 import LiftingLine
-from beam_jax import Beam, CSTube
+from beam_jax_2 import Beam, CSTube
 import numpy as np
 from crm_mesh import build_crm_mesh
 import jax.numpy as jnp
@@ -10,7 +10,6 @@ import jax
 jax.config.update("jax_enable_x64", True)
 from modopt import JaxProblem, SLSQP
 from jax_b_splines import get_bspline_mtx, bspline_comp
-from softmax import ks_max
 
 # aero parameters
 v_inf   = 210 # (Mach 0.7)
@@ -83,17 +82,10 @@ def constraints(x):
     F = F.at[:, :3].set(aero_forces)
 
     cs = CSTube(radius=beam_radius, thickness=thickness)
-    beam = Beam(mesh=beam_mesh, E=E, G=G, rho=rho_mat,
-                A=cs.area, J=cs.J, Iy=cs.Iy, Iz=cs.Iz, F=F, 
-                fixed_nodes=[ns // 2])
+    beam = Beam(mesh=beam_mesh, E=E, G=G, rho=rho_mat, cs=cs, F=F, fixed_nodes=[ns // 2])
     u = beam.solve()
     u = jnp.linalg.norm(u[:, :3], axis=1)
     right_tip_disp, left_tip_disp = u[-1], u[0]
-
-    c = np.linalg.norm(te - le, axis=1)
-    c = 0.25 * c / 2
-    sigma = beam.recover_stresses(u, c=c)
-    max_sigma = ks_max(sigma, rho=1e-6)
 
     crm_weight = (beam.mass + m0) * 9.81
 
@@ -175,20 +167,10 @@ F = jnp.zeros((ns, 6))
 F = F.at[:, :3].set(aero_forces)
 
 cs = CSTube(radius=beam_radius, thickness=thickness)
-beam = Beam(mesh=beam_mesh, E=E, G=G, rho=rho_mat,
-            A=cs.area, J=cs.J, Iy=cs.Iy, Iz=cs.Iz, F=F, 
-            fixed_nodes=[ns // 2])
+beam = Beam(mesh=beam_mesh, E=E, G=G, rho=rho_mat, cs=cs, F=F, fixed_nodes=[ns // 2])
 u = beam.solve()
 # u = jnp.linalg.norm(u[:, :3], axis=1)
 # right_tip_disp, left_tip_disp = u[-1], u[0]
-
-c = np.linalg.norm(te - le, axis=1)
-c = 0.25 * c / 2
-sigma = beam.recover_stresses(u, c=c)
-
-print('max stress:', np.max(sigma))
-soft_max_stress = ks_max(sigma, rho=1e-6)
-print('soft max stress:', soft_max_stress)
 
 ax[4].plot(beam_mesh[:, 1], u[:, 0], linewidth=2, label='x-displacement')
 ax[4].plot(beam_mesh[:, 1], u[:, 1], linewidth=2, label='y-displacement')
@@ -208,55 +190,14 @@ ax[5].set_title("Load Magnitude")
 
 deformed_beam_mesh = beam_mesh + u[:, :3]
 
-# ax[2].plot(deformed_beam_mesh[:, 1], deformed_beam_mesh[:, 2], label='Deformed Beam', color='red')
-# ax[2].set_title("Deformed Beam Mesh")
-# ax[2].grid()
-
-ax[2].plot(beam_mesh[:, 1], sigma, label='Bending Stress', color='red')
-ax[2].set_title("Bending Stress")
-ax[2].set_xlabel("Spanwise Position (m)")
-ax[2].set_ylabel("Bending Stress (Pa)")
+ax[2].plot(deformed_beam_mesh[:, 1], deformed_beam_mesh[:, 2], label='Deformed Beam', color='red')
+ax[2].set_title("Deformed Beam Mesh")
 ax[2].grid()
 
 plt.show()
 
 
-# fig, ax = plt.subplots(1, 2, figsize=(12, 4))
-# ax[0].plot(lifting_line.y, twist, linewidth=2)
-# ax[0].scatter(np.linspace(lifting_line.y[0], lifting_line.y[-1], n_twist_cp), twist_cp, color='red')
-# ax[0].set_title("Twist")
-# ax[1].plot(lifting_line.y, Gamma, linewidth=2)
-# ax[1].set_title("Gamma")
-# plt.show()
-
-# plotter = pv.Plotter()
-# lifting_line.plot_3d(Gamma, forces, plotter)
-# plotter.view_isometric()
-# plotter.show()
-
-# b = np.linalg.norm(te[0] - te[-1])
-# plt.plot(np.linspace(-b/2, b/2, ns - 1), thickness)
-# plt.xlabel('Spanwise Position')
-# plt.ylabel('Thickness')
-# plt.title('Thickness Distribution')
-# plt.grid()
-# plt.show()
-
-
-# aero_forces = sol["F"] * load_factor * safety_factor
-# F = jnp.zeros((ns, 6))
-# F = F.at[:, :3].set(aero_forces)
-
-# cs = CSTube(radius=beam_radius, thickness=thickness)
-# beam = Beam(mesh=beam_mesh, E=E, G=G, rho=rho_mat,
-#             A=cs.area, J=cs.J, Iy=cs.Iy, Iz=cs.Iz, F=F, 
-#             fixed_nodes=[ns // 2])
-# u = beam.solve()
-# u = jnp.linalg.norm(u[:, :3], axis=1)
-# right_tip_disp, left_tip_disp = u[-1], u[0]
-
-# crm_mass = beam.mass + m0
-# print("CRM Mass:", crm_mass)
-
-# print("Left Tip Displacement:", left_tip_disp)
-# print("Right Tip Displacement:", right_tip_disp)
+plotter = pv.Plotter()
+lifting_line.plot_3d(Gamma, forces, plotter)
+plotter.view_isometric()
+plotter.show()

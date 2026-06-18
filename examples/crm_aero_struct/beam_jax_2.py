@@ -5,14 +5,79 @@ import jax.numpy as jnp
 import matplotlib.pyplot as plt
 import pyvista as pv
 
+# class CSTube:
+#     def __init__(self, radius, thickness):
+#         r_i = radius - thickness
+#         r_o4_minus_r_i4 = radius**4 - r_i**4
+#         self.area = jnp.pi * (radius**2 - r_i**2)
+#         self.J  = jnp.pi * r_o4_minus_r_i4 / 2   # polar moment
+#         self.Iy = jnp.pi * r_o4_minus_r_i4 / 4   # 2nd moment about y
+#         self.Iz = jnp.pi * r_o4_minus_r_i4 / 4   # 2nd moment about z
+
 class CSTube:
     def __init__(self, radius, thickness):
         r_i = radius - thickness
+
+        self.radius = radius
+        self.thickness = thickness
+        self.r_i = r_i
+        self.r_o = radius
+
         r_o4_minus_r_i4 = radius**4 - r_i**4
+
         self.area = jnp.pi * (radius**2 - r_i**2)
-        self.J  = jnp.pi * r_o4_minus_r_i4 / 2   # polar moment
-        self.Iy = jnp.pi * r_o4_minus_r_i4 / 4   # 2nd moment about y
-        self.Iz = jnp.pi * r_o4_minus_r_i4 / 4   # 2nd moment about z
+        self.J  = jnp.pi * r_o4_minus_r_i4 / 2
+        self.Iy = jnp.pi * r_o4_minus_r_i4 / 4
+        self.Iz = jnp.pi * r_o4_minus_r_i4 / 4
+
+    def max_von_mises(
+        self,
+        axial_strain,
+        kappa_y,
+        kappa_z,
+        torsion_rate,
+        E,
+        G,
+    ):
+        """
+        Maximum von-Mises stress anywhere on the tube cross-section.
+
+        Parameters
+        ----------
+        axial_strain : float
+            du/dx
+
+        kappa_y : float
+            d(theta_y)/dx
+
+        kappa_z : float
+            d(theta_z)/dx
+
+        torsion_rate : float
+            d(theta_x)/dx
+
+        Returns
+        -------
+        sigma_vm_max : float
+        """
+
+        r = self.r_o
+
+        # resultant bending curvature magnitude
+        kappa = jnp.sqrt(kappa_y**2 + kappa_z**2)
+
+        sigma_axial = E * axial_strain
+        sigma_bending = E * r * kappa
+
+        sigma_max = sigma_axial + sigma_bending
+        sigma_min = sigma_axial - sigma_bending
+
+        tau_torsion = G * r * torsion_rate
+
+        vm_pos = jnp.sqrt(sigma_max**2 + 3.0 * tau_torsion**2)
+        vm_neg = jnp.sqrt(sigma_min**2 + 3.0 * tau_torsion**2)
+
+        return jnp.maximum(vm_pos, vm_neg)
 
 
 class Beam:
@@ -22,10 +87,11 @@ class Beam:
                  E:           float,
                  G:           float,
                  rho:         float,
-                 A,
-                 J,
-                 Iy,
-                 Iz,
+                 cs:         CSTube,
+                #  A,
+                #  J,
+                #  Iy,
+                #  Iz,
                  F,
                  fixed_nodes: list[int] | None = None,
                  fixed_dofs:  list[int] | None = None):
@@ -33,6 +99,7 @@ class Beam:
         self.num_nodes    = len(mesh)
         self.num_elements = self.num_nodes - 1
         n = self.num_elements
+        self.cs = cs
 
         self.connectivity = np.array([[i, i + 1] for i in range(n)])
 
@@ -57,11 +124,15 @@ class Beam:
         self.F    = jnp.asarray(F,   dtype=float)
 
         # Broadcast scalar -> (num_elements,); works with traced values too
-        to_elem = lambda x: jnp.broadcast_to(jnp.atleast_1d(jnp.asarray(x, dtype=float)), (n,))
-        self.A  = to_elem(A)
-        self.J  = to_elem(J)
-        self.Iy = to_elem(Iy)
-        self.Iz = to_elem(Iz)
+        # to_elem = lambda x: jnp.broadcast_to(jnp.atleast_1d(jnp.asarray(x, dtype=float)), (n,))
+        # self.A  = to_elem(cs.area)
+        # self.J  = to_elem(cs.J)
+        # self.Iy = to_elem(cs.Iy)
+        # self.Iz = to_elem(cs.Iz)
+        self.A  = cs.area
+        self.J  = cs.J
+        self.Iy = cs.Iy
+        self.Iz = cs.Iz
 
         # Element lengths and unit axes (JAX, so mesh is differentiable too)
         p1   = self.mesh[self.connectivity[:, 0]]
@@ -259,98 +330,92 @@ class Beam:
         u = jnp.zeros(self.num_nodes * 6).at[self.free_dofs].set(u_f)
         return u.reshape(self.num_nodes, 6)
     
-    def recover_stresses(self, u: jnp.ndarray, c: float | jnp.ndarray) -> jnp.ndarray:
+
+
+    def recover_strain(self, u):
         """
-        Recover maximum bending stress at both ends of every element.
- 
-        Transforms nodal displacements back to the local frame, computes
-        internal moments via  f_local = K_local @ u_local, then applies
-        the elastic bending formula  sigma = M * c / I.
- 
-        For a biaxial case the stress is the sum of both
-        bending contributions (conservative, valid for a circular section):
-            sigma = |Mz| / Iz * c  +  |My| / Iy * c
- 
+        Elemental strain recovery.
+
         Parameters
         ----------
-        u : (num_nodes, 6)  nodal displacements from solve()
-        c : distance from the neutral axis
- 
+        u : (num_nodes, 6)
+
         Returns
         -------
-        sigma : (num_elements, 2)  bending stress at [node-1, node-2] for each element
+        axial_strain : (n_elem,)
+        kappa_y      : (n_elem,)
+        kappa_z      : (n_elem,)
+        torsion_rate : (n_elem,)
         """
-        K_local   = self._local_stiffness()
-        u_flat    = u.reshape(-1)
-        elem_dofs = jnp.asarray(self.elem_dofs)  # (num_elements, 12)
 
-        # Expand c to (num_nodes,) then pick the two per-element values
-        c_nodes = jnp.broadcast_to(jnp.asarray(c, dtype=float), (self.num_nodes,))
-        c1 = c_nodes[self.connectivity[:, 0]]  # (num_elements,) start nodes
-        c2 = c_nodes[self.connectivity[:, 1]]  # (num_elements,) end nodes
- 
-        def one_element(K_e, ex, dofs, Iy_e, Iz_e, c1_e, c2_e):
-            R       = Beam._rotation_matrix(ex)
-            T       = jnp.kron(jnp.eye(4), R)   # local <- global
-            u_local = T @ u_flat[dofs]           # 12 local DOFs
-            f_local = K_e @ u_local              # 12 local forces / moments
- 
-            # Local-frame bending moments at each end of the element:
-            #   DOF 4 / 10 : My  (bending about local y)
-            #   DOF 5 / 11 : Mz  (bending about local z)
-            My1, Mz1 = f_local[4],  f_local[5]
-            My2, Mz2 = f_local[10], f_local[11]
- 
-            sigma1 = (jnp.abs(Mz1) / Iz_e + jnp.abs(My1) / Iy_e) * c1_e
-            sigma2 = (jnp.abs(Mz2) / Iz_e + jnp.abs(My2) / Iy_e) * c2_e
-            return jnp.stack([sigma1, sigma2])
- 
-        # sigma_elem[e, 0] = start node of element e
-        # sigma_elem[e, 1] = end node   of element e  (== start of element e+1)
-        # So take every start-node value and append the tip once.
+        # gather global element DOFs
+        elem_u = u.reshape(-1)[self.elem_dofs]  # (n_elem, 12)
 
-        sigma_elem = jax.vmap(one_element)(
-            K_local, self.e_x, elem_dofs, self.Iy, self.Iz, c1, c2
-        )
-        # return jnp.append(sigma_elem[:, 0], sigma_elem[-1, 1])  # (num_nodes,)
+        # transform to local coordinates
+        def to_local(ue, ex):
+            R = Beam._rotation_matrix(ex)
+            T = jnp.kron(jnp.eye(4), R)
+            return T @ ue
+
+        ul = jax.vmap(to_local)(elem_u, self.e_x)
+
+        L = self.L
+
+        # axial strain
+        axial_strain = (ul[:, 6] - ul[:, 0]) / L
+
+        # twist rate
+        torsion_rate = (ul[:, 9] - ul[:, 3]) / L
+
+        # bending curvatures
+        kappa_y = (ul[:, 10] - ul[:, 4]) / L
+        kappa_z = (ul[:, 11] - ul[:, 5]) / L
+
+        return axial_strain, kappa_y, kappa_z, torsion_rate
     
-        from_start = jnp.append(sigma_elem[:, 0], 0.0)  # stress as start of element; 0 for last node
-        from_end   = jnp.append(0.0, sigma_elem[:, 1])  # stress as end of element;   0 for first node
-        return jnp.maximum(from_start, from_end)         # (num_nodes,)
+
+    # def recover_stress(self, u):
+
+    #     axial_strain, kappa_y, kappa_z, torsion_rate = \
+    #         self.recover_strain(u)
+
+    #     return jax.vmap(
+    #         lambda ea, ky, kz, tr:
+    #             self.cs.max_von_mises(
+    #                 ea,
+    #                 ky,
+    #                 kz,
+    #                 tr,
+    #                 self.E,
+    #                 self.G,
+    #             )
+    #     )(axial_strain, kappa_y, kappa_z, torsion_rate)
+
+    def recover_stress(self, u):
+
+        axial_strain, kappa_y, kappa_z, torsion_rate = self.recover_strain(u)
+
+        sigma_vm = self.cs.max_von_mises(
+            axial_strain,
+            kappa_y,
+            kappa_z,
+            torsion_rate,
+            self.E,
+            self.G,
+        )
+
+        return sigma_vm
 
 
-    def plot_3d(self,
-                u:      jnp.ndarray,
-                radius: float | np.ndarray,
-                plotter: pv.Plotter,
-                scale:  float = 1.0,
-                cmap:   str   = "plasma") -> None:
-
-        orig     = np.array(self.mesh)
-        disp     = np.array(u[:, :3])
-        deformed = orig + scale * disp
-        mag      = np.linalg.norm(disp, axis=1)
-        radii    = np.broadcast_to(np.asarray(radius, dtype=float), (self.num_elements,)).copy()
 
 
-        for i, (n1, n2) in enumerate(self.connectivity):
-            p1, p2    = deformed[n1], deformed[n2]
-            center    = 0.5 * (p1 + p2)
-            direction = p2 - p1
-            length    = np.linalg.norm(direction)
-            scalar    = 0.5 * (mag[n1] + mag[n2])
 
-            cyl = pv.Cylinder(center=center, direction=direction, radius=radii[i], height=length, resolution=30, capping=False)
-            cyl.point_data["Displacement"] = np.full(cyl.n_points, scalar)
-            plotter.add_mesh(cyl, scalars="Displacement", cmap=cmap,
-                        clim=[mag.min(), mag.max()], smooth_shading=True,
-                        show_scalar_bar=False, show_edges=False, opacity=0.8)
 
 
 
 if __name__ == "__main__":
 
-    num_nodes = 21
+    num_nodes = 31
     length    = 10.0
     mesh      = np.zeros((num_nodes, 3))
     mesh[:, 1] = np.linspace(0, length, num_nodes)
@@ -366,12 +431,12 @@ if __name__ == "__main__":
     radius = 0.5
     thickness = 0.001
     cs   = CSTube(radius=radius, thickness=thickness)
-    beam = Beam(mesh=mesh, E=E, G=G, rho=rho, A=cs.area, 
-                J=cs.J, Iy=cs.Iy, Iz=cs.Iz, F=F, fixed_nodes=[num_nodes // 2])
     # beam = Beam(mesh=mesh, E=E, G=G, rho=rho, A=cs.area, 
-    #             J=cs.J, Iy=cs.Iy, Iz=cs.Iz, F=F, fixed_nodes=[0])
+    #             J=cs.J, Iy=cs.Iy, Iz=cs.Iz, F=F, fixed_nodes=[num_nodes // 2])
+    beam = Beam(mesh=mesh, E=E, G=G, rho=rho, cs=cs, F=F, fixed_nodes=[0])
 
     u = beam.solve()
+    print('shape of u:', u.shape)
 
     plt.plot(mesh[:, 1], u[:, 2], marker='o')
     plt.title("Vertical displacement along the beam")
@@ -379,38 +444,26 @@ if __name__ == "__main__":
     plt.ylabel("Vertical displacement (m)")
     plt.show()
 
-    I     = cs.Iz
-    delta = P * length**3 / (3 * E * I)
+    delta = P * length**3 / (3 * E * cs.Iz)
 
     print(f"  Tip displacement (FEA):      {u[-1, 2]:.6e} m")
     print(f"  Tip displacement (analytic): {delta:.6e} m")
     print(f"  Relative error:              {abs(u[-1, 2] - delta) / delta * 100:.4f} %")
 
-    sigma = beam.recover_stresses(u, c=radius)   # (num_elements, 2)
-    # print('Bending stress: ', sigma)
+    sigma = beam.recover_stress(u)   # (num_elements,)
+    print('shape of sigma:', sigma.shape)
 
     # plot the stress distribution along the beam
-    plt.plot(mesh[:, 1], sigma, marker='o')
-    plt.title("Bending stress along the beam")
+    plt.plot(sigma)
     plt.xlabel("Spanwise position (m)")
     plt.ylabel("Bending stress (Pa)")
     plt.grid()
     plt.show()
  
-    # Root moment = P * L  =>  sigma_root = P * L * c / I
-    sigma_root_analytic = P * length * radius / float(I)
+    # Root moment = P * L  and  sigma_root = P * L * c / I
+    sigma_root_analytic = P * length * radius / float(cs.Iz)
     sigma_root_fea      = float(sigma[0])   # element 0, node-1 end (fixed root)
  
     print(f"  Root stress (FEA):      {sigma_root_fea:.6e} Pa")
     print(f"  Root stress (analytic): {sigma_root_analytic:.6e} Pa")
     print(f"  Error:                  {abs(sigma_root_fea - sigma_root_analytic) / sigma_root_analytic * 100:.4f} %")
-
-
-    radius = np.linspace(0.1, 0.5, num_nodes - 1)  # variable radius for visualization
-
-    plotter = pv.Plotter()
-    beam.plot_3d(u, radius=radius, plotter=plotter, scale=10)
-    plotter.view_isometric()
-    plotter.add_axes()
-    plotter.set_background("white")
-    plotter.show()

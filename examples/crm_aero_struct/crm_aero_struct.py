@@ -1,6 +1,6 @@
 # from lifting_line_jax_3 import LiftingLine
 from lifting_line_jax_4 import LiftingLine
-from beam_jax import Beam, CSTube
+from beam_jax_2 import Beam, CSTube
 import numpy as np
 from crm_mesh import build_crm_mesh
 import jax.numpy as jnp
@@ -77,9 +77,7 @@ def constraints(x):
     F = F.at[:, :3].set(aero_forces)
 
     cs = CSTube(radius=beam_radius, thickness=thickness)
-    beam = Beam(mesh=beam_mesh, E=E, G=G, rho=rho_mat,
-                A=cs.area, J=cs.J, Iy=cs.Iy, Iz=cs.Iz, F=F, 
-                fixed_nodes=[ns // 2])
+    beam = Beam(mesh=beam_mesh, E=E, G=G, rho=rho_mat, cs=cs, F=F, fixed_nodes=[ns // 2])
     u = beam.solve()
     u = jnp.linalg.norm(u[:, :3], axis=1)
     right_tip_disp, left_tip_disp = u[-1], u[0]
@@ -168,9 +166,7 @@ F = jnp.zeros((ns, 6))
 F = F.at[:, :3].set(aero_forces)
 
 cs = CSTube(radius=beam_radius, thickness=thickness)
-beam = Beam(mesh=beam_mesh, E=E, G=G, rho=rho_mat,
-            A=cs.area, J=cs.J, Iy=cs.Iy, Iz=cs.Iz, F=F, 
-            fixed_nodes=[ns // 2])
+beam = Beam(mesh=beam_mesh, E=E, G=G, rho=rho_mat, cs=cs, F=F, fixed_nodes=[ns // 2])
 u = beam.solve()
 u = jnp.linalg.norm(u[:, :3], axis=1)
 right_tip_disp, left_tip_disp = u[-1], u[0]
