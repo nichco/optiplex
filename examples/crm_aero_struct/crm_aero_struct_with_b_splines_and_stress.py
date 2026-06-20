@@ -108,8 +108,8 @@ twist_upper = np.ones(n_twist_cp) * np.deg2rad(10)
 xl = np.concatenate([twist_lower, thickness_lower])
 xu = np.concatenate([twist_upper, thickness_upper])
 
-cl = np.concatenate([-np.inf * np.ones(1), np.zeros(1)])
-cu = np.concatenate([500 * np.ones(1),         np.zeros(1)])
+cl = np.array([-np.inf, 0])
+cu = np.array([500, 0])
 
 c_scaler = np.array([1e-3, 1e-4])
 

@@ -11,10 +11,11 @@ from optiplex import combo
 import warnings
 warnings.filterwarnings("ignore")
 import time
+from jax_b_splines import get_bspline_mtx, bspline_comp
 
 
 # generate the CRM lifting line mesh
-ns = 33 # num spanwise panels (must be odd)
+ns = 45 # num spanwise panels (must be odd)
 crm_mesh = build_crm_mesh(ns=ns, span_cos_spacing=0)
 
 # generate a beam mesh from the CRM lifting line mesh
@@ -35,8 +36,14 @@ safety_factor = 1.5
 tip_disp_target = 0.1
 
 
+n_twist_cp = 17
+twist_bspline_mtx = get_bspline_mtx(n_twist_cp, ns)
 
-def make_subproblem(subP, num, cs, opt_time, samples):
+n_thickness_cp = 10
+thickness_bspline_mtx = get_bspline_mtx(n_thickness_cp, ns - 1)
+
+
+def make_subproblem(subP, num, opt_time, samples):
 
     def subP_i(v_init: list,
                y: np.ndarray = None, # lagrange multipliers
@@ -46,27 +53,30 @@ def make_subproblem(subP, num, cs, opt_time, samples):
         print(f"Solving subproblem {subP}")
 
         alphas = []
-        twists = []
-        thicknesses = []
+        twist_cps = []
+        thickness_cps = []
         for i in range(num):
             x_init_i = v_init[i]
             alphas.append(x_init_i[0])
-            twists.append(x_init_i[1:1 + ns])
-            thicknesses.append(x_init_i[1 + ns:])
+            twist_cps.append(x_init_i[1:1 + n_twist_cp])
+            thickness_cps.append(x_init_i[1 + n_twist_cp:])
 
 
         def objective(x):
             alpha_i = x[0] # trim angle for this condition
-            twist_i = x[1:1 + ns] # twist distribution for this condition
-            thickness_i = x[1 + ns:] # thickness distribution for this condition
+            twist_cp_i = x[1:1 + n_twist_cp] # twist distribution for this condition
+            thickness_cp_i = x[1 + n_twist_cp:] # thickness distribution for this condition
 
             alpha_list = alphas.copy()
-            twist_list = twists.copy()
-            thickness_list = thicknesses.copy()
+            twist_cp_list = twist_cps.copy()
+            thickness_cp_list = thickness_cps.copy()
 
             alpha_list[subP] = alpha_i
-            twist_list[subP] = twist_i
-            thickness_list[subP] = thickness_i
+            twist_cp_list[subP] = twist_cp_i
+            thickness_cp_list[subP] = thickness_cp_i
+
+            twist_i = bspline_comp(twist_bspline_mtx, twist_cp_i)
+            thickness_i = bspline_comp(thickness_bspline_mtx, thickness_cp_i)
 
             rho_atm_i, v_inf_i = samples[subP]
             effective_twist = twist_i + alpha_i # add the trim aoa to the twist distribution
@@ -85,24 +95,26 @@ def make_subproblem(subP, num, cs, opt_time, samples):
 
             obj += jnp.sum(jnp.array(alpha_list)**2) * 1e1 # remove the differential flatness in the trim solution
 
-            twist_constraint = combo(twist_list) # modified combo to remove one pair
+            twist_cps_for_constraint = [twist_cp_i + 0.1 for twist_cp_i in twist_cp_list]
+            twist_cp_constraint = combo(twist_cps_for_constraint)
 
-            thickness_list = [thickness + 0.1 for thickness in thickness_list] # offset all thicknesses
-
-            thickness_constraint = combo(thickness_list) # modified combo to remove one pair
+            thickness_cp_list = [thickness_cp_i + 0.1 for thickness_cp_i in thickness_cp_list]
+            thickness_cp_constraint = combo(thickness_cp_list)
         
-            c = jnp.concatenate((twist_constraint, thickness_constraint)) * cs
+            c = jnp.concatenate((twist_cp_constraint, 6*thickness_cp_constraint))
 
-            L = 1e2 * obj + y.T @ c + 0.5 * mu * jnp.sum(c**2)
-            # L = 1e3 * obj + y.T @ c + 0.5 * c.T @ jnp.diag(mu) @ c
-            return L
+            # return 1e2 * obj + y.T @ c + 0.5 * mu * jnp.sum(c**2)
+            return 1e2 * obj + y.T @ c + 0.5 * c.T @ jnp.diag(mu) @ c
 
 
         def constraints(x):
 
             alpha_i = x[0] # trim angle for this condition
-            twist_i = x[1:1 + ns] # twist distribution for this condition
-            thickness_i = x[1 + ns:] # thickness distribution for this condition
+            twist_cp_i = x[1:1 + n_twist_cp] # twist distribution for this condition
+            thickness_cp_i = x[1 + n_twist_cp:] # thickness distribution for this condition
+
+            twist_i = bspline_comp(twist_bspline_mtx, twist_cp_i)
+            thickness_i = bspline_comp(thickness_bspline_mtx, thickness_cp_i)
 
             effective_twist = twist_i + alpha_i # add the trim aoa to the twist distribution
 
@@ -119,49 +131,48 @@ def make_subproblem(subP, num, cs, opt_time, samples):
             cs = CSTube(radius=beam_radius, thickness=thickness_i)
             beam = Beam(mesh=beam_mesh, E=E, G=G, rho=rho_mat, cs=cs, F=F, fixed_nodes=[ns // 2])
             u = beam.solve()
-            u = jnp.linalg.norm(u[:, :3], axis=1)
-            right_tip_disp, left_tip_disp = u[-1], u[0]
+            sigma = beam.recover_stress(u)
+            sigma_mpa = sigma / 1e6
+            rho = 2e-1
+            max_sigma_mpa = jnp.log(jnp.sum(jnp.exp(rho * (sigma_mpa)))) / rho
 
             crm_weight = (beam.mass + m0) * 9.81
 
             q = 0.5 * rho_atm_i * v_inf_i**2
             lift = CL * q * ll.S
 
-            con_i = jnp.zeros(3)
-            con_i = con_i.at[0].set(left_tip_disp - tip_disp_target)
-            con_i = con_i.at[1].set(right_tip_disp - tip_disp_target)
-            con_i = con_i.at[2].set(lift - crm_weight)
-
+            con_i = jnp.zeros(2)
+            con_i = con_i.at[0].set(max_sigma_mpa)
+            con_i = con_i.at[1].set(lift - crm_weight)
             return con_i
         
 
 
 
         alpha_i_0 = alphas[subP]
-        thickness_i_0 = thicknesses[subP]
-        twist_i_0 = twists[subP]
-        x0 = np.concatenate([np.array([alpha_i_0]), np.array(twist_i_0), np.array(thickness_i_0)])
+        thickness_cp_i_0 = thickness_cps[subP]
+        twist_cp_i_0 = twist_cps[subP]
+        x0 = np.concatenate([np.array([alpha_i_0]), np.array(twist_cp_i_0), np.array(thickness_cp_i_0)])
 
         alpha_lower = -1 * np.ones(1) * np.deg2rad(5)
-        alpha_upper = np.ones(1) * np.deg2rad(10)
-        thickness_lower = np.ones(ns - 1) * 0.001 # min gauge
-        thickness_upper = beam_radius # max thickness is when the inner radius goes to zero
-        twist_lower = -1 * np.ones(ns) * np.deg2rad(15)
-        twist_upper = np.ones(ns) * np.deg2rad(15)
-        xl = np.concatenate([alpha_lower, twist_lower, thickness_lower])
-        xu = np.concatenate([alpha_upper, twist_upper, thickness_upper])
+        alpha_upper = np.ones(1) * np.deg2rad(5)
+        thickness_cp_lower = np.ones(n_thickness_cp) * 0.001 # min gauge
+        thickness_cp_upper = np.ones(n_thickness_cp) * min(beam_radius) # max thickness is when the inner radius goes to zero
+        twist_cp_lower = -1 * np.ones(n_twist_cp) * np.deg2rad(10)
+        twist_cp_upper = np.ones(n_twist_cp) * np.deg2rad(10)
+        xl = np.concatenate([alpha_lower, twist_cp_lower, thickness_cp_lower])
+        xu = np.concatenate([alpha_upper, twist_cp_upper, thickness_cp_upper])
 
-        cl = np.concatenate([-np.inf * np.ones(2), np.zeros(1)])
-        cu = np.concatenate([ np.zeros(2),         np.zeros(1)])
-
-        c_scaler = np.array([10, 10, 1e-4])
+        cl_i = np.array([-np.inf, 0])
+        cu_i = np.array([500, 0])
+        c_i_scaler = np.array([1e-2, 1e-4])
 
         x_scaler = np.concatenate([np.array([100]),    # alpha scaler
-                                   10 * np.ones(ns),      # twist scaler
-                                   10 * np.ones(ns - 1)]) # thickness scaler
+                                   10 * np.ones(n_twist_cp),      # twist scaler
+                                   10 * np.ones(n_thickness_cp)]) # thickness scaler
         
         jaxprob = JaxProblem(x0=x0, jax_obj=objective, jax_con=constraints, 
-                     cl=cl, cu=cu, xl=xl, xu=xu, x_scaler=x_scaler, c_scaler=c_scaler)
+                     cl=cl_i, cu=cu_i, xl=xl, xu=xu, x_scaler=x_scaler, c_scaler=c_i_scaler)
 
         optimizer = SLSQP(jaxprob, solver_options={'maxiter': 1000, 'ftol': 1e-8}, turn_off_outputs=True)
 
@@ -176,25 +187,15 @@ def make_subproblem(subP, num, cs, opt_time, samples):
         x = optimizer.results['x'] / x_scaler
 
         alpha_i = x[0] # trim angle for this condition
-        twist_i = x[1:1 + ns] # twist distribution for this condition
-        thickness_i = x[1 + ns:] # thickness distribution for this condition
+        twist_cp_i = x[1:1 + n_twist_cp] # twist distribution for this condition
+        thickness_cp_i = x[1 + n_twist_cp:] # thickness distribution for this condition
 
-        # alphas[subP] = alpha_i
-        # twists[subP] = twist_i
-        # thicknesses[subP] = thickness_i
-
-        # v_init[0] = alphas
-        # v_init[1] = twists
-        # v_init[2] = thicknesses
-
-        ans_i = np.concatenate([np.array([alpha_i]), np.array(twist_i), np.array(thickness_i)])
-        # v_init[subP] = ans_i
+        ans_i = np.concatenate([np.array([alpha_i]), np.array(twist_cp_i), np.array(thickness_cp_i)])
         ans = v_init.copy()
         ans[subP] = ans_i
 
-        # gc.collect()
+        gc.collect()
         return ans
-
 
 
     return subP_i
