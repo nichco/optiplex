@@ -51,15 +51,19 @@ def make_subproblem(subP, num, opt_time, samples):
                ) -> list:
         
         print(f"Solving subproblem {subP}")
+        # print(samples[subP])
 
-        alphas = []
-        twist_cps = []
-        thickness_cps = []
-        for i in range(num):
-            x_init_i = v_init[i]
-            alphas.append(x_init_i[0])
-            twist_cps.append(x_init_i[1:1 + n_twist_cp])
-            thickness_cps.append(x_init_i[1 + n_twist_cp:])
+        # alphas = []
+        # twist_cps = []
+        # thickness_cps = []
+        # for i in range(num):
+        #     x_init_i = v_init[i]
+        #     alphas.append(x_init_i[0])
+        #     twist_cps.append(x_init_i[1:1 + n_twist_cp])
+        #     thickness_cps.append(x_init_i[1 + n_twist_cp:])
+        alphas = [x_init_i[0] for x_init_i in v_init]
+        twist_cps = [x_init_i[1:1 + n_twist_cp] for x_init_i in v_init]
+        thickness_cps = [x_init_i[1 + n_twist_cp:] for x_init_i in v_init]
 
 
         def objective(x):
@@ -74,34 +78,40 @@ def make_subproblem(subP, num, opt_time, samples):
             alpha_list[subP] = alpha_i
             twist_cp_list[subP] = twist_cp_i
             thickness_cp_list[subP] = thickness_cp_i
+            
+            # twist_i = bspline_comp(twist_bspline_mtx, twist_cp_i)
 
-            twist_i = bspline_comp(twist_bspline_mtx, twist_cp_i)
-            thickness_i = bspline_comp(thickness_bspline_mtx, thickness_cp_i)
+            # rho_atm_i, v_inf_i = samples[subP]
+            # effective_twist = twist_i + alpha_i # add the trim aoa to the twist distribution
+            # ll = LiftingLine(le, te, v_inf_i, rho_atm_i)
+            # sol = ll.solve_lifting_line_model(effective_twist)
+            # obj = sol["CD"]
+            obj = 0.0
+            for i in range(num):
+                rho_atm_i, v_inf_i = samples[i]
+                twist_i = bspline_comp(twist_bspline_mtx, twist_cp_i)
+                effective_twist = twist_i + alpha_list[i]
+                ll = LiftingLine(le, te, v_inf_i, rho_atm_i)
+                sol = ll.solve_lifting_line_model(effective_twist)
+                obj += sol["CD"]
 
-            rho_atm_i, v_inf_i = samples[subP]
-            effective_twist = twist_i + alpha_i # add the trim aoa to the twist distribution
-            ll = LiftingLine(le, te, v_inf_i, rho_atm_i)
-            sol = ll.solve_lifting_line_model(effective_twist)
-            obj = sol["CD"]
-            # obj = 0.0
-            # for i in range(num):
-            #     rho_atm_i, v_inf_i = samples[i]
-            #     effective_twist = twist_list[i] + alpha_list[i]
-            #     ll = LiftingLine(le, te, v_inf_i, rho_atm_i)
-            #     sol = ll.solve_lifting_line_model(effective_twist)
-            #     obj += sol["CD"]
+            obj = obj / num # minimize the average CD across all conditions
 
-            # obj = obj / num # minimize the average CD across all conditions
+            # MAYBE IT'S SOMETHING TO DO WITH THE SEPARABLE OBJECTIVE, AND THE FACT THAT THE OBJECTIVE ADDS THE ALPHA REGULARIZATION????
 
             obj += jnp.sum(jnp.array(alpha_list)**2) * 1e1 # remove the differential flatness in the trim solution
 
-            twist_cps_for_constraint = [twist_cp_i + 0.1 for twist_cp_i in twist_cp_list]
-            twist_cp_constraint = combo(twist_cps_for_constraint)
+            delta_twist_cp = twist_cp_i[1:] - twist_cp_i[:-1] # variation in twist_cp
+            obj += jnp.sum(delta_twist_cp**2) * 2e-2
+
+            # twist_cps_for_constraint = [twist_cp_i + 0.1 for twist_cp_i in twist_cp_list]
+            # twist_cp_constraint = combo(twist_cps_for_constraint)
+            twist_cp_constraint = combo(twist_cp_list)
 
             thickness_cp_list = [thickness_cp_i + 0.1 for thickness_cp_i in thickness_cp_list]
             thickness_cp_constraint = combo(thickness_cp_list)
         
-            c = jnp.concatenate((twist_cp_constraint, 6*thickness_cp_constraint))
+            c = jnp.concatenate((0.5*twist_cp_constraint, 2*thickness_cp_constraint))
 
             # return 1e2 * obj + y.T @ c + 0.5 * mu * jnp.sum(c**2)
             return 1e2 * obj + y.T @ c + 0.5 * c.T @ jnp.diag(mu) @ c
@@ -174,7 +184,7 @@ def make_subproblem(subP, num, opt_time, samples):
         jaxprob = JaxProblem(x0=x0, jax_obj=objective, jax_con=constraints, 
                      cl=cl_i, cu=cu_i, xl=xl, xu=xu, x_scaler=x_scaler, c_scaler=c_i_scaler)
 
-        optimizer = SLSQP(jaxprob, solver_options={'maxiter': 1000, 'ftol': 1e-8}, turn_off_outputs=True)
+        optimizer = SLSQP(jaxprob, solver_options={'maxiter': 700, 'ftol': 1e-8}, turn_off_outputs=True)
 
         t0 = time.perf_counter()
         optimizer.solve()

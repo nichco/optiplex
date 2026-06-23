@@ -110,16 +110,16 @@ def con(v_init):
 opt = Plex(subproblems=[subproblem1, subproblem2],
            x_init=v_init,
            con=con,
+           tol=1e-5, # outer loop feasibility
+           mu=1.0, # initial penalty parameter
+           max_mu=1e6,
+           rho=1.2, # penalty increase factor
            )
 
-# opt.solve(max_iter=100, tol=1e-4, ctol=1e-4, itol=1.0, rho=1.05)
 opt.solve(max_outer_iter=100,
           max_inner_iter=10,
-          ATOL_out=1e-6, 
-          RTOL_out=1e-6,
-          eps=1e-2,
-          ATOL_feas=1e-3,
-          rho=1.1
+          eps_inner=1e-2, # inner loop tolerance
+          eps_outer=1e-5, # outer loop tolerance
           )
 
 print('Solution: ', opt.x)

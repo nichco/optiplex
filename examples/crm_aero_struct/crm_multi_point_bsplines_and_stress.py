@@ -102,10 +102,12 @@ def objective(x):
 
     obj += jnp.sum(alphas**2) * 1e1 # remove the differential flatness in the trim solution
 
-    # delta_twist_cp = twist_cp[1:] - twist_cp[:-1] # variation in twist_cp
-    # obj += jnp.sum(delta_twist_cp**2) * 1e-2
+    delta_twist_cp = twist_cp[1:] - twist_cp[:-1] # variation in twist_cp
+    obj += jnp.sum(delta_twist_cp**2) * 2e-2
+    # 0.47039549084076543
+    # 0.4713255386357085
 
-    return obj
+    return 1e2 * obj
 
 
 def constraints(x):
@@ -170,7 +172,7 @@ x_scaler = np.concatenate([100 * np.ones(num),      # alpha scaler
 
 
 jaxprob = JaxProblem(x0=x0, jax_obj=objective, jax_con=constraints, 
-                     cl=cl, cu=cu, xl=xl, xu=xu, x_scaler=x_scaler, c_scaler=c_scaler, o_scaler=1e2)
+                     cl=cl, cu=cu, xl=xl, xu=xu, x_scaler=x_scaler, c_scaler=c_scaler)
 
 optimizer = SLSQP(jaxprob, solver_options={'maxiter': 1000, 'ftol': 1e-8}, turn_off_outputs=True)
 optimizer.solve()

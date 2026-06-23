@@ -1,4 +1,4 @@
-from optiplex import Plex
+from optiplex import Plex, Plex2
 import numpy as np
 import modopt as mo
 import jax.numpy as jnp
@@ -108,22 +108,39 @@ def con(v_init):
     return np.concatenate([c_1, c_2])
 
 
-opt = Plex(subproblems=[subproblem1, subproblem2],
-           x_init=v_init,
-           con=con,
-           )
+# opt = Plex(subproblems=[subproblem1, subproblem2],
+#            x_init=v_init,
+#            con=con,
+#            tol=1e-5, # outer loop feasibility
+#            mu=1.0, # initial penalty parameter
+#            max_mu=1e6,
+#            rho=1.2, # penalty increase factor
+#            )
 
-opt.solve(max_outer_iter=100,
-          max_inner_iter=10,
-          eps_inner=1e-2, # inner loop tolerance
-          eps_outer=1e-5, # outer loop tolerance
-          tol=1e-5, # feasibility tolerance
-          rho=1.2,
-          mu=1.0,
+# opt.solve(max_outer_iter=100,
+#           max_inner_iter=10,
+#           eps_inner=1e-2, # inner loop tolerance
+#           eps_outer=1e-5, # outer loop tolerance
+#           )
+
+opt = Plex2(subproblems=[subproblem1, subproblem2],
+            x_init=v_init,
+            con=con,
+            mu=1,
+            max_mu=1e6,
+            rho=1.2,
+            tau=0.5,
+            tol=1e-4, # outer loop feasibility
+            eps=1e-3, # initial inner loop convergence
+            eta=1e-4, # final inner loop convergence
+            )
+
+opt.solve(max_outer_iter=100, 
+          max_inner_iter=100,
           )
 
 print('Solution: ', opt.x)
-print('Time (s): ', opt.time)
+# print('Time (s): ', opt.time)
 
 
 

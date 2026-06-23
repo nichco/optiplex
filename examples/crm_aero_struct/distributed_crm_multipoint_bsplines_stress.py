@@ -51,13 +51,14 @@ def con(v_init):
         twist_cps.append(x_init_i[1:1 + n_twist_cp])
         thickness_cps.append(x_init_i[1 + n_twist_cp:])
 
-    twist_cps_for_constraint = [twist_cp_i + 0.1 for twist_cp_i in twist_cps]
-    twist_cp_constraint = combo(twist_cps_for_constraint) # modified combo to remove one pair
+    # twist_cps_for_constraint = [twist_cp_i + 0.1 for twist_cp_i in twist_cps]
+    # twist_cp_constraint = combo(twist_cps_for_constraint) # modified combo to remove one pair
+    twist_cp_constraint = combo(twist_cps)
 
     thickness_cps_for_constraint = [thickness_cp_i + 0.1 for thickness_cp_i in thickness_cps]
     thickness_cp_constraint = combo(thickness_cps_for_constraint)
 
-    c = jnp.concatenate((twist_cp_constraint, 6*thickness_cp_constraint))
+    c = jnp.concatenate((0.5*twist_cp_constraint, 2*thickness_cp_constraint))
 
     return c
 
@@ -79,13 +80,15 @@ opt = Plex2(subproblems=subPfuns,
             con=con,
             # mu=1,
             mu=np.ones(n_twist_cp + n_thickness_cp) * 1,
-            max_mu=1e7,
+            max_mu=1e6,
             rho=1.2,
             tau=0.5,
-            tol=0.3e-3,#1e-3, # outer loop feasibility
+            tol=1e-4, # outer loop feasibility
             eps=1e-3, # initial inner loop convergence
             eta=1e-4, # final inner loop convergence
             )
+
+# best error: 0.1226
 
 opt.solve(max_outer_iter=100, 
           max_inner_iter=100,
@@ -133,6 +136,7 @@ print('Total optimization time (s): ', opt_time[-1])
 # solution = np.load('examples/crm_aero_struct/test_solution_a.npz')
 solution = np.load('examples/crm_aero_struct/solution_num_2_bsplines_and_stress.npz')
 alphas_star = solution['alphas']
+print('alphas_star (deg): ', np.rad2deg(alphas_star))
 twist_cp_star = solution['twist_cp']
 thickness_cp_star = solution['thickness_cp']
 
