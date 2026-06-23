@@ -16,8 +16,11 @@ num = 2 # number of operating conditions
 # sampler = LatinHypercube(d=2, seed=42)
 # samples = scale(sampler.random(num), l_bounds=[0.4, 180], u_bounds=[0.6, 220])
 # samples = [(0.4135, 210), (0.4135, 207)] # test solution a
-samples = [(0.4135, 210), (0.4135, 210)] # test solution b
+# samples = [(0.4135, 210), (0.4135, 210)] # test solution b
+# samples = [(0.4135, 210), (0.5, 191)] # test solution c
+samples = [(0.4226044, 191.2224312), (0.51414021, 206.05263942)] # test solution d
 print(samples)
+# exit()
 
 ns = 45 # number of spanwise panels
 
@@ -42,25 +45,15 @@ x_init = [x_i_init for _ in range(num)]
 
 
 def con(v_init):
-    alphas = []
-    twist_cps = []
-    thickness_cps = []
-    for i in range(num):
-        x_init_i = v_init[i]
-        alphas.append(x_init_i[0])
-        twist_cps.append(x_init_i[1:1 + n_twist_cp])
-        thickness_cps.append(x_init_i[1 + n_twist_cp:])
 
-    # twist_cps_for_constraint = [twist_cp_i + 0.1 for twist_cp_i in twist_cps]
-    # twist_cp_constraint = combo(twist_cps_for_constraint) # modified combo to remove one pair
+    alphas = [x_init_i[0] for x_init_i in v_init]
+    twist_cps = [x_init_i[1:1 + n_twist_cp] for x_init_i in v_init]
+    thickness_cps = [x_init_i[1 + n_twist_cp:] for x_init_i in v_init]
+
     twist_cp_constraint = combo(twist_cps)
+    thickness_cp_constraint = combo(thickness_cps)
 
-    thickness_cps_for_constraint = [thickness_cp_i + 0.1 for thickness_cp_i in thickness_cps]
-    thickness_cp_constraint = combo(thickness_cps_for_constraint)
-
-    c = jnp.concatenate((0.5*twist_cp_constraint, 2*thickness_cp_constraint))
-
-    return c
+    return jnp.concatenate((0.25*twist_cp_constraint, 2*thickness_cp_constraint))
 
 
 
@@ -134,8 +127,10 @@ print('Total optimization time (s): ', opt_time[-1])
 
 
 # solution = np.load('examples/crm_aero_struct/test_solution_a.npz')
-solution = np.load('examples/crm_aero_struct/test_solution_b.npz')
+# solution = np.load('examples/crm_aero_struct/test_solution_b.npz')
+# solution = np.load('examples/crm_aero_struct/test_solution_c.npz')
 # solution = np.load('examples/crm_aero_struct/solution_num_2_bsplines_and_stress.npz')
+solution = np.load('examples/crm_aero_struct/test_solution_d.npz')
 alphas_star = solution['alphas']
 print('alphas_star (deg): ', np.rad2deg(alphas_star))
 twist_cp_star = solution['twist_cp']

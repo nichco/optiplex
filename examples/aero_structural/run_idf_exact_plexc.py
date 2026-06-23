@@ -47,9 +47,7 @@ def structures_model(aero_loads, thickness):
     F = F.at[:, 2].set(aero_loads * load_factor * safety_factor)
 
     cs = CSTube(radius=r, thickness=thickness)
-    beam = Beam(mesh=mesh, E=69e9, G=26e9, rho=3000,
-                A=cs.area, J=cs.J, Iy=cs.Iy, Iz=cs.Iz, F=F, 
-                fixed_nodes=fixed_nodes)
+    beam = Beam(mesh=mesh, E=69e9, G=26e9, rho=3000, cs=cs, F=F, fixed_nodes=fixed_nodes)
     u = beam.solve()
     u = jnp.linalg.norm(u[:, :3], axis=1)
     right_tip_disp, left_tip_disp = u[-1], u[0]

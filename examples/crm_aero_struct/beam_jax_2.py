@@ -20,15 +20,14 @@ class CSTube:
 
         self.radius = radius
         self.thickness = thickness
-        self.r_i = r_i
-        self.r_o = radius
+        self.r_i = r_i    # inner radius
+        self.r_o = radius # outer radius
 
         r_o4_minus_r_i4 = radius**4 - r_i**4
-
-        self.area = jnp.pi * (radius**2 - r_i**2)
-        self.J  = jnp.pi * r_o4_minus_r_i4 / 2
-        self.Iy = jnp.pi * r_o4_minus_r_i4 / 4
-        self.Iz = jnp.pi * r_o4_minus_r_i4 / 4
+        self.area = jnp.pi * (radius**2 - r_i**2) # cross-sectional area
+        self.J  = jnp.pi * r_o4_minus_r_i4 / 2    # polar moment
+        self.Iy = jnp.pi * r_o4_minus_r_i4 / 4    # 2nd moment about y
+        self.Iz = jnp.pi * r_o4_minus_r_i4 / 4    # 2nd moment about z
 
     def max_von_mises(
         self,
@@ -373,23 +372,6 @@ class Beam:
 
         return axial_strain, kappa_y, kappa_z, torsion_rate
     
-
-    # def recover_stress(self, u):
-
-    #     axial_strain, kappa_y, kappa_z, torsion_rate = \
-    #         self.recover_strain(u)
-
-    #     return jax.vmap(
-    #         lambda ea, ky, kz, tr:
-    #             self.cs.max_von_mises(
-    #                 ea,
-    #                 ky,
-    #                 kz,
-    #                 tr,
-    #                 self.E,
-    #                 self.G,
-    #             )
-    #     )(axial_strain, kappa_y, kappa_z, torsion_rate)
 
     def recover_stress(self, u):
 
