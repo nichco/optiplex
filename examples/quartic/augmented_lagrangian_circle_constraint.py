@@ -126,7 +126,7 @@ def con(v_init):
 opt = Plex2(subproblems=[subproblem1, subproblem2],
             x_init=v_init,
             con=con,
-            mu=1,
+            mu=10,#1,
             max_mu=1e6,
             rho=1.2,
             tau=0.5,
@@ -140,6 +140,7 @@ opt.solve(max_outer_iter=100,
           )
 
 print('Solution: ', opt.x)
+print('Total time (s): ', opt.tf)
 # print('Time (s): ', opt.time)
 
 

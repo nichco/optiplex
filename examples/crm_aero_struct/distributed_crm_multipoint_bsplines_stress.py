@@ -53,7 +53,7 @@ def con(v_init):
     twist_cp_constraint = combo(twist_cps)
     thickness_cp_constraint = combo(thickness_cps)
 
-    return jnp.concatenate((0.25*twist_cp_constraint, 2*thickness_cp_constraint))
+    return jnp.concatenate((0.125*twist_cp_constraint, 2*thickness_cp_constraint))
 
 
 

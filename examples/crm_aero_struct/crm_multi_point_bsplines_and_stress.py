@@ -107,8 +107,6 @@ def objective(x):
 
     delta_twist_cp = twist_cp[1:] - twist_cp[:-1] # variation in twist_cp
     obj += jnp.sum(delta_twist_cp**2) * 2e-2
-    # 0.47039549084076543
-    # 0.4713255386357085
 
     return 1e2 * obj
 

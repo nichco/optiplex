@@ -60,7 +60,7 @@ opt = Plex(subproblems=[subproblem1, subproblem2],
            x_init=v_init)
 
 opt.solve(max_inner_iter=300, 
-          eps=1e-4
+          eps_inner=1e-4
           )
 
 print('Solution: ', opt.x)
