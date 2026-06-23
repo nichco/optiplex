@@ -13,10 +13,10 @@ from optiplex import Plex, PlexC, Plex2, combo
 
 
 num = 2 # number of operating conditions
-sampler = LatinHypercube(d=2, seed=42)
-samples = scale(sampler.random(num), l_bounds=[0.4, 180], u_bounds=[0.6, 220])
+# sampler = LatinHypercube(d=2, seed=42)
+# samples = scale(sampler.random(num), l_bounds=[0.4, 180], u_bounds=[0.6, 220])
 # samples = [(0.4135, 210), (0.4135, 207)] # test solution a
-# samples = [(0.4135, 210), (0.4135, 210)] # test solution b
+samples = [(0.4135, 210), (0.4135, 210)] # test solution b
 print(samples)
 
 ns = 45 # number of spanwise panels
@@ -134,7 +134,8 @@ print('Total optimization time (s): ', opt_time[-1])
 
 
 # solution = np.load('examples/crm_aero_struct/test_solution_a.npz')
-solution = np.load('examples/crm_aero_struct/solution_num_2_bsplines_and_stress.npz')
+solution = np.load('examples/crm_aero_struct/test_solution_b.npz')
+# solution = np.load('examples/crm_aero_struct/solution_num_2_bsplines_and_stress.npz')
 alphas_star = solution['alphas']
 print('alphas_star (deg): ', np.rad2deg(alphas_star))
 twist_cp_star = solution['twist_cp']
