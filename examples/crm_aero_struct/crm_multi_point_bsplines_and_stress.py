@@ -192,23 +192,28 @@ print("Trim aoa (deg):", np.rad2deg(alphas))
 
 
 y_aero = crm_mesh[0, :, 1] # spanwise y-coordinates from the mesh
-fig, ax = plt.subplots(1, 2, figsize=(12, 4))
+fig, ax = plt.subplots(1, 2, figsize=(8, 2), constrained_layout=True)
 ax[0].plot(y_aero, twist, linewidth=2)
 ax[0].plot(np.linspace(y_aero[0], y_aero[-1], n_twist_cp), twist_cp, marker='o', linestyle='--')
 ax[0].set_title("Twist")
+ax[0].set_xlabel("Spanwise location (m)")
+ax[0].set_ylabel("Twist (rad)")
 
 panel_centers = 0.5 * (beam_mesh[:-1, 1] + beam_mesh[1:, 1])
 thickness_cp_span = np.linspace(panel_centers[0], panel_centers[-1], n_thickness_cp)
 
 ax[1].plot(panel_centers, thickness, linewidth=2)
 ax[1].plot(thickness_cp_span, thickness_cp, marker='o', linestyle='--')
-ax[1].grid()
+# ax[1].grid()
 ax[1].set_title("Thickness")
+ax[1].set_xlabel("Spanwise location (m)")
+ax[1].set_ylabel("Thickness (m)")
 
+# plt.savefig("crm_multi_point_bsplines_and_stress.png", dpi=500, transparent=True, bbox_inches='tight')
 plt.show()
 
 # np.savez('solution_num_2_bsplines_and_stress.npz', alphas=alphas, twist_cp=twist_cp, thickness_cp=thickness_cp, samples=samples)
 # np.savez('test_solution_b.npz', alphas=alphas, twist_cp=twist_cp, thickness_cp=thickness_cp, samples=samples)
 # np.savez('test_solution_a.npz', alphas=alphas, twist_cp=twist_cp, thickness_cp=thickness_cp, samples=samples)
 # np.savez('test_solution_c.npz', alphas=alphas, twist_cp=twist_cp, thickness_cp=thickness_cp, samples=samples)
-np.savez('test_solution_d.npz', alphas=alphas, twist_cp=twist_cp, thickness_cp=thickness_cp, samples=samples)
+# np.savez('test_solution_d.npz', alphas=alphas, twist_cp=twist_cp, thickness_cp=thickness_cp, samples=samples)

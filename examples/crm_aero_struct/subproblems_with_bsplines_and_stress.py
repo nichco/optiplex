@@ -86,31 +86,12 @@ def make_subproblem(subP, num, opt_time, samples):
 
             delta_twist_cp = twist_cps[0][1:] - twist_cps[0][:-1] # variation in twist_cp
             obj += jnp.sum(delta_twist_cp**2) * 2e-2
-            # obj = 0.0
-            # for i in range(num):
-            #     rho_atm_i, v_inf_i = samples[i]
-            #     effective_twist = twist + alphas[i]
-            #     ll = LiftingLine(le, te, v_inf_i, rho_atm_i)
-            #     sol = ll.solve_lifting_line_model(effective_twist)
-            #     obj += sol["CD"]
 
-            # obj = obj / num # minimize the average CD across all conditions
 
-            # obj += jnp.sum(alphas**2) * 1e1 # remove the differential flatness in the trim solution
-
-            # delta_twist_cp = twist_cp[1:] - twist_cp[:-1] # variation in twist_cp
-            # obj += jnp.sum(delta_twist_cp**2) * 2e-2
-
-            # twist_cp_constraint = combo(twist_cp_list)
             twist_cp_constraint = combo(twist_cps)
-
-            # thickness_cp_list = [thickness_cp_i + 0.1 for thickness_cp_i in thickness_cp_list]
-            # thickness_cp_constraint = combo(thickness_cp_list)
-            # thickness_cp_list = [thickness_cp_i + 0.1 for thickness_cp_i in thickness_cps]
-            # thickness_cp_constraint = combo(thickness_cp_list)
             thickness_cp_constraint = combo(thickness_cps)
-        
-            c = jnp.concatenate((0.125*twist_cp_constraint, 2*thickness_cp_constraint))
+            # c = jnp.concatenate((0.125*twist_cp_constraint, 2*thickness_cp_constraint))
+            c = jnp.concatenate((0.125*twist_cp_constraint, 1.5*thickness_cp_constraint))
 
             # return 1e2 * obj + y.T @ c + 0.5 * mu * jnp.sum(c**2)
             return 1e2 * obj + y.T @ c + 0.5 * c.T @ jnp.diag(mu) @ c

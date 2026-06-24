@@ -13,21 +13,19 @@ from optiplex import Plex, PlexC, Plex2, combo
 
 
 num = 2 # number of operating conditions
-# sampler = LatinHypercube(d=2, seed=42)
-# samples = scale(sampler.random(num), l_bounds=[0.4, 180], u_bounds=[0.6, 220])
+sampler = LatinHypercube(d=2, seed=42)
+samples = scale(sampler.random(num), l_bounds=[0.4, 180], u_bounds=[0.6, 220])
 # samples = [(0.4135, 210), (0.4135, 207)] # test solution a
 # samples = [(0.4135, 210), (0.4135, 210)] # test solution b
 # samples = [(0.4135, 210), (0.5, 191)] # test solution c
-samples = [(0.4226044, 191.2224312), (0.51414021, 206.05263942)] # test solution d
+# samples = [(0.4226044, 191.2224312), (0.51414021, 206.05263942)] # test solution d
 print(samples)
-# exit()
 
 ns = 45 # number of spanwise panels
 
 # generate subproblem functions
 subPfuns, opt_time = [], []
 for i, (rho_atm, v_inf) in enumerate(samples): 
-    # subPfuns.append(make_subproblem(i, rho_atm, v_inf, num, si, cs, opt_time, samples))
     subPfuns.append(make_subproblem(i, num, opt_time, samples))
 
 n_twist_cp = 17
@@ -53,7 +51,8 @@ def con(v_init):
     twist_cp_constraint = combo(twist_cps)
     thickness_cp_constraint = combo(thickness_cps)
 
-    return jnp.concatenate((0.125*twist_cp_constraint, 2*thickness_cp_constraint))
+    # return jnp.concatenate((0.125*twist_cp_constraint, 2*thickness_cp_constraint))
+    return jnp.concatenate((0.125*twist_cp_constraint, 1.5*thickness_cp_constraint))
 
 
 
@@ -71,17 +70,14 @@ def con(v_init):
 opt = Plex2(subproblems=subPfuns,
             x_init=x_init,
             con=con,
-            # mu=1,
             mu=np.ones(n_twist_cp + n_thickness_cp) * 1,
             max_mu=1e6,
-            rho=1.2,
+            rho=1.5,
             tau=0.5,
             tol=1e-4, # outer loop feasibility
             eps=1e-3, # initial inner loop convergence
             eta=1e-4, # final inner loop convergence
             )
-
-# best error: 0.1226
 
 opt.solve(max_outer_iter=100, 
           max_inner_iter=100,
@@ -118,8 +114,6 @@ for i in range(num):
 
 
 print('alphas (deg): ', np.rad2deg(alphas))
-# print('twists: ', twist_cps)
-# print('thicknesses: ', thickness_cps)
 
 # print the total optimization time
 print('Total optimization time (s): ', opt_time[-1])
