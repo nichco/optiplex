@@ -5,10 +5,7 @@ jax.config.update("jax_enable_x64", True)
 import matplotlib.pyplot as plt
 from scipy.stats.qmc import LatinHypercube, scale
 from subproblems_with_bsplines_and_stress import make_subproblem
-from optiplex import Plex, PlexC, Plex2, combo
-
-
-
+from optiplex import PlexC, Plex2, combo
 
 
 
@@ -84,23 +81,6 @@ opt.solve(max_outer_iter=100,
           )
 
 print('Total time (s): ', opt.tf)
-
-# opt = Plex(subproblems=subPfuns,
-#            x_init=x_init,
-#            con=con,
-#            tol=1e-5, # outer loop feasibility
-#            mu=1,
-#            max_mu=1e5,
-#            rho=1.5,
-#            )
-
-# opt.solve(max_inner_iter=100,
-#           max_outer_iter=100,
-#           eps_inner=1e-3,
-#           eps_outer=1e-5,
-#           )
-
-# print('Total time (s): ', opt.time)
 
 x = opt.x
 alphas = []

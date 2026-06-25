@@ -91,7 +91,7 @@ def make_subproblem(subP, num, opt_time, samples):
             twist_cp_constraint = combo(twist_cps)
             thickness_cp_constraint = combo(thickness_cps)
             # c = jnp.concatenate((0.125*twist_cp_constraint, 2*thickness_cp_constraint))
-            c = jnp.concatenate((0.125*twist_cp_constraint, 1*thickness_cp_constraint))
+            c = jnp.concatenate((0.125*twist_cp_constraint, 0.5*thickness_cp_constraint))
 
             # return 1e2 * obj + y.T @ c + 0.5 * mu * jnp.sum(c**2)
             return 1e2 * obj + y.T @ c + 0.5 * c.T @ jnp.diag(mu) @ c
