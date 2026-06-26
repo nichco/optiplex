@@ -60,8 +60,8 @@ def structures_model(aero_loads, thickness):
 
 # scalers for constraint functions
 lw_scale = 1e-4 # increasing this further results in huge numbers of inner iterations
-f_scale = 2e-4
-disp_scale = 3e-1
+f_scale = 1e-4
+disp_scale = 5e-1 # 3e-1
 
 # initial design variable values
 thickness0 = np.ones(num_nodes - 1) * 0.002
@@ -220,21 +220,22 @@ opt = Plex2(subproblems=[aero_subproblem, struct_subproblem],
             con=con,
             mu=np.ones(N + 3) * 10, # initial penalty parameters for each constraint
             max_mu=1e6,
-            rho=1.5,
+            rho=1.2,
             tau=0.5,
             tol=1e-3, # outer loop feasibility
             eps=1e-1, # initial inner loop convergence
-            eta=1e-5, # final inner loop convergence
+            eta=1e-4, # final inner loop convergence
             )
 
 opt.solve(max_outer_iter=100, 
           max_inner_iter=100,
           )
 
-# The optimal CD should be:  0.012349323882890414
+
 
 print('Lagrange multipliers: ', opt.y)
 print('Penalty parameters: ', opt.mu)
+print('Total time (s): ', opt.tf)
 
 solution = opt.x
 
@@ -272,13 +273,16 @@ print('right_disp_con: ', right_disp_con)
 print('left_disp_con: ', left_disp_con)
 
 
-solution = np.load('examples/aero_structural/new_solution.npz')
+# solution = np.load('examples/aero_structural/new_solution.npz')
+solution = np.load('examples/aero_structural/new_solution copy.npz')
 x_star = np.concatenate([solution['twist'], solution['thickness']])
 
 history_vecs = [np.concatenate(h[:2]) for h in opt.history]
 error = [np.linalg.norm((x - x_star) / x_star) for x in history_vecs]
 
 print('CD: ', cd_history[-1])
+
+print('Error: ', error[-1])
 
 # plt.semilogy(error)
 # plt.xlabel('Iteration')
