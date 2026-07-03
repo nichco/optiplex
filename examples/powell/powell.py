@@ -129,8 +129,8 @@ opt = Plex(
 )
 
 opt.solve(
-    max_inner_iter=10,
-    eps_inner=1e-7
+    max_inner_iter=6,
+    eps_inner=1e-15
 )
 
 print("Solution:", opt.x)
@@ -180,7 +180,7 @@ plotter.add_mesh(
     cube,
     scalars="F",
     cmap="viridis",
-    opacity=1.0,
+    opacity=0.6,
     show_edges=True,
     smooth_shading=False,
     show_scalar_bar=False
@@ -191,7 +191,7 @@ trajectory = pv.lines_from_points(points)
 plotter.add_mesh(
     trajectory,
     color="red",
-    line_width=5
+    line_width=5,
 )
 
 plotter.add_points(
