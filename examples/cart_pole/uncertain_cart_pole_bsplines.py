@@ -6,6 +6,7 @@ import jax
 jax.config.update("jax_enable_x64", True)
 from modopt import JaxProblem, SLSQP
 from scipy.stats.qmc import LatinHypercube, scale
+from jax_b_splines import get_bspline_mtx, bspline_comp
 
 # sample the space of uncertain parameters using Latin hypercube sampling
 # uncertain parameters: g, mu_cart, mu_pole
@@ -30,10 +31,12 @@ mc = 2
 d = 0.8
 x0 = np.array([0, np.pi, 0, 0])
 xf = np.array([d, 0, 0, 0])
+nu = 12
+bspline_mtx = get_bspline_mtx(nu, n)
 
 ni = 0
 ni += 4 * n # num state vars
-ni += n # num control vars
+ni += nu # num control vars
 # l and mp are the final two vars
 
 def jax_obj(v):
@@ -41,9 +44,11 @@ def jax_obj(v):
     j = 0
     for i in range(N):
         v_i = v[i * ni:(i + 1) * ni]
-        u_i = v_i[4 * n:]
+        u_cp_i = v_i[4 * n:]
+        u_i = bspline_comp(bspline_mtx, u_cp_i)
         j_i = 0.5 * dt * jnp.sum(u_i[:-1]**2 + u_i[1:]**2)
         j += j_i
+    # j = jnp.array(j_i)
 
     return j / N
 
@@ -64,7 +69,8 @@ def jax_con(v):
         mu_pole_i = samples[i, 2]
 
         x_i = v_i[:4 * n].reshape((4, n))
-        u_i = v_i[4 * n:]
+        u_cp_i = v_i[4 * n:]
+        u_i = bspline_comp(bspline_mtx, u_cp_i)
 
         theta_i = x_i[1, :]
         dx_i = x_i[2, :]
@@ -115,24 +121,28 @@ xf_scaler = np.ones(4) * 1
 c_scaler_i = np.concatenate((r_scaler, x0_scaler, xf_scaler))
 c_scaler = np.tile(c_scaler_i, N)
 
-# position_l = np.ones((n)) * -np.inf
-# position_u = np.ones((n)) * np.inf
-# theta_l = np.ones((n)) * -np.inf
-# theta_u = np.ones((n)) * np.inf
-# dx_l = np.ones((n)) * -np.inf
-# dx_u = np.ones((n)) * np.inf
-# dtheta_l = np.ones((n)) * -np.inf
-# dtheta_u = np.ones((n)) * np.inf
-# state_l = np.vstack((position_l, theta_l, dx_l, dtheta_l))
-# state_u = np.vstack((position_u, theta_u, dx_u, dtheta_u))
-state_u = np.ones((4, n)) * np.inf
-state_l = np.ones((4, n)) * -np.inf
+position_l = np.ones((n)) * 0#-np.inf
+position_u = np.ones((n)) * 2#np.inf
+theta_l = np.ones((n)) * -np.inf
+theta_u = np.ones((n)) * np.inf
+dx_l = np.ones((n)) * -4#-np.inf
+dx_u = np.ones((n)) * 4#np.inf
+dtheta_l = np.ones((n)) * -np.inf
+dtheta_u = np.ones((n)) * np.inf
+state_l = np.vstack((position_l, theta_l, dx_l, dtheta_l))
+state_u = np.vstack((position_u, theta_u, dx_u, dtheta_u))
+# state_u = np.ones((4, n)) * np.inf
+# state_l = np.ones((4, n)) * -np.inf
 l_u = np.array([5])
 l_l = np.array([0.1])
 mp_u = np.array([3])
 mp_l = np.array([0.1])
-u_u = np.ones((n)) * 50
-u_l = np.ones((n)) * -50
+u_u = np.ones((nu)) * 50
+u_l = np.ones((nu)) * -50
+# u_u[0] = 0
+# u_l[0] = 0
+# u_u[-1] = 0
+# u_l[-1] = 0
 xl_i = np.concatenate((state_l.flatten(), u_l))
 xu_i = np.concatenate((state_u.flatten(), u_u))
 xl = np.concatenate((np.tile(xl_i, N), l_l, mp_l))
@@ -145,14 +155,14 @@ q2_0 = np.linspace(np.pi, 0, n)
 q3_0 = np.zeros(n)
 q4_0 = np.zeros(n)
 state_0 = np.vstack((q1_0, q2_0, q3_0, q4_0)).flatten()
-u_0 = np.zeros(n)
+u_0 = np.zeros(nu)
 v0_i = np.concatenate((state_0, u_0))
 v0 = np.concatenate((np.tile(v0_i, N), l_0, mp_0))
 
 l_scaler = np.ones(1)
 mp_scaler = np.ones(1)
 state_scaler = np.ones(4 * n)
-u_scaler = np.ones(n) * 1e-1
+u_scaler = np.ones(nu) * 1e-1
 x_scaler_i = np.concatenate((state_scaler, u_scaler))
 x_scaler = np.concatenate((np.tile(x_scaler_i, N), l_scaler, mp_scaler))
 
@@ -175,15 +185,18 @@ print('mp: ', mp)
 for i in range(N):
     v_i = ans[i * ni:(i + 1) * ni]
     x_i = v_i[:4 * n].reshape((4, n))
-    u_i = v_i[4 * n:]
+    u_cp_i = v_i[4 * n:]
+    u_i = bspline_comp(bspline_mtx, u_cp_i)
 
     position_i = x_i[0, :].flatten()
     velocity_i = x_i[2, :].flatten()
     angle_i = x_i[1, :].flatten()
 
     t = np.linspace(0, n*dt, n)
+    t_ucp = np.linspace(0, n*dt, nu)
     plt.plot(t, angle_i, label='angle '+str(i))
     plt.plot(t, u_i, label='control '+str(i))
+    plt.scatter(t_ucp, u_cp_i, label='control points '+str(i))
     plt.plot(t, position_i, label='position '+str(i))
     plt.plot(t, velocity_i, label='velocity '+str(i))
     plt.legend()
@@ -207,7 +220,8 @@ trajectory_data = []
 for i in range(N):
     v_i = ans[i * ni:(i + 1) * ni]
     x_i = v_i[:4 * n].reshape((4, n))
-    u_i = v_i[4 * n:]
+    u_cp_i = v_i[4 * n:]
+    u_i = bspline_comp(bspline_mtx, u_cp_i)
 
     position_i = x_i[0, :].flatten()
     velocity_i = x_i[2, :].flatten()

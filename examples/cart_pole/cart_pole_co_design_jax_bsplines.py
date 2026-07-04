@@ -5,6 +5,7 @@ from matplotlib.animation import FuncAnimation
 import jax
 jax.config.update("jax_enable_x64", True)
 from modopt import JaxProblem, SLSQP
+from jax_b_splines import get_bspline_mtx, bspline_comp
 
 # dynamics from https://sharpneat.sourceforge.io/research/cart-pole/cart-pole-equations.html
 # co-design problem by me
@@ -19,6 +20,8 @@ mu_cart = 0.03
 mu_pole = 0.03
 x0 = np.array([0, np.pi, 0, 0])
 xf = np.array([d, 0, 0, 0])
+nu = 15
+bspline_mtx = get_bspline_mtx(nu, n)
 
 def jax_obj(v):
 
@@ -27,7 +30,8 @@ def jax_obj(v):
     l = v[0]
     mp = v[1]
     x = v[2:2 + 4 * n].reshape((4, n))
-    u = v[2 + 4 * n:]
+    u_cp = v[2 + 4 * n:]
+    u = bspline_comp(bspline_mtx, u_cp)
 
     return 0.5 * dt * jnp.sum(u[:-1]**2 + u[1:]**2)
 
@@ -39,7 +43,8 @@ def jax_con(v):
     l = v[0]
     mp = v[1]
     x = v[2:2 + 4 * n].reshape((4, n))
-    u = v[2 + 4 * n:]
+    u_cp = v[2 + 4 * n:]
+    u = bspline_comp(bspline_mtx, u_cp)
 
     l_hat = l / 2
 
@@ -89,8 +94,8 @@ l_u = np.array([5])
 l_l = np.array([0.1])
 mp_u = np.array([3])
 mp_l = np.array([0.1])
-u_u = np.ones((n)) * 50
-u_l = np.ones((n)) * -50
+u_u = np.ones((nu)) * 50
+u_l = np.ones((nu)) * -50
 xl = np.concatenate((l_l, mp_l, state_l.flatten(), u_l))
 xu = np.concatenate((l_u, mp_u, state_u.flatten(), u_u))
 
@@ -101,13 +106,13 @@ q2_0 = np.linspace(np.pi, 0, n)
 q3_0 = np.zeros(n)
 q4_0 = np.zeros(n)
 state_0 = np.vstack((q1_0, q2_0, q3_0, q4_0)).flatten()
-u_0 = np.zeros(n)
+u_0 = np.zeros(nu)
 v0 = np.concatenate((l_0, mp_0, state_0, u_0))
 
 l_scaler = np.ones(1)
 mp_scaler = np.ones(1)
 state_scaler = np.ones(4 * n)
-u_scaler = np.ones(n) * 1e-1
+u_scaler = np.ones(nu) * 1e-1
 x_scaler = np.concatenate((l_scaler, mp_scaler, state_scaler, u_scaler))
 
 o_scaler = 1e-2
@@ -122,7 +127,8 @@ ans = optimizer.results['x'] / x_scaler
 l = ans[0]
 mp = ans[1]
 x = ans[2:2 + 4 * n].reshape((4, n))
-u = ans[2 + 4 * n:]
+u_cp = ans[2 + 4 * n:]
+u = bspline_comp(bspline_mtx, u_cp)
 
 print('l: ', l)
 print('mp: ', mp)
@@ -132,8 +138,10 @@ velocity = x[2, :].flatten()
 angle = x[1, :].flatten()
 
 t = np.linspace(0, n*dt, n)
+t_ucp = np.linspace(0, n*dt, nu)
 plt.plot(t, angle, label='angle')
 plt.plot(t, u, label='control')
+plt.scatter(t_ucp, u_cp, color='red', label='control points')
 plt.plot(t, position, label='position')
 plt.plot(t, velocity, label='velocity')
 plt.legend()
