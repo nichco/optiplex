@@ -15,7 +15,7 @@ mu_cart_u = 0.03 + 0.01
 mu_cart_l = 0.03 - 0.01
 mu_pole_u = 0.03 + 0.01
 mu_pole_l = 0.03 - 0.01
-N = 3
+N = 4
 sampler = LatinHypercube(d=3, seed=0)
 samples = scale(sampler.random(N), 
                 l_bounds=[g_l, mu_cart_l, mu_pole_l], 
@@ -198,7 +198,7 @@ plt.show()
 
 
 
-np.savez('uncertain_cart_pole_solution_N3.npz', l=l, mp=mp, x_list=x_list, u_list=u_list, samples=samples)
+np.savez('uncertain_cart_pole_solution_N4.npz', l=l, mp=mp, x_list=x_list, u_list=u_list, samples=samples)
 
 
 

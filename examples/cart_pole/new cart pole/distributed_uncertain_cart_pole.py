@@ -73,7 +73,7 @@ opt.solve(max_outer_iter=100,
           )
 
 # save opt.history to an npz file
-# np.savez('uncertain_cart_pole_distributed_history_N2.npz', history=opt.history, x_time=opt.x_time)
+np.savez('uncertain_cart_pole_distributed_history_N3.npz', history=opt.history, x_time=opt.x_time)
 
 ans = opt.x
 l_list, mp_list = [], []
