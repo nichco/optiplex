@@ -15,7 +15,7 @@ mu_cart_u = 0.03 + 0.01
 mu_cart_l = 0.03 - 0.01
 mu_pole_u = 0.03 + 0.01
 mu_pole_l = 0.03 - 0.01
-N = 5
+N = 2
 sampler = LatinHypercube(d=3, seed=0)
 samples = scale(sampler.random(N), 
                 l_bounds=[g_l, mu_cart_l, mu_pole_l], 
@@ -172,10 +172,14 @@ mp = ans[-1]
 print('l: ', l)
 print('mp: ', mp)
 
+x_list, u_list = [], []
 for i in range(N):
     v_i = ans[i * ni:(i + 1) * ni]
     x_i = v_i[:4 * n].reshape((4, n))
     u_i = v_i[4 * n:]
+
+    x_list.append(v_i[:4 * n])
+    u_list.append(v_i[4 * n:])
 
     position_i = x_i[0, :].flatten()
     velocity_i = x_i[2, :].flatten()
@@ -190,6 +194,11 @@ for i in range(N):
 
 plt.show()
 
+
+
+
+
+np.savez('uncertain_cart_pole_solution_N2.npz', l=l, mp=mp, x_list=x_list, u_list=u_list, samples=samples)
 
 
 
