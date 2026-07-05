@@ -16,7 +16,7 @@ mu_cart_u = 0.03 + 0.01
 mu_cart_l = 0.03 - 0.01
 mu_pole_u = 0.03 + 0.01
 mu_pole_l = 0.03 - 0.01
-N = 2
+N = 3
 sampler = LatinHypercube(d=3, seed=0)
 samples = scale(sampler.random(N), 
                 l_bounds=[g_l, mu_cart_l, mu_pole_l], 
@@ -73,7 +73,7 @@ opt.solve(max_outer_iter=100,
           )
 
 # save opt.history to an npz file
-np.savez('uncertain_cart_pole_distributed_history_N2.npz', history=opt.history, x_time=opt.x_time)
+# np.savez('uncertain_cart_pole_distributed_history_N2.npz', history=opt.history, x_time=opt.x_time)
 
 ans = opt.x
 l_list, mp_list = [], []
@@ -83,34 +83,30 @@ for i in range(N):
 print('l: ', l_list)
 print('mp: ', mp_list)
 
-# read solution from npz file
-solution = np.load('examples/cart_pole/new cart pole/uncertain_cart_pole_solution_N2.npz')
+# solution = np.load('examples/cart_pole/new cart pole/uncertain_cart_pole_solution_N2.npz')
+solution = np.load('examples/cart_pole/new cart pole/uncertain_cart_pole_solution_N3.npz')
 l_star = solution['l']
 mp_star = solution['mp']
-x_list_star = solution['x_list']
-u_list_star = solution['u_list']
+x_list_star = np.array(solution['x_list'])
+u_list_star = np.array(solution['u_list'])
 
-error = []
-for i in range(len(opt.history)):
-    h_i = opt.history[i]
-    error_i = 0
-    for j in range(N):
+v_stars = []
+for i in range(N):
+    v_i_star = np.concatenate((np.array([l_star, mp_star]), x_list_star[i], u_list_star[i]))
+    v_stars.append(v_i_star)
 
-        v_j = h_i[j]
+solution = np.concatenate(v_stars)
 
-        x_j_star = x_list_star[j]
-        u_j_star = u_list_star[j]
-        sol_j = np.concatenate((np.array([l_star, mp_star]), x_j_star, u_j_star))
+h = opt.history
+h = np.array(h)
+n_itr = len(h)
 
-        error_j = np.linalg.norm((v_j - sol_j) / sol_j)
-        error_i += error_j
+error = np.zeros(n_itr)
+for i in range(n_itr):
+    h_i = h[i].flatten()
+    error_i = np.linalg.norm((h_i - solution))
+    error[i] = error_i
 
-    error.append(error_i)
-
-# plt.semilogy(opt.x_time, error)
-plt.semilogy(error)
-plt.xlabel('Time (s)')
-plt.ylabel('Error')
+plt.semilogy(error, linewidth=2)
+plt.grid()
 plt.show()
-
-print('Final error: ', error[-1])

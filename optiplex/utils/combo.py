@@ -43,7 +43,7 @@ def combo(variables: list) -> jnp.ndarray:
     # remove an arbitrary pair so the constraints are linearly independent
     # (e.g. remove the last pair)
     if len(pairs) > 1:
-        print('removing one pair')
+        # print('removing one pair')
         pairs = pairs[:-1]
     # print(pairs)
     

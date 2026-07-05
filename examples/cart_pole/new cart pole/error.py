@@ -7,12 +7,32 @@ n = 30
 solution = np.load('examples/cart_pole/new cart pole/uncertain_cart_pole_solution_N2.npz')
 l_star = solution['l']
 mp_star = solution['mp']
-x_list_star = solution['x_list']
-u_list_star = solution['u_list']
+x_list_star = np.array(solution['x_list'])
+u_list_star = np.array(solution['u_list'])
+
+v_stars = []
+for i in range(N):
+    v_i_star = np.concatenate((np.array([l_star, mp_star]), x_list_star[i], u_list_star[i]))
+    v_stars.append(v_i_star)
+
+solution = np.concatenate(v_stars)
 
 data = np.load('examples/cart_pole/new cart pole/uncertain_cart_pole_distributed_history_N2.npz')
 h = data['history']
+h = np.array(h)
 n_itr = len(h)
+
+error = np.zeros(n_itr)
+for i in range(n_itr):
+    h_i = h[i].flatten()
+    error_i = np.linalg.norm((h_i - solution))
+    error[i] = error_i
+
+plt.semilogy(error, linewidth=2)
+plt.grid()
+plt.show()
+
+"""
 
 l_history = np.zeros((n_itr, N))
 mp_history = np.zeros((n_itr, N))
@@ -49,39 +69,12 @@ l_error = np.linalg.norm((l_history - l_star), axis=1)
 mp_error = np.linalg.norm((mp_history - mp_star), axis=1)
 
 x_error = np.zeros((n_itr, N))
-# position_error = np.zeros((n_itr, N))
-# theta_error = np.zeros((n_itr, N))
-# dx_error = np.zeros((n_itr, N))
-# dtheta_error = np.zeros((n_itr, N))
 u_error = np.zeros((n_itr, N))
 for i in range(N):
     x_i = x_history[:, i, :]
     x_i_star = x_list_star[i]
     u_i = u_history[:, i, :]
     u_i_star = u_list_star[i]
-
-    # x_i = x_i.reshape((n_itr, 4, n))
-
-    # position_i = x_i[:, 0, :]
-    # theta_i = x_i[:, 1, :]
-    # dx_i = x_i[:, 2, :]
-    # dtheta_i = x_i[:, 3, :]
-
-    # x_i_star = x_i_star.reshape((4, n))
-    # position_i_star = x_i_star[0, :]
-    # theta_i_star = x_i_star[1, :]
-    # dx_i_star = x_i_star[2, :]
-    # dtheta_i_star = x_i_star[3, :]
-
-    # position_error_i = np.linalg.norm((position_i - position_i_star) / position_i_star, axis=1)
-    # theta_error_i = np.linalg.norm((theta_i - theta_i_star) / theta_i_star, axis=1)
-    # dx_error_i = np.linalg.norm((dx_i - dx_i_star) / dx_i_star, axis=1)
-    # dtheta_error_i = np.linalg.norm((dtheta_i - dtheta_i_star) / dtheta_i_star, axis=1)
-
-    # position_error[:, i] = position_error_i
-    # theta_error[:, i] = theta_error_i
-    # dx_error[:, i] = dx_error_i
-    # dtheta_error[:, i] = dtheta_error_i
 
     # x_error_i = np.linalg.norm((x_i - x_i_star) / x_i_star, axis=1)
     x_error_i = np.linalg.norm((x_i - x_i_star), axis=1)
@@ -94,10 +87,6 @@ for i in range(N):
 plt.semilogy(l_error, label='l error')
 plt.semilogy(mp_error, label='mp error')
 plt.semilogy(x_error, label='x error')
-# plt.semilogy(position_error, label='position error')
-# plt.semilogy(theta_error, label='theta error')
-# plt.semilogy(dx_error, label='dx error')
-# plt.semilogy(dtheta_error, label='dtheta error')
 plt.semilogy(u_error, label='u error')
 plt.xlabel('Iteration')
 plt.ylabel('Error')
@@ -112,3 +101,4 @@ plt.show()
 # plt.plot(x_history[-1, 1, :], label='x1')
 # plt.legend()
 # plt.show()
+"""
