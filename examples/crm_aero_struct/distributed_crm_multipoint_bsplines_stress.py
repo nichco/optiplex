@@ -9,7 +9,7 @@ from optiplex import PlexC, Plex2, combo
 
 
 
-num = 2 # number of operating conditions
+num = 4 # number of operating conditions
 sampler = LatinHypercube(d=2, seed=42)
 samples = scale(sampler.random(num), l_bounds=[0.4, 180], u_bounds=[0.6, 220])
 # samples = [(0.4135, 210), (0.4135, 207)] # test solution a
@@ -41,12 +41,14 @@ x_init = [x_i_init for _ in range(num)]
 
 def con(v_init):
 
-    alphas = [x_init_i[0] for x_init_i in v_init]
+    # alphas = [x_init_i[0] for x_init_i in v_init]
     twist_cps = [x_init_i[1:1 + n_twist_cp] for x_init_i in v_init]
     thickness_cps = [x_init_i[1 + n_twist_cp:] for x_init_i in v_init]
 
     twist_cp_constraint = combo(twist_cps)
+    # print('twist_cp_constraint shape: ', twist_cp_constraint.shape)
     thickness_cp_constraint = combo(thickness_cps)
+    # print('thickness_cp_constraint shape: ', thickness_cp_constraint.shape)
 
     # return jnp.concatenate((0.125*twist_cp_constraint, 2*thickness_cp_constraint))
     return jnp.concatenate((0.125*twist_cp_constraint, 1*thickness_cp_constraint))
@@ -67,12 +69,14 @@ def con(v_init):
 opt = Plex2(subproblems=subPfuns,
             x_init=x_init,
             con=con,
-            mu=np.ones(n_twist_cp + n_thickness_cp) * 1,
+            # mu=np.ones(n_twist_cp + n_thickness_cp) * 1,
+            # mu=np.ones((num - 1) * (n_twist_cp + n_thickness_cp)) * 1,
+            mu=np.ones((135)) * 1,
             max_mu=1e6,
             rho=1.5,
             tau=0.5,
             tol=1e-4, # outer loop feasibility
-            eps=1e-3, # initial inner loop convergence
+            eps=1e-2, # initial inner loop convergence
             eta=1e-4, # final inner loop convergence
             )
 
@@ -100,11 +104,16 @@ print('Total optimization time (s): ', opt_time[-1])
 
 
 
+# save history to an npz file
+np.savez('examples/crm_aero_struct/distributed_solution_N4.npz', history=opt.history, time=opt.x_time)
+
+
 # solution = np.load('examples/crm_aero_struct/test_solution_a.npz')
 # solution = np.load('examples/crm_aero_struct/test_solution_b.npz')
 # solution = np.load('examples/crm_aero_struct/test_solution_c.npz')
 # solution = np.load('examples/crm_aero_struct/solution_num_2_bsplines_and_stress.npz')
-solution = np.load('examples/crm_aero_struct/test_solution_d.npz')
+# solution = np.load('examples/crm_aero_struct/test_solution_d.npz')
+solution = np.load('examples/crm_aero_struct/test_solution_N4.npz')
 alphas_star = solution['alphas']
 print('alphas_star (deg): ', np.rad2deg(alphas_star))
 twist_cp_star = solution['twist_cp']
@@ -162,50 +171,51 @@ plt.show()
 
 
 
+alphas_star = np.array(solution['alphas']).reshape(-1, 1)
+twist_cp_star = solution['twist_cp']
+thickness_cp_star = solution['thickness_cp']
 
+twist_params = np.broadcast_to(twist_cp_star, (num, n_twist_cp))
+thickness_params = np.broadcast_to(thickness_cp_star, (num, n_thickness_cp))
+solution = np.concatenate((alphas_star, twist_params, thickness_params), axis=1).ravel()
 
+h = np.array(opt.history)
 
-vars = np.array(opt.history)
-n = vars.shape[0]
+error = np.zeros(len(h))
+for i in range(len(h)):
+    h_i = h[i].flatten()
+    error_i = np.linalg.norm((h_i - solution))
+    error[i] = error_i
 
-error = []
-for i in range(n):
-    sol = []
-    x_i = []
-    for j in range(num):
-        x_j_star = np.concatenate(([alphas_star[j]], twist_cp_star, thickness_cp_star))
-        sol.append(x_j_star)
+plt.semilogy(error, linewidth=2)
 
-        x_i_j = vars[i, j, :]
-        x_i.append(x_i_j)
-
-    sol = np.concatenate(sol)
-    x_i = np.concatenate(x_i)
-
-    error_i = np.linalg.norm((x_i - sol) / sol)
-    error.append(error_i)
-
-plt.semilogy(opt.x_time, error)
-plt.xlabel('Time (s)')
 plt.ylabel('Error')
+plt.xlabel('Iteration')
 plt.show()
 
-print('Final error: ', error[-1])
+# vars = np.array(opt.history)
+# n = vars.shape[0]
 
-    
-# x_star = np.concatenate([solution['twist'], solution['thickness']])
+# error = []
+# for i in range(n):
+#     sol = []
+#     x_i = []
+#     for j in range(num):
+#         x_j_star = np.concatenate(([alphas_star[j]], twist_cp_star, thickness_cp_star))
+#         sol.append(x_j_star)
 
-# history_vecs = [np.concatenate(h[:2]) for h in opt.history]
-# error = [np.linalg.norm((x - x_star) / x_star) for x in history_vecs]
+#         x_i_j = vars[i, j, :]
+#         x_i.append(x_i_j)
 
-# print('CD: ', cd_history[-1])
+#     sol = np.concatenate(sol)
+#     x_i = np.concatenate(x_i)
 
-# # plt.semilogy(error)
-# # plt.xlabel('Iteration')
-# # plt.ylabel('Relative error')
-# # plt.show()
+#     error_i = np.linalg.norm((x_i - sol) / sol)
+#     error.append(error_i)
 
 # plt.semilogy(opt.x_time, error)
 # plt.xlabel('Time (s)')
-# plt.ylabel('Relative error')
+# plt.ylabel('Error')
 # plt.show()
+
+# print('Final error: ', error[-1])

@@ -1,33 +1,87 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+
+plt.figure(figsize=(3, 3))
+
+
+
 N = 2
-n = 30
+solution_N2 = np.load('examples/cart_pole/new cart pole/uncertain_cart_pole_solution_N2.npz')
+l_star = solution_N2['l']
+mp_star = solution_N2['mp']
+x_star = np.array(solution_N2['x_list'])
+u_star = np.array(solution_N2['u_list'])
 
-solution = np.load('examples/cart_pole/new cart pole/uncertain_cart_pole_solution_N2.npz')
-l_star = solution['l']
-mp_star = solution['mp']
-x_list_star = np.array(solution['x_list'])
-u_list_star = np.array(solution['u_list'])
+params = np.broadcast_to([l_star, mp_star], (N, 2))
+solution_N2 = np.concatenate((params, x_star, u_star), axis=1).ravel()
 
-v_stars = []
-for i in range(N):
-    v_i_star = np.concatenate((np.array([l_star, mp_star]), x_list_star[i], u_list_star[i]))
-    v_stars.append(v_i_star)
+data_N2 = np.load('examples/cart_pole/new cart pole/uncertain_cart_pole_distributed_history_N2.npz')
+h2 = np.array(data_N2['history'])
 
-solution = np.concatenate(v_stars)
+# error = np.zeros(len(h2))
+# for i in range(len(h2)):
+#     h_i = h2[i].flatten()
+#     error_i = np.linalg.norm((h_i - solution_N2))
+#     error[i] = error_i
+error = np.linalg.norm(h2.reshape(len(h2), -1) - solution_N2, axis=1)
 
-data = np.load('examples/cart_pole/new cart pole/uncertain_cart_pole_distributed_history_N2.npz')
-h = data['history']
-h = np.array(h)
-n_itr = len(h)
+plt.semilogy(error, linewidth=2, label='N=2')
+# plt.grid()
+# plt.show()
 
-error = np.zeros(n_itr)
-for i in range(n_itr):
-    h_i = h[i].flatten()
-    error_i = np.linalg.norm((h_i - solution))
-    error[i] = error_i
 
-plt.semilogy(error, linewidth=2)
-plt.grid()
+
+
+
+N = 3
+solution_N3 = np.load('examples/cart_pole/new cart pole/uncertain_cart_pole_solution_N3.npz')
+l_star = solution_N3['l']
+mp_star = solution_N3['mp']
+x_star = np.array(solution_N3['x_list'])
+u_star = np.array(solution_N3['u_list'])
+
+params = np.broadcast_to([l_star, mp_star], (N, 2))
+solution_N3 = np.concatenate((params, x_star, u_star), axis=1).ravel()
+
+data_N3 = np.load('examples/cart_pole/new cart pole/uncertain_cart_pole_distributed_history_N3.npz')
+h3 = np.array(data_N3['history'])
+
+error = np.linalg.norm(h3.reshape(len(h3), -1) - solution_N3, axis=1)
+
+plt.semilogy(error, linewidth=2, label='N=3')
+# plt.grid()
+# plt.show()
+
+
+
+
+
+N = 4
+solution_N4 = np.load('examples/cart_pole/new cart pole/uncertain_cart_pole_solution_N4.npz')
+l_star = solution_N4['l']
+mp_star = solution_N4['mp']
+x_star = np.array(solution_N4['x_list'])
+u_star = np.array(solution_N4['u_list'])
+
+params = np.broadcast_to([l_star, mp_star], (N, 2))
+solution_N4 = np.concatenate((params, x_star, u_star), axis=1).ravel()
+
+data_N4 = np.load('examples/cart_pole/new cart pole/uncertain_cart_pole_distributed_history_N4.npz')
+h4 = np.array(data_N4['history'])
+
+error = np.linalg.norm(h4.reshape(len(h4), -1) - solution_N4, axis=1)
+
+plt.semilogy(error, linewidth=2, label='N=4')
+
+
+
+
+plt.title('Uncertain Cart Pole Co-Design')
+plt.ylabel('Error')
+plt.xlabel('Iteration')
+plt.grid(alpha=0.2)
+plt.legend()
+
+plt.savefig('examples/cart_pole/new cart pole/error_plot.pdf', bbox_inches='tight')
 plt.show()

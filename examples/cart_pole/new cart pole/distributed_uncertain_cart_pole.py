@@ -16,7 +16,7 @@ mu_cart_u = 0.03 + 0.01
 mu_cart_l = 0.03 - 0.01
 mu_pole_u = 0.03 + 0.01
 mu_pole_l = 0.03 - 0.01
-N = 3
+N = 4
 sampler = LatinHypercube(d=3, seed=0)
 samples = scale(sampler.random(N), 
                 l_bounds=[g_l, mu_cart_l, mu_pole_l], 
@@ -72,40 +72,28 @@ opt.solve(max_outer_iter=100,
           max_inner_iter=20,
           )
 
-# save opt.history to an npz file
-np.savez('uncertain_cart_pole_distributed_history_N3.npz', history=opt.history, x_time=opt.x_time)
+np.savez('uncertain_cart_pole_distributed_history_N4.npz', history=opt.history, x_time=opt.x_time)
 
 ans = opt.x
-l_list, mp_list = [], []
-for i in range(N):
-    l_list.append(ans[i][0])
-    mp_list.append(ans[i][1])
+l_list = [a[0] for a in ans]
+mp_list = [a[1] for a in ans]
 print('l: ', l_list)
 print('mp: ', mp_list)
 
 # solution = np.load('examples/cart_pole/new cart pole/uncertain_cart_pole_solution_N2.npz')
-solution = np.load('examples/cart_pole/new cart pole/uncertain_cart_pole_solution_N3.npz')
+# solution = np.load('examples/cart_pole/new cart pole/uncertain_cart_pole_solution_N3.npz')
+solution = np.load('examples/cart_pole/new cart pole/uncertain_cart_pole_solution_N4.npz')
 l_star = solution['l']
 mp_star = solution['mp']
-x_list_star = np.array(solution['x_list'])
-u_list_star = np.array(solution['u_list'])
+x_star = np.array(solution['x_list'])
+u_star = np.array(solution['u_list'])
 
-v_stars = []
-for i in range(N):
-    v_i_star = np.concatenate((np.array([l_star, mp_star]), x_list_star[i], u_list_star[i]))
-    v_stars.append(v_i_star)
+params = np.broadcast_to([l_star, mp_star], (N, 2))
+solution = np.concatenate((params, x_star, u_star), axis=1).ravel()
 
-solution = np.concatenate(v_stars)
+h = np.array(opt.history)
 
-h = opt.history
-h = np.array(h)
-n_itr = len(h)
-
-error = np.zeros(n_itr)
-for i in range(n_itr):
-    h_i = h[i].flatten()
-    error_i = np.linalg.norm((h_i - solution))
-    error[i] = error_i
+error = np.linalg.norm(h.reshape(len(h), -1) - solution, axis=1)
 
 plt.semilogy(error, linewidth=2)
 plt.grid()
