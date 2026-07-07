@@ -13,11 +13,12 @@ distributed_memory = np.array([5.006, 5.116, 5.33, 5.497, 5.641, 5.864, 6.134, 6
 
 
 
-plt.figure(figsize=(4,2.5))
+# plt.figure(figsize=(4,2.5))
+plt.figure(figsize=(3,3))
 
-plt.semilogy(copies, monolithic_memory_jax, label='Monolithic', marker='o', markersize=7, linewidth=1, color='tab:purple', mec='k')
-plt.semilogy(copies, distributed_memory, label='Distributed', marker='s', markersize=7, linewidth=1, color='tab:orange', mec='k')
-plt.xlabel('Number of sub-problems')
+plt.semilogy(copies, monolithic_memory_jax, label='Monolithic', marker='o', markersize=7, linewidth=2, color='tab:purple', mec='k')
+plt.semilogy(copies, distributed_memory, label='Distributed', marker='s', markersize=7, linewidth=2, color='tab:orange', mec='k')
+plt.xlabel('N')
 plt.ylabel('Memory (MB)')
 plt.legend()
 
@@ -31,6 +32,7 @@ ax.spines['left'].set_color('gray')
 ax.spines['bottom'].set_position(('outward', 6))
 ax.spines['left'].set_position(('outward', 6))
 
+plt.title('Uncertain Cart Pole Co-Design')
 plt.grid(color='blue', alpha=0.1, axis='y')
 
 plt.savefig('cart_pole_memory.pdf', transparent=True, bbox_inches='tight')

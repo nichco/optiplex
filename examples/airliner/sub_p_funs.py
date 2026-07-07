@@ -21,21 +21,9 @@ def make_sub_problem(subP, r, N, data):
         print('Solving subproblem ', subP, ' with range ', r)
 
         nu = 300
-        
-        # AR_list, S_list = [], []
-        # for j in range(N):
-        #     AR_j = v_init[j][-3]
-        #     S_j = v_init[j][-2]
-
-        #     AR_list.append(AR_j)
-        #     S_list.append(S_j)
 
         AR_list = [v_init[j][-3] for j in range(N)]
         S_list  = [v_init[j][-2] for j in range(N)]
-
-        # print('AR List: ', AR_list)
-        # print('S List: ', S_list)
-
 
         def jax_obj(v):
             # order of vars: eta_i, theta_i, tf_i, AR_i, S_i, fuel_i
@@ -70,13 +58,6 @@ def make_sub_problem(subP, r, N, data):
         
 
         x0 = v_init[subP]
-        # x0 = np.concatenate((np.linspace(0.6, 0.5, nu), 
-        #                      np.linspace(np.deg2rad(6), np.deg2rad(6), nu), 
-        #                      np.array([16750.0]), 
-        #                      np.array([22.0]), 
-        #                      np.array([80.0]), 
-        #                      np.array([2000.0]))
-        #                      )
         
         x_scaler = np.concatenate((np.full((nu), 1), # eta scale
                                    np.full((nu), 1e1), # theta scale

@@ -9,6 +9,8 @@ jax.config.update("jax_enable_x64", True)
 from modopt import JaxProblem, SLSQP
 from scipy.stats.qmc import LatinHypercube, scale
 from jax_b_splines import get_bspline_mtx, bspline_comp
+import tracemalloc
+tracemalloc.start()
 
 # generate the CRM lifting line mesh
 ns = 45 # 33 # num spanwise panels (must be odd)
@@ -40,7 +42,7 @@ thickness_bspline_mtx = get_bspline_mtx(n_thickness_cp, ns - 1)
 
 
 
-num = 4 # number of operating conditions
+num = 2 # number of operating conditions
 sampler = LatinHypercube(d=2, seed=42)
 samples = scale(sampler.random(num), l_bounds=[0.4, 180], u_bounds=[0.6, 220])
 # samples = [(0.4135, 210), (0.4135, 207)] # test solution a
@@ -180,6 +182,11 @@ optimizer.solve()
 optimizer.print_results()
 x = optimizer.results['x'] / x_scaler
 
+# print peak memory usage
+_, peak = tracemalloc.get_traced_memory()
+print(f"Peak: {peak / 10**6}MB")
+tracemalloc.stop()
+
 alphas = x[:num]
 twist_cp = x[num:num + n_twist_cp]
 thickness_cp = x[num + n_twist_cp:]
@@ -217,4 +224,5 @@ plt.show()
 # np.savez('test_solution_a.npz', alphas=alphas, twist_cp=twist_cp, thickness_cp=thickness_cp, samples=samples)
 # np.savez('test_solution_c.npz', alphas=alphas, twist_cp=twist_cp, thickness_cp=thickness_cp, samples=samples)
 # np.savez('test_solution_d.npz', alphas=alphas, twist_cp=twist_cp, thickness_cp=thickness_cp, samples=samples)
-np.savez('test_solution_N4.npz', alphas=alphas, twist_cp=twist_cp, thickness_cp=thickness_cp, samples=samples)
+
+# np.savez('test_solution_N6.npz', alphas=alphas, twist_cp=twist_cp, thickness_cp=thickness_cp, samples=samples)
