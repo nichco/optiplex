@@ -8,7 +8,7 @@ from subproblems_with_bsplines_and_stress import make_subproblem
 from optiplex import PlexC, Plex2, combo
 import tracemalloc
 
-num = 8 # number of operating conditions
+num = 2 # number of operating conditions
 sampler = LatinHypercube(d=2, seed=42)
 samples = scale(sampler.random(num), l_bounds=[0.4, 180], u_bounds=[0.6, 220])
 # samples = [(0.4135, 210), (0.4135, 207)] # test solution a
@@ -70,11 +70,11 @@ tracemalloc.start()
 opt = Plex2(subproblems=subPfuns,
             x_init=x_init,
             con=con,
-            # mu=np.ones(n_twist_cp + n_thickness_cp) * 1,
+            mu=np.ones(n_twist_cp + n_thickness_cp) * 1,
             # mu=np.ones((num - 1) * (n_twist_cp + n_thickness_cp)) * 1,
             # mu=np.ones((135)) * 1,
             # mu=np.ones((378)) * 1,
-            mu=np.ones((729)) * 1,
+            # mu=np.ones((729)) * 1,
             max_mu=1e6,
             rho=1.5,
             tau=0.5,
@@ -83,8 +83,8 @@ opt = Plex2(subproblems=subPfuns,
             eta=1e-4, # final inner loop convergence
             )
 
-opt.solve(max_outer_iter=1,#100, 
-          max_inner_iter=3,#100,
+opt.solve(max_outer_iter=100, 
+          max_inner_iter=100,
           )
 
 print('Total time (s): ', opt.tf)
@@ -94,7 +94,7 @@ print('Optimization time (s): ', opt_time[-1])
 _, peak = tracemalloc.get_traced_memory()
 print(f"Peak: {peak / 10**6}MB")
 tracemalloc.stop()
-exit()
+# exit()
 
 x = opt.x
 alphas = []
@@ -122,8 +122,8 @@ np.savez('examples/crm_aero_struct/distributed_solution_N6.npz', history=opt.his
 # solution = np.load('examples/crm_aero_struct/test_solution_b.npz')
 # solution = np.load('examples/crm_aero_struct/test_solution_c.npz')
 # solution = np.load('examples/crm_aero_struct/solution_num_2_bsplines_and_stress.npz')
-# solution = np.load('examples/crm_aero_struct/test_solution_d.npz')
-solution = np.load('examples/crm_aero_struct/test_solution_N6.npz')
+solution = np.load('examples/crm_aero_struct/test_solution_d.npz')
+# solution = np.load('examples/crm_aero_struct/test_solution_N3.npz')
 alphas_star = solution['alphas']
 print('alphas_star (deg): ', np.rad2deg(alphas_star))
 twist_cp_star = solution['twist_cp']

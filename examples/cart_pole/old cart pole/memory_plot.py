@@ -16,8 +16,8 @@ distributed_memory = np.array([5.006, 5.116, 5.33, 5.497, 5.641, 5.864, 6.134, 6
 # plt.figure(figsize=(4,2.5))
 plt.figure(figsize=(3,3))
 
-plt.semilogy(copies, monolithic_memory_jax, label='Monolithic', marker='o', markersize=7, linewidth=2, color='tab:purple', mec='k')
-plt.semilogy(copies, distributed_memory, label='Distributed', marker='s', markersize=7, linewidth=2, color='tab:orange', mec='k')
+plt.semilogy(copies, monolithic_memory_jax, label='Monolithic', marker='o', markersize=7, linewidth=2, color='tab:purple')
+plt.semilogy(copies, distributed_memory, label='ALBCD', marker='s', markersize=7, linewidth=2, color='tab:orange')
 plt.xlabel('N')
 plt.ylabel('Memory (MB)')
 plt.legend()

@@ -65,7 +65,8 @@ def make_subproblem(subP, num, opt_time, samples):
             twist_cps[subP] = twist_cp_i
             thickness_cps[subP] = thickness_cp_i
             
-            # twist_i = bspline_comp(twist_bspline_mtx, twist_cp_i)
+            # # twist_i = bspline_comp(twist_bspline_mtx, twist_cp_i)
+            # twist_i = bspline_comp(twist_bspline_mtx, twist_cps[0]) # compute obj using only one of the twist vars
             # rho_atm_i, v_inf_i = samples[subP]
             # effective_twist = twist_i + alpha_i # add the trim aoa to the twist distribution
             # ll = LiftingLine(le, te, v_inf_i, rho_atm_i)
@@ -75,8 +76,7 @@ def make_subproblem(subP, num, opt_time, samples):
             obj = 0.0
             for j in range(num):
                 rho_atm_j, v_inf_j = samples[j]
-                # twist_j = bspline_comp(twist_bspline_mtx, twist_cps[j])
-                twist_j = bspline_comp(twist_bspline_mtx, twist_cps[0])
+                twist_j = bspline_comp(twist_bspline_mtx, twist_cps[0]) # compute obj using only one of the twist vars
                 ll_j = LiftingLine(le, te, v_inf_j, rho_atm_j)
                 sol_j = ll_j.solve_lifting_line_model(twist_j + alphas[j])
                 obj += sol_j["CD"]
