@@ -2,9 +2,16 @@ import jax.numpy as jnp
 import jax
 import numpy as np
 from interpax_atm1976 import akima_interp_a, akima_interp_rho, akima_interp_T
-import jaxopt
+from implicit_euler_2 import backward_euler_newton
+from jax_b_splines import get_bspline_mtx, bspline_comp
 
+nt = 300
 
+n_eta = 50
+eta_bspline_mtx = get_bspline_mtx(n_eta, nt)
+
+n_theta = 50
+theta_bspline_mtx = get_bspline_mtx(n_theta, nt)
 
 softplus = lambda x, k=30: jnp.log1p(jnp.exp(k * x)) / k
 
@@ -22,16 +29,22 @@ def korn(CL, tc=0.15, kappa=0.8, csweep=np.cos(np.deg2rad(35))):
 
 
 # dynamics function
-def f(t, y, args):
+def f(t, y, args, i):
 
-    nu = 300
+    # nu = 300
 
     h, r, v, gamma, m = y
     eta, theta, tf, AR, S = args
 
-    xp = jnp.linspace(0, tf, nu)
-    eta = jnp.interp(t, xp, eta)
-    theta = jnp.interp(t, xp, theta)
+    # xp = jnp.linspace(0, tf, nu)
+    # eta = jnp.interp(t, xp, eta)
+    # theta = jnp.interp(t, xp, theta)
+
+    eta = bspline_comp(eta_bspline_mtx, eta).ravel()
+    eta = eta[i]
+
+    theta = bspline_comp(theta_bspline_mtx, theta).ravel()
+    theta = theta[i]
 
     rho = akima_interp_rho(h) # kg/m^3
     sos = akima_interp_a(h) # m/s
@@ -142,44 +155,44 @@ def compute_constraints(AR, S, eta, theta, tf, fuel):
 
 
 
-def newton_fpi(G, y_init, data, tol=1e-9, maxiter=1000):
+# def newton_fpi(G, y_init, data, tol=1e-9, maxiter=1000):
 
-    def T(y, data): # Define the Newton fixed point map
-        res = G(y, data) # Compute residual
-        J = jax.jacrev(G)(y, data) # Compute Jacobian
-        delta = jnp.linalg.solve(J, -res) # Newton step
-        return y + delta
+#     def T(y, data): # Define the Newton fixed point map
+#         res = G(y, data) # Compute residual
+#         J = jax.jacrev(G)(y, data) # Compute Jacobian
+#         delta = jnp.linalg.solve(J, -res) # Newton step
+#         return y + delta
 
-    fpi = jaxopt.FixedPointIteration(fixed_point_fun=T,
-                                     maxiter=maxiter,
-                                     tol=tol,
-                                     )
+#     fpi = jaxopt.FixedPointIteration(fixed_point_fun=T,
+#                                      maxiter=maxiter,
+#                                      tol=tol,
+#                                      )
 
-    return fpi.run(y_init, data).params
+#     return fpi.run(y_init, data).params
 
 
-def backward_euler_step(y_prev, t_next, h, args, f):
+# def backward_euler_step(y_prev, t_next, h, args, f):
 
-    def G(y_next, data): # Residual function with all differentiable values explicit
-        y_prev, t_next, h, args = data
-        return y_next - y_prev - h * f(t_next, y_next, args)
+#     def G(y_next, data): # Residual function with all differentiable values explicit
+#         y_prev, t_next, h, args = data
+#         return y_next - y_prev - h * f(t_next, y_next, args)
 
-    y_init = y_prev
+#     y_init = y_prev
 
-    data = (y_prev, t_next, h, args)
-    y_next = newton_fpi(G, y_init, data)
-    return y_next
+#     data = (y_prev, t_next, h, args)
+#     y_next = newton_fpi(G, y_init, data)
+#     return y_next
 
-def backward_euler_newton(f, t0, y0, h, n, args):
+# def backward_euler_newton(f, t0, y0, h, n, args):
 
-    y0 = jnp.atleast_1d(y0)
+#     y0 = jnp.atleast_1d(y0)
 
-    def step(carry, _):
-        t_prev, y_prev = carry
-        t_next = t_prev + h
-        y_next = backward_euler_step(y_prev, t_next, h, args, f)
-        return (t_next, y_next), y_next
+#     def step(carry, _):
+#         t_prev, y_prev = carry
+#         t_next = t_prev + h
+#         y_next = backward_euler_step(y_prev, t_next, h, args, f)
+#         return (t_next, y_next), y_next
 
-    (_, _), ys = jax.lax.scan(step, (t0, y0), None, length=n)
+#     (_, _), ys = jax.lax.scan(step, (t0, y0), None, length=n)
 
-    return jnp.vstack([y0, ys])
+#     return jnp.vstack([y0, ys])

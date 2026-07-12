@@ -5,7 +5,7 @@ jax.config.update("jax_enable_x64", True)
 import gc
 from optiplex import combo
 from model import compute_objective, compute_constraints
-from modopt import JaxProblem, SLSQP, IPOPT
+from modopt import JaxProblem, SLSQP
 import warnings
 warnings.filterwarnings("ignore")
 import time
@@ -20,15 +20,17 @@ def make_sub_problem(subP, r, N, data):
         
         print('Solving subproblem ', subP, ' with range ', r)
 
-        nu = 300
+        # nu = 300
+        n_eta = 50
+        n_theta = 50
 
         AR_list = [v_init[j][-3] for j in range(N)]
         S_list  = [v_init[j][-2] for j in range(N)]
 
         def jax_obj(v):
             # order of vars: eta_i, theta_i, tf_i, AR_i, S_i, fuel_i
-            eta_i = v[:nu]
-            theta_i = v[nu:-4]
+            eta_i = v[:n_eta]
+            theta_i = v[n_eta:-4]
             tf_i = v[-4]
             AR_i = v[-3]
             S_i = v[-2]
@@ -47,8 +49,8 @@ def make_sub_problem(subP, r, N, data):
         
         def jax_con(v):
             # order of vars: eta_i, theta_i, tf_i, AR_i, S_i, fuel_i
-            eta_i = v[:nu]
-            theta_i = v[nu:-4]
+            eta_i = v[:n_eta]
+            theta_i = v[n_eta:-4]
             tf_i = v[-4]
             AR_i = v[-3]
             S_i = v[-2]
@@ -59,8 +61,8 @@ def make_sub_problem(subP, r, N, data):
 
         x0 = v_init[subP]
         
-        x_scaler = np.concatenate((np.full((nu), 1), # eta scale
-                                   np.full((nu), 1e1), # theta scale
+        x_scaler = np.concatenate((np.full((n_eta), 1), # eta scale
+                                   np.full((n_theta), 1e1), # theta scale
                                    np.array([1 / 20000]), # tf scale
                                    np.array([1]), # AR scale
                                    np.array([1e-1]), # S scale
@@ -71,8 +73,8 @@ def make_sub_problem(subP, r, N, data):
         cl = cu = np.array([3048, r, 1])
 
         # variable bounds
-        eta_l, eta_u = np.full((nu), 0.0), np.full((nu), 1.0)
-        theta_l, theta_u = np.full((nu), np.deg2rad(0)), np.full((nu), np.deg2rad(15))
+        eta_l, eta_u = np.full((n_eta), 0.0), np.full((n_eta), 1.0)
+        theta_l, theta_u = np.full((n_theta), np.deg2rad(0)), np.full((n_theta), np.deg2rad(15))
         tf_l, tf_u = np.array([1e3]), np.array([50000])
         AR_l, AR_u = np.array([5.0]), np.array([50.0])
         S_l, S_u = np.array([30.0]), np.array([150.0])
@@ -90,13 +92,13 @@ def make_sub_problem(subP, r, N, data):
         data.append(opt_time + (data[-1] if len(data)>0 else 0))
 
 
-        optimizer.print_results()
+        # optimizer.print_results()
 
         ans = optimizer.results['x'] / x_scaler
 
         # update lists with subPi results
-        eta_i = ans[:nu]
-        theta_i = ans[nu:-4]
+        eta_i = ans[:n_eta]
+        theta_i = ans[n_eta:-4]
         tf_i = ans[-4]
         AR_i = ans[-3]
         S_i = ans[-2]
