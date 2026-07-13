@@ -24,9 +24,9 @@ h2 = np.array(data_N2['history'])
 #     h_i = h2[i].flatten()
 #     error_i = np.linalg.norm((h_i - solution_N2))
 #     error[i] = error_i
-error = np.linalg.norm(h2.reshape(len(h2), -1) - solution_N2, axis=1)
+error_N2 = np.linalg.norm(h2.reshape(len(h2), -1) - solution_N2, axis=1)
 
-plt.semilogy(error, linewidth=2, label='N=2')
+plt.semilogy(error_N2, linewidth=2, label='N=2')
 # plt.grid()
 # plt.show()
 
@@ -47,9 +47,9 @@ solution_N3 = np.concatenate((params, x_star, u_star), axis=1).ravel()
 data_N3 = np.load('examples/cart_pole/new cart pole/uncertain_cart_pole_distributed_history_N3.npz')
 h3 = np.array(data_N3['history'])
 
-error = np.linalg.norm(h3.reshape(len(h3), -1) - solution_N3, axis=1)
+error_N3 = np.linalg.norm(h3.reshape(len(h3), -1) - solution_N3, axis=1)
 
-plt.semilogy(error, linewidth=2, label='N=3')
+plt.semilogy(error_N3, linewidth=2, label='N=3')
 # plt.grid()
 # plt.show()
 
@@ -70,9 +70,9 @@ solution_N4 = np.concatenate((params, x_star, u_star), axis=1).ravel()
 data_N4 = np.load('examples/cart_pole/new cart pole/uncertain_cart_pole_distributed_history_N4.npz')
 h4 = np.array(data_N4['history'])
 
-error = np.linalg.norm(h4.reshape(len(h4), -1) - solution_N4, axis=1)
+error_N4 = np.linalg.norm(h4.reshape(len(h4), -1) - solution_N4, axis=1)
 
-plt.semilogy(error, linewidth=2, label='N=4')
+plt.semilogy(error_N4, linewidth=2, label='N=4')
 
 
 
@@ -83,5 +83,13 @@ plt.xlabel('Iteration')
 plt.grid(alpha=0.2)
 plt.legend()
 
-plt.savefig('examples/cart_pole/new cart pole/error_plot.pdf', bbox_inches='tight')
+# plt.savefig('examples/cart_pole/new cart pole/error_plot.pdf', bbox_inches='tight')
 plt.show()
+
+
+
+np.savez('examples/cart_pole/new cart pole/ucp_error_data.npz',
+         error_N2=error_N2,
+            error_N3=error_N3,
+            error_N4=error_N4,
+            )

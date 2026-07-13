@@ -16,7 +16,7 @@ mu_cart_u = 0.03 + 0.01
 mu_cart_l = 0.03 - 0.01
 mu_pole_u = 0.03 + 0.01
 mu_pole_l = 0.03 - 0.01
-N = 4
+N = 2
 sampler = LatinHypercube(d=3, seed=0)
 samples = scale(sampler.random(N), 
                 l_bounds=[g_l, mu_cart_l, mu_pole_l], 
@@ -72,7 +72,7 @@ opt.solve(max_outer_iter=100,
           max_inner_iter=20,
           )
 
-np.savez('uncertain_cart_pole_distributed_history_N4.npz', history=opt.history, x_time=opt.x_time)
+np.savez('uncertain_cart_pole_distributed_history_N2_V2.npz', history=opt.history, x_time=opt.x_time, feasibility=opt.feasibility, mu_history=opt.mu_history, multipliers=opt.y_history)
 
 ans = opt.x
 l_list = [a[0] for a in ans]
@@ -80,9 +80,9 @@ mp_list = [a[1] for a in ans]
 print('l: ', l_list)
 print('mp: ', mp_list)
 
-# solution = np.load('examples/cart_pole/new cart pole/uncertain_cart_pole_solution_N2.npz')
+solution = np.load('examples/cart_pole/new cart pole/uncertain_cart_pole_solution_N2.npz')
 # solution = np.load('examples/cart_pole/new cart pole/uncertain_cart_pole_solution_N3.npz')
-solution = np.load('examples/cart_pole/new cart pole/uncertain_cart_pole_solution_N4.npz')
+# solution = np.load('examples/cart_pole/new cart pole/uncertain_cart_pole_solution_N4.npz')
 l_star = solution['l']
 mp_star = solution['mp']
 x_star = np.array(solution['x_list'])

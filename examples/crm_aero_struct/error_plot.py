@@ -20,13 +20,13 @@ solution_N2 = np.concatenate((alphas_star, twist_params, thickness_params), axis
 data_N2 = np.load('examples/crm_aero_struct/distributed_solution_N2.npz')
 h2 = np.array(data_N2['history'])
 
-error = np.zeros(len(h2))
+error_N2 = np.zeros(len(h2))
 for i in range(len(h2)):
     h_i = h2[i].flatten()
     error_i = np.linalg.norm((h_i - solution_N2))
-    error[i] = error_i
+    error_N2[i] = error_i
 
-plt.semilogy(error, label='N=2', linewidth=2)
+plt.semilogy(error_N2, label='N=2', linewidth=2)
 
 
 
@@ -45,13 +45,13 @@ solution_N3 = np.concatenate((alphas_star, twist_params, thickness_params), axis
 data_N3 = np.load('examples/crm_aero_struct/distributed_solution_N3_V2.npz')
 h3 = np.array(data_N3['history'])
 
-error = np.zeros(len(h3))
+error_N3 = np.zeros(len(h3))
 for i in range(len(h3)):
     h_i = h3[i].flatten()
     error_i = np.linalg.norm((h_i - solution_N3))
-    error[i] = error_i
+    error_N3[i] = error_i
 
-plt.semilogy(error, label='N=3', linewidth=2)
+plt.semilogy(error_N3, label='N=3', linewidth=2)
 
 
 
@@ -70,13 +70,13 @@ solution_N4 = np.concatenate((alphas_star, twist_params, thickness_params), axis
 data_N4 = np.load('examples/crm_aero_struct/distributed_solution_N4.npz')
 h4 = np.array(data_N4['history'])
 
-error = np.zeros(len(h4))
+error_N4 = np.zeros(len(h4))
 for i in range(len(h4)):
     h_i = h4[i].flatten()
     error_i = np.linalg.norm((h_i - solution_N4))
-    error[i] = error_i
+    error_N4[i] = error_i
 
-plt.semilogy(error, label='N=4', linewidth=2)
+plt.semilogy(error_N4, label='N=4', linewidth=2)
 
 
 
@@ -92,5 +92,13 @@ plt.xlabel('Iteration')
 plt.grid(alpha=0.2)
 plt.legend()
 
-plt.savefig('examples/crm_aero_struct/error_plot.pdf', bbox_inches='tight')
+# plt.savefig('examples/crm_aero_struct/error_plot.pdf', bbox_inches='tight')
 plt.show()
+
+
+
+np.savez('examples/crm_aero_struct/multi_point_crm_error_data.npz',
+         error_N2=error_N2,
+         error_N3=error_N3,
+         error_N4=error_N4,
+)

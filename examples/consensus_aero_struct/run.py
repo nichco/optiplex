@@ -320,10 +320,10 @@ plt.xlabel('Iteration')
 plt.ylabel('CD')
 plt.show()
 
-# np.savez('examples/aero_structural/history4_2phase_r1p5_eps_1en1.npz', 
-#          error=error, 
-#          mu_history=opt.mu_history, 
-#          x_time=opt.x_time, 
-#          feasibility=opt.feasibility,
-#          multipliers=opt.y_history,
-#          )
+np.savez('examples/consensus_aero_struct/consensus_aero_struct_albcd_solution.npz', 
+         error=error, 
+         mu_history=opt.mu_history, 
+         x_time=opt.x_time, 
+         feasibility=opt.feasibility,
+         multipliers=opt.y_history,
+         )
