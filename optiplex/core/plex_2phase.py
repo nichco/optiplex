@@ -2,7 +2,6 @@ from typing import List, Callable
 import numpy as np
 import time
 
-
 class Plex():
     def __init__(self, 
                  subproblems: List[Callable],

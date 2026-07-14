@@ -8,7 +8,7 @@ from subproblems_with_bsplines_and_stress import make_subproblem
 from optiplex import PlexC, Plex2, combo
 import tracemalloc
 
-num = 3 # number of operating conditions
+num = 10 # number of operating conditions
 sampler = LatinHypercube(d=2, seed=42)
 samples = scale(sampler.random(num), l_bounds=[0.4, 180], u_bounds=[0.6, 220])
 # samples = [(0.4135, 210), (0.4135, 207)] # test solution a
@@ -71,10 +71,11 @@ opt = Plex2(subproblems=subPfuns,
             x_init=x_init,
             con=con,
             # mu=np.ones(n_twist_cp + n_thickness_cp) * 1, # N=2
-            mu=np.ones((num - 1) * (n_twist_cp + n_thickness_cp)) * 1, # N=3
+            # mu=np.ones((num - 1) * (n_twist_cp + n_thickness_cp)) * 1, # N=3
             # mu=np.ones((135)) * 1, # N=4
-            # mu=np.ones((378)) * 1, # N=5
-            # mu=np.ones((729)) * 1, # N=6
+            # mu=np.ones((378)) * 1, # N=6
+            # mu=np.ones((729)) * 1, # N=8
+            mu=np.ones((1188)) * 1, # N=10
             max_mu=1e6,
             rho=1.5,
             tau=0.5,
@@ -83,8 +84,8 @@ opt = Plex2(subproblems=subPfuns,
             eta=1e-4, # final inner loop convergence
             )
 
-opt.solve(max_outer_iter=100, 
-          max_inner_iter=100,
+opt.solve(max_outer_iter=3,#100, 
+          max_inner_iter=3,#100,
           )
 
 print('Total time (s): ', opt.tf)
@@ -94,7 +95,7 @@ print('Optimization time (s): ', opt_time[-1])
 _, peak = tracemalloc.get_traced_memory()
 print(f"Peak: {peak / 10**6}MB")
 tracemalloc.stop()
-# exit()
+exit()
 
 x = opt.x
 alphas = []
