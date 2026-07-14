@@ -8,7 +8,7 @@ from subproblems_with_bsplines_and_stress import make_subproblem
 from optiplex import PlexC, Plex2, combo
 import tracemalloc
 
-num = 10 # number of operating conditions
+num = 2 # number of operating conditions
 sampler = LatinHypercube(d=2, seed=42)
 samples = scale(sampler.random(num), l_bounds=[0.4, 180], u_bounds=[0.6, 220])
 # samples = [(0.4135, 210), (0.4135, 207)] # test solution a
@@ -70,12 +70,12 @@ tracemalloc.start()
 opt = Plex2(subproblems=subPfuns,
             x_init=x_init,
             con=con,
-            # mu=np.ones(n_twist_cp + n_thickness_cp) * 1, # N=2
+            mu=np.ones(n_twist_cp + n_thickness_cp) * 1, # N=2
             # mu=np.ones((num - 1) * (n_twist_cp + n_thickness_cp)) * 1, # N=3
             # mu=np.ones((135)) * 1, # N=4
             # mu=np.ones((378)) * 1, # N=6
             # mu=np.ones((729)) * 1, # N=8
-            mu=np.ones((1188)) * 1, # N=10
+            # mu=np.ones((1188)) * 1, # N=10
             max_mu=1e6,
             rho=1.5,
             tau=0.5,
@@ -84,8 +84,8 @@ opt = Plex2(subproblems=subPfuns,
             eta=1e-4, # final inner loop convergence
             )
 
-opt.solve(max_outer_iter=3,#100, 
-          max_inner_iter=3,#100,
+opt.solve(max_outer_iter=100, 
+          max_inner_iter=100,
           )
 
 print('Total time (s): ', opt.tf)
@@ -95,7 +95,7 @@ print('Optimization time (s): ', opt_time[-1])
 _, peak = tracemalloc.get_traced_memory()
 print(f"Peak: {peak / 10**6}MB")
 tracemalloc.stop()
-exit()
+
 
 x = opt.x
 alphas = []
@@ -116,15 +116,15 @@ print('Total optimization time (s): ', opt_time[-1])
 
 
 # save history to an npz file
-np.savez('examples/crm_aero_struct/distributed_solution_N3_V2.npz', history=opt.history, time=opt.x_time, feasibility=opt.feasibility, mu_history=opt.mu_history, multipliers=opt.y_history)
+# np.savez('examples/crm_aero_struct/distributed_solution_N3_V2.npz', history=opt.history, time=opt.x_time, feasibility=opt.feasibility, mu_history=opt.mu_history, multipliers=opt.y_history)
 
 
 # solution = np.load('examples/crm_aero_struct/test_solution_a.npz')
 # solution = np.load('examples/crm_aero_struct/test_solution_b.npz')
 # solution = np.load('examples/crm_aero_struct/test_solution_c.npz')
 # solution = np.load('examples/crm_aero_struct/solution_num_2_bsplines_and_stress.npz')
-# solution = np.load('examples/crm_aero_struct/test_solution_d.npz')
-solution = np.load('examples/crm_aero_struct/test_solution_N3.npz')
+solution = np.load('examples/crm_aero_struct/test_solution_d.npz')
+# solution = np.load('examples/crm_aero_struct/test_solution_N3.npz')
 alphas_star = solution['alphas']
 print('alphas_star (deg): ', np.rad2deg(alphas_star))
 twist_cp_star = solution['twist_cp']
@@ -203,30 +203,3 @@ plt.semilogy(error, linewidth=2)
 plt.ylabel('Error')
 plt.xlabel('Iteration')
 plt.show()
-
-# vars = np.array(opt.history)
-# n = vars.shape[0]
-
-# error = []
-# for i in range(n):
-#     sol = []
-#     x_i = []
-#     for j in range(num):
-#         x_j_star = np.concatenate(([alphas_star[j]], twist_cp_star, thickness_cp_star))
-#         sol.append(x_j_star)
-
-#         x_i_j = vars[i, j, :]
-#         x_i.append(x_i_j)
-
-#     sol = np.concatenate(sol)
-#     x_i = np.concatenate(x_i)
-
-#     error_i = np.linalg.norm((x_i - sol) / sol)
-#     error.append(error_i)
-
-# plt.semilogy(opt.x_time, error)
-# plt.xlabel('Time (s)')
-# plt.ylabel('Error')
-# plt.show()
-
-# print('Final error: ', error[-1])
