@@ -10,9 +10,7 @@ import warnings
 warnings.filterwarnings("ignore")
 
 n = 1000  # dimension
-N = 10    # number of subproblems
-
-solution = np.ones(n)  # known solution for convergence criterion
+N = 4    # number of subproblems
 
 if n % N:
     raise ValueError("n must be divisible by N")
@@ -123,7 +121,7 @@ for i in range(N): v_init.append(guess[i*size:(i+1)*size])
 
 opt = BCD(subproblems=subP_functions,
           x_init=v_init,
-          solution=solution,
+          solution=np.ones(n),  # known solution for convergence criterion,
           eps=0.01, # percent solution tolerance
           )
 
@@ -137,6 +135,8 @@ print(f"Peak: {peak / 10**6:.2f} MB")
 
 tracemalloc.stop()
 
-print('Solution: ', opt.x)
+# print('Solution: ', opt.x)
+solution = np.concatenate(opt.x)
+print(min(solution), max(solution))
 # print('Total time (s): ', opt.time)
 print('Optimization time (s): ', times[-1])
