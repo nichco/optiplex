@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 
 
 N = np.array([2, 4, 6, 8, 10])
-ALBCD_time = np.array([24.68, ])
+ALBCD_time = np.array([24.68, 56.17, 89.79, 140.24, 126.56])
 
 # N_d = np.array([2, 4, 6])
 # ALBCD_time = np.array([149.05, 309.84, 678.61])
