@@ -26,7 +26,6 @@ ax[0].set_xlabel('Dimension (n)')
 ax[0].set_ylabel('Optimization time (s)')
 ax[0].legend(loc='upper left', fontsize=10)
 
-
 monolithic_memory = np.array([3.37, 5.94, 16.12, 33.01, 56.63, 86.96])
 distributed_memory_2_subp = np.array([2.91, 3.57, 6.14, 10.40, 16.35, 23.95])
 distributed_memory_5_subp = np.array([2.81, 2.93, 3.34, 4.05, 5.00, 6.25])

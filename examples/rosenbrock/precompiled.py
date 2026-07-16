@@ -3,22 +3,15 @@ import jax
 import jax.numpy as jnp
 import modopt as mo
 import numpy as np
-import time
-import tracemalloc
-import gc
 import warnings
 warnings.filterwarnings("ignore")
 
-n = 1000  # dimension
-N = 4    # number of subproblems
-
-if n % N:
-    raise ValueError("n must be divisible by N")
+n = 100  # dimension
+N = 10    # number of subproblems
 
 block = n // N  # size of each subproblem's variable block
 
-objective, times = [], []
-
+objective = []
 
 def rosenbrock(x):
     return jnp.sum(100 * (x[1:] - x[:-1] ** 2) ** 2 + (1 - x[:-1]) ** 2)
@@ -67,9 +60,8 @@ def make_sub_problem(subp):
         v0 = np.asarray(x_init[subp])
 
         # Use modopt's ProblemLite -- a concrete container class that takes
-        # plain obj/grad callables directly, instead of JaxProblem (which
-        # would re-jit a fresh jax_obj internally on every call) or Problem
-        # (which is abstract and requires subclassing).
+        # obj/grad callables directly, instead of JaxProblem (which
+        # would re-jit a fresh jax_obj internally on every call)
         problem = mo.ProblemLite(
             x0=v0,
             obj=obj,
@@ -79,20 +71,9 @@ def make_sub_problem(subp):
         )
 
         optimizer = mo.SLSQP(problem, solver_options={'maxiter': 6000, 'ftol': 1e-7}, turn_off_outputs=True)
-        # optimizer = mo.IPOPT(problem, solver_options={'max_iter': 6000, 'tol': 1e-7}, turn_off_outputs=True)
-
-        t1 = time.perf_counter()
         optimizer.solve()
-        t2 = time.perf_counter()
-        opt_time = t2 - t1
-        times.append(opt_time + (times[-1] if len(times) > 0 else 0))
-        # optimizer.print_results()
-
         objective.append(optimizer.results['fun'])
-
         x_init[subp] = np.asarray(optimizer.results['x'])
-
-        gc.collect()
 
         return x_init
 
@@ -110,7 +91,7 @@ for i in range(N):
 
 
 
-
+"""
 size = int(n / N)
 guess = np.array([-1.2, 1] * (n // 2))
 v_init = []
@@ -140,3 +121,137 @@ solution = np.concatenate(opt.x)
 print(min(solution), max(solution))
 # print('Total time (s): ', opt.time)
 print('Optimization time (s): ', times[-1])
+"""
+
+
+
+from scipy.stats.qmc import LatinHypercube, scale
+
+num = 100#50
+sampler = LatinHypercube(d=n, seed=42)
+samples = scale(sampler.random(num), l_bounds=-1.5 * np.ones(n), u_bounds=1.5 * np.ones(n))
+
+solution_a = np.ones(n)
+solution_b = np.insert(np.ones(n - 1), 0, -1)
+
+times = []
+num_success = 0
+for i in range(num):
+    print('Run ', i + 1, ' of ', num)
+
+    v_init = np.split(samples[i], N)
+
+    opt = BCD(subproblems=subP_functions,
+            x_init=v_init,
+            # solution=np.ones(n),  # known solution for convergence criterion,
+            solution=[solution_a, solution_b],  # known solution for convergence criterion,
+            eps=0.01, # percent solution tolerance
+            )
+
+    opt.solve(max_iter=1000)
+
+    # print('Solution: ', opt.x)
+    solution = np.concatenate(opt.x)
+    print(min(solution), max(solution))
+    print('Total time (s): ', opt.tf)
+
+    if opt.success:
+        num_success += 1
+        times.append(opt.tf)
+
+
+print('Number of successful runs: ', num_success, ' out of ', num)
+
+mean_time = np.mean(times)
+std_time = np.std(times)
+print('mean time (s): ', mean_time)
+print('std time (s): ', std_time)
+
+
+
+np.savez('albcd_time_data_n100_N10_07162026.npz', times=times)
+
+
+# n=100; N=2
+# mean_time = 0.78
+# std_time = 0.24
+
+# n=200; N=2
+# mean_time = 1.16
+# std_time = 0.28
+
+# n=400; N=2
+# mean_time = 4.89
+# std_time = 1.12
+
+# n=600; N=2
+# mean_time = 12.81
+# std_time = 3.23
+
+# n=800; N=2
+# mean_time = 36.04
+# std_time = 9.89
+
+# n=1000; N=2
+# mean_time = 64.94
+# std_time = 19.59
+
+
+
+
+
+
+
+# n=100; N=5
+# mean_time = 2.90
+# std_time = 0.85
+
+# n=200; N=5
+# mean_time = 3.19
+# std_time = 1.02
+
+# n=400; N=5
+# mean_time = 4.12
+# std_time = 1.25
+
+# n=600; N=5
+# mean_time = 2.93
+# std_time = 0.71
+
+# n=800; N=5
+# mean_time = 4.55
+# std_time = 0.91
+
+# n=1000; N=5
+# mean_time = 9.25
+# std_time = 2.39
+
+
+
+
+
+
+
+# n=100; N=10
+# mean_time = 5.04
+# std_time = 2.19
+
+# n=200; N=10
+# mean_time = 5.51
+# std_time = 2.15
+
+# n=400; N=10
+# mean_time = 5.83
+# std_time = 1.80
+
+# n=600; N=10
+# mean_time = 
+# std_time = 
+
+# n=800; N=10
+# mean_time = 
+# std_time = 
+
+# n=1000; N=10
+# mean_time = 
+# std_time = 

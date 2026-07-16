@@ -7,7 +7,7 @@ class BCD():
     def __init__(self, 
                  subproblems: List[Callable],
                  x_init: List[np.ndarray],
-                 solution: np.ndarray, # known solution for convergence criterion
+                 solution: List[np.ndarray], # known solution for convergence criterion
                  eps: float = 1e-5, # inner loop convergence tolerance
                  ):
 
@@ -20,6 +20,7 @@ class BCD():
         self.t0 = None
         self.tf = None
         self.eps = eps
+        self.success = False
 
 
     def solve(self, 
@@ -51,11 +52,15 @@ class BCD():
                 #     print('-Primal loop converged with rel step: ', rel_step, ' in ', j, ' iterations!-')
                 #     break
                 z = np.concatenate([xi.ravel() for xi in self.x])
-                relative_error = np.linalg.norm(z - self.solution) / np.linalg.norm(self.solution, ord=np.inf)
-                print(f"pr_itr={j:03d} | "f"rel_err={relative_error:.3e} | ")
+
+                relative_error = np.inf
+                for sol in self.solution:
+                    relative_error = min(relative_error, np.linalg.norm(z - sol) / np.linalg.norm(sol, ord=np.inf))
+                    print(f"pr_itr={j:03d} | "f"rel_err={relative_error:.3e} | ")
 
                 if relative_error <= self.eps:
                     print('-Primal loop converged with relative error: ', relative_error, ' in ', j, ' iterations!-')
+                    self.success = True
                     break
 
         self.tf = time.perf_counter() - self.t0
