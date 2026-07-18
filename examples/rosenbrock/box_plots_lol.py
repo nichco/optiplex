@@ -42,10 +42,10 @@ plt.setp(ax[1].get_xticklabels(), rotation=30, ha='right')
 
 ax[0].set_ylabel('Time (s)')
 ax[0].set_title('100d Rosenbrock')
-# ax[0].set_yscale('log')
+ax[0].set_yscale('log')
 ax[1].set_ylabel('Time (s)')
 ax[1].set_title('1000d Rosenbrock')
-# ax[1].set_yscale('log')
+ax[1].set_yscale('log')
 
 
 

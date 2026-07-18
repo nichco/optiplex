@@ -4,7 +4,7 @@ import modopt as mo
 import numpy as np
 import time
 import tracemalloc
-import gc
+# import gc
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -47,7 +47,7 @@ def make_sub_problem(subp, N, n):
 
         x_init[subp] = optimizer.results['x']
 
-        gc.collect()
+        # gc.collect()
 
         return x_init
     

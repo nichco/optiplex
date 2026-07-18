@@ -8,7 +8,7 @@ from subproblems_with_bsplines_and_stress import make_subproblem
 from optiplex import PlexC, Plex2, combo
 import tracemalloc
 
-num = 10 # number of operating conditions
+num = 2 # number of operating conditions
 sampler = LatinHypercube(d=2, seed=42)
 samples = scale(sampler.random(num), l_bounds=[0.4, 180], u_bounds=[0.6, 220])
 # samples = [(0.4135, 210), (0.4135, 207)] # test solution a
@@ -70,18 +70,18 @@ tracemalloc.start()
 opt = Plex2(subproblems=subPfuns,
             x_init=x_init,
             con=con,
-            # mu=np.ones(n_twist_cp + n_thickness_cp) * 1, # N=2
+            mu=np.ones(n_twist_cp + n_thickness_cp) * 1, # N=2
             # mu=np.ones((num - 1) * (n_twist_cp + n_thickness_cp)) * 1, # N=3
             # mu=np.ones((135)) * 1, # N=4
             # mu=np.ones((378)) * 1, # N=6
             # mu=np.ones((729)) * 1, # N=8
-            mu=np.ones((1188)) * 1, # N=10
+            # mu=np.ones((1188)) * 1, # N=10
             max_mu=1e6,
             rho=1.5,
             tau=0.5,
             tol=1e-4, # outer loop feasibility
             eps=1e-2, # initial inner loop convergence
-            eta=1e-4, # final inner loop convergence
+            eta=1e-3,#1e-4, # final inner loop convergence
             )
 
 opt.solve(max_outer_iter=100, 
@@ -123,8 +123,8 @@ print('Total optimization time (s): ', opt_time[-1])
 # solution = np.load('examples/crm_aero_struct/test_solution_b.npz')
 # solution = np.load('examples/crm_aero_struct/test_solution_c.npz')
 # solution = np.load('examples/crm_aero_struct/solution_num_2_bsplines_and_stress.npz')
-# solution = np.load('examples/crm_aero_struct/test_solution_d.npz')
-solution = np.load('examples/crm_aero_struct/test_solution_N10.npz')
+solution = np.load('examples/crm_aero_struct/test_solution_d.npz')
+# solution = np.load('examples/crm_aero_struct/test_solution_N6.npz')
 alphas_star = solution['alphas']
 print('alphas_star (deg): ', np.rad2deg(alphas_star))
 twist_cp_star = solution['twist_cp']
@@ -203,3 +203,13 @@ plt.semilogy(error, linewidth=2)
 plt.ylabel('Error')
 plt.xlabel('Iteration')
 plt.show()
+
+
+# N = 2
+# time = 15.92
+
+# N = 6
+# time = 52.76
+
+# N = 10
+# time = 107.42

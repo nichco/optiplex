@@ -5,7 +5,7 @@ import tracemalloc
 
 # https://www.sfu.ca/~ssurjano/dixonpr.html
 
-n = 1000 # dimension
+n = 100 # dimension
 
 tracemalloc.start()
 
@@ -26,5 +26,17 @@ tracemalloc.stop()
 
 optimizer.print_results()
 ans = optimizer.results['x']
+print(ans)
 
 print(f"Peak: {peak / 10**6:.2f} MB")
+
+
+
+
+# n = 100
+# time = 0.08
+# memory = 3.4
+
+# n = 1000
+# time = 271.06
+# memory = 71.15

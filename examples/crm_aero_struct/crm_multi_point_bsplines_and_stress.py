@@ -42,7 +42,7 @@ thickness_bspline_mtx = get_bspline_mtx(n_thickness_cp, ns - 1)
 
 
 
-num = 2 # number of operating conditions
+num = 10 # number of operating conditions
 sampler = LatinHypercube(d=2, seed=42)
 samples = scale(sampler.random(num), l_bounds=[0.4, 180], u_bounds=[0.6, 220])
 # samples = [(0.4135, 210), (0.4135, 207)] # test solution a
@@ -225,4 +225,4 @@ plt.show()
 # np.savez('test_solution_c.npz', alphas=alphas, twist_cp=twist_cp, thickness_cp=thickness_cp, samples=samples)
 # np.savez('test_solution_d.npz', alphas=alphas, twist_cp=twist_cp, thickness_cp=thickness_cp, samples=samples)
 
-# np.savez('test_solution_N6.npz', alphas=alphas, twist_cp=twist_cp, thickness_cp=thickness_cp, samples=samples)
+np.savez('test_solution_N10.npz', alphas=alphas, twist_cp=twist_cp, thickness_cp=thickness_cp, samples=samples)
