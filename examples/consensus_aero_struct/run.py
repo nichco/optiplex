@@ -9,6 +9,9 @@ import warnings
 warnings.filterwarnings("ignore")
 import numpy as np
 import matplotlib.pyplot as plt
+import tracemalloc
+import gc
+import time
 
 # aero setup
 N = 31
@@ -76,14 +79,13 @@ data = {'aero_loads': aero_loads_init,
 x_init = [twist0, thickness0, aero_loads_init, weight_init]
 
 cd_history = []
+opt_time = 0
 
 f_scale = 1e-4
 w_scale = 1e-4
 
 def con(x):
 
-    twist = x[0]
-    thickness = x[1]
     aero_loads_copy = x[2]
     weight_copy = x[3]
 
@@ -94,8 +96,7 @@ def con(x):
 
 
 def aero_subproblem(x, y, mu):
-
-    # print('Solving aerodynamic subproblem...', end=' ', flush=True)
+    global opt_time
 
     twist = x[0]
     thickness = x[1]
@@ -113,10 +114,8 @@ def aero_subproblem(x, y, mu):
 
         CD, aero_loads, _ = aero_model(twist)
         
-        # consensus constraints
         c = jnp.concatenate([f_scale * (aero_loads - aero_loads_copy), w_scale * jnp.array([weight - weight_copy])])
 
-        # return 1e3 * CD + y.T @ c + 0.5 * mu * jnp.sum(c**2)
         return 1e3 * CD + y.T @ c + 0.5 * c.T @ jnp.diag(mu) @ c
     
     def jax_con(v):
@@ -134,7 +133,9 @@ def aero_subproblem(x, y, mu):
 
     jaxprob = mo.JaxProblem(x0=v0, jax_obj=jax_obj, jax_con=jax_con, x_scaler=x_scaler, cl=0, cu=0, c_scaler=1e-3)
     optimizer = mo.SLSQP(jaxprob, solver_options={'maxiter': 1000, 'ftol': 1e-8}, turn_off_outputs=True)
+    t1 = time.perf_counter()
     optimizer.solve()
+    t2 = time.perf_counter()
     # optimizer.print_results()
     ans = optimizer.results['x'] / x_scaler
     twist_solution = ans[:N]
@@ -145,13 +146,15 @@ def aero_subproblem(x, y, mu):
     data['CD'] = CD
     data['aero_loads'] = aero_loads
     cd_history.append(CD)
-    # print('CD: ', CD, ' obj: ', optimizer.results['fun'])
+
+    opt_time += t2 - t1
+
+    gc.collect()
 
     return [twist_solution, thickness, aero_loads_copy, weight_copy_solution]
 
 def struct_subproblem(x, y, mu):
-
-    # print('Solving structural subproblem....', end=' ', flush=True)
+    global opt_time
 
     twist = x[0]
     thickness = x[1]
@@ -170,10 +173,8 @@ def struct_subproblem(x, y, mu):
 
         _, _, weight = structures_model(aero_loads_copy, thickness)
 
-        # consensus constraints
         c = jnp.concatenate([f_scale * (aero_loads - aero_loads_copy), w_scale * jnp.array([weight - weight_copy])])
 
-        # return 1e3 * CD + y.T @ c + 0.5 * mu * jnp.sum(c**2)
         return 1e3 * CD + y.T @ c + 0.5 * c.T @ jnp.diag(mu) @ c
     
     def jax_con(v):
@@ -187,7 +188,7 @@ def struct_subproblem(x, y, mu):
                           u_l - tip_disp_target])
     
     tl = np.ones(num_nodes - 1) * 0.001     # min gauge
-    tu = np.ones(num_nodes - 1) * r # np.inf    # thickness upper
+    tu = np.ones(num_nodes - 1) * r         # thickness upper
     fl = np.ones(num_nodes) * -np.inf       # f lower
     fu = np.ones(num_nodes) * np.inf        # f upper
     xl = np.concatenate([tl, fl])
@@ -198,7 +199,9 @@ def struct_subproblem(x, y, mu):
 
     jaxprob = mo.JaxProblem(x0=v0, jax_obj=jax_obj, jax_con=jax_con, xl=xl, xu=xu, x_scaler=x_scaler, cl=0, cu=0, c_scaler=1e1)
     optimizer = mo.SLSQP(jaxprob, solver_options={'maxiter': 1000, 'ftol': 1e-8}, turn_off_outputs=True)
+    t1 = time.perf_counter()
     optimizer.solve()
+    t2 = time.perf_counter()
     # optimizer.print_results()
     ans = optimizer.results['x'] / x_scaler
     thickness_solution = ans[:num_nodes - 1]
@@ -209,11 +212,13 @@ def struct_subproblem(x, y, mu):
     data['weight'] = weight
 
     cd_history.append(CD)
-    # print('CD: ', CD, ' obj: ', optimizer.results['fun'])
+    opt_time += t2 - t1
+
+    gc.collect()
 
     return [twist, thickness_solution, aero_loads_copy_solution, weight_copy]
 
-
+tracemalloc.start()
 
 opt = Plex2(subproblems=[aero_subproblem, struct_subproblem],
             x_init=x_init,
@@ -232,24 +237,23 @@ opt.solve(max_outer_iter=100,
           )
 
 
+_, peak = tracemalloc.get_traced_memory()
+print(f"Peak: {peak / 10**6}MB")
+tracemalloc.stop()
 
-# print('Lagrange multipliers: ', opt.y)
-# print('Penalty parameters: ', opt.mu)
 print('Total time (s): ', opt.tf)
+print('Optimization time (s): ', opt_time)
 
-solution = opt.x
-
-twist = solution[0]
-thickness = solution[1]
-aero_loads_copy = solution[2]
-weight_copy = solution[3]
+twist = opt.x[0]
+thickness = opt.x[1]
+aero_loads_copy = opt.x[2]
+weight_copy = opt.x[3]
 
 fig, (ax1, ax2) = plt.subplots(1, 2)
 ax1.plot(lifting_line.y, twist)
 ax2.plot(thickness)
 plt.tight_layout()
 plt.show()
-
 
 aero_loads = data['aero_loads']
 f_con = (aero_loads_copy - aero_loads) * f_scale
@@ -260,33 +264,19 @@ print('f_con max abs: ', jnp.max(jnp.abs(f_con)))
 print('w_con: ', w_con)
 
 
-# solution = np.load('examples/aero_structural/new_solution.npz')
-solution = np.load('examples/aero_structural/new_solution copy.npz')
+solution = np.load('examples/consensus_aero_struct/solution.npz')
 x_star = np.concatenate([solution['twist'], solution['thickness']])
 
-history_vecs = [np.concatenate(h[:2]) for h in opt.history]
-error = [np.linalg.norm((x - x_star) / x_star) for x in history_vecs]
+albcd_solution = np.array([np.concatenate([h[0], h[1]]) for h in opt.history])
+error = np.linalg.norm(albcd_solution - x_star, axis=1) / np.linalg.norm(x_star)
 
 print('CD: ', cd_history[-1])
-
 print('Error: ', error[-1])
 
-# plt.semilogy(error)
-# plt.xlabel('Iteration')
-# plt.ylabel('Relative error')
-# plt.show()
-
-plt.semilogy(opt.x_time, error)
-plt.xlabel('Time (s)')
+plt.semilogy(error)
+plt.xlabel('Iteration')
 plt.ylabel('Relative error')
 plt.show()
-
-# mu_hist = np.asarray(opt.mu_history)
-# for i in range(mu_hist.shape[1]):
-#     plt.semilogy(opt.x_time, mu_hist[:, i], label=f'mu[{i}]')
-# plt.xlabel('Time (s)')
-# plt.ylabel('Penalty parameter')
-# plt.show()
 
 plt.semilogy(opt.feasibility)
 plt.xlabel('Iteration')
@@ -322,8 +312,12 @@ plt.show()
 
 # np.savez('examples/consensus_aero_struct/consensus_aero_struct_albcd_solution.npz', 
 #          error=error, 
-#          mu_history=opt.mu_history, 
+#          albcd_solution=albcd_solution,
+#          mu_history=opt.mu_history,
+#          y_history=opt.y_history,
 #          x_time=opt.x_time, 
 #          feasibility=opt.feasibility,
 #          multipliers=opt.y_history,
+#          x_star=x_star,
+#          cd_history=cd_history
 #          )
