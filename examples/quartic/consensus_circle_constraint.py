@@ -3,14 +3,13 @@ import numpy as np
 import modopt as mo
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
-from optiplex import combo
 import warnings
 warnings.filterwarnings("ignore")
 
-# v_init = [1.0, -1.0, 1.0, -1.0]
-# v_init = [-1.0, 1.0, -1.0, 1.0]
-v_init = [-0.5, 1.0, -0.5, 1.0]
-# v_init = [0.5, 1.0, 0.5, 1.0]
+x0_1 = np.array([-0.5, 1.0])
+x0_2 = np.array([-0.5, 1.0])
+cvar = x0_1 + x0_2 / 2
+v_init = [-0.5, 1.0, -0.5, 1.0, cvar]
 
 x1_1_history = [v_init[0]]
 x2_1_history = [v_init[1]]
@@ -23,6 +22,7 @@ def subproblem1(v_init, y, mu):
     x2_1 = v_init[1]
     x1_2 = v_init[2]
     x2_2 = v_init[3]
+    cvar = v_init[4]
 
     v0 = np.concatenate([np.atleast_1d(x1_1), np.atleast_1d(x2_1)])
 
@@ -32,9 +32,9 @@ def subproblem1(v_init, y, mu):
         beta = 1.5 # beta in [0, 2)
         obj = jnp.squeeze(x1_1**2 + x2_1**2 - beta * x1_1 * x2_1)
 
-        c_1 = combo([x1_1, x1_2])
-        c_2 = combo([x2_1, x2_2])
-        c = jnp.concatenate([c_1, c_2])
+        c1 = jnp.array([x1_1, x2_1]) - cvar
+        c2 = jnp.array([x1_2, x2_2]) - cvar
+        c = jnp.concatenate([c1, c2])
 
         return obj + y.T @ c + mu * jnp.sum(c**2)
     
@@ -56,7 +56,7 @@ def subproblem1(v_init, y, mu):
     x1_2_history.append(x1_2)
     x2_2_history.append(x2_2)
 
-    return [ans[0], ans[1], x1_2, x2_2]
+    return [ans[0], ans[1], x1_2, x2_2, cvar]
 
 
 def subproblem2(v_init, y, mu):
@@ -64,6 +64,7 @@ def subproblem2(v_init, y, mu):
     x2_1 = v_init[1]
     x1_2 = v_init[2]
     x2_2 = v_init[3]
+    cvar = v_init[4]
 
     v0 = np.concatenate([np.atleast_1d(x1_2), np.atleast_1d(x2_2)])
 
@@ -73,14 +74,9 @@ def subproblem2(v_init, y, mu):
         beta = 1.5 # beta in [0, 2)
         obj = jnp.squeeze(x1_2**2 + x2_2**2 - beta * x1_2 * x2_2)
 
-        # c_1 = combo([x1_1, x1_2])
-        # c_2 = combo([x2_1, x2_2])
-        x01_hat = jnp.average(jnp.array([x1_1, x1_2]))
-        x02_hat = jnp.average(jnp.array([x2_1, x2_2]))
-
-        c_1 = jnp.array([x1_1 - x01_hat])
-        c_2 = jnp.array([x2_2 - x02_hat])
-        c = jnp.concatenate([c_1, c_2])
+        c1 = jnp.array([x1_1, x2_1]) - cvar
+        c2 = jnp.array([x1_2, x2_2]) - cvar
+        c = jnp.concatenate([c1, c2])
 
         return obj + y.T @ c + mu * jnp.sum(c**2)
     
@@ -102,20 +98,29 @@ def subproblem2(v_init, y, mu):
     x1_2_history.append(ans[0])
     x2_2_history.append(ans[1])
 
-    return [x1_1, x2_1, ans[0], ans[1]]
+    return [x1_1, x2_1, ans[0], ans[1], cvar]
 
 
+# the common variable is updated in the spy subproblem with an explicit solution
+def spy(v_init, y, mu):
 
-# def con(v_init):
-    
-#     x1_1 = v_init[0]
-#     x2_1 = v_init[1]
-#     x1_2 = v_init[2]
-#     x2_2 = v_init[3]
+    x1_1 = v_init[0]
+    x2_1 = v_init[1]
+    x1_2 = v_init[2]
+    x2_2 = v_init[3]
+    # cvar = v_init[4]
 
-#     c_1 = combo([x1_1, x1_2])
-#     c_2 = combo([x2_1, x2_2])
-#     return jnp.concatenate([c_1, c_2])
+    x01_hat = np.average(np.array([x1_1, x1_2]))
+    x02_hat = np.average(np.array([x2_1, x2_2]))
+    x0_bar = np.array([x01_hat, x02_hat])
+
+    y_bar = (y[:2] + y[2:]) / 2
+
+    cvar = x0_bar + y_bar / mu
+
+    return [x1_1, x2_1, x1_2, x2_2, cvar]
+
+
 
 def con(v_init):
     
@@ -123,37 +128,32 @@ def con(v_init):
     x2_1 = v_init[1]
     x1_2 = v_init[2]
     x2_2 = v_init[3]
+    cvar = v_init[4]
 
-    x01_hat = np.average(np.array([x1_1, x1_2]))
-    x02_hat = np.average(np.array([x2_1, x2_2]))
+    c1 = jnp.array([x1_1, x2_1]) - cvar
+    c2 = jnp.array([x1_2, x2_2]) - cvar
+    c = jnp.concatenate([c1, c2])
 
-    c_1 = np.array([x1_1 - x01_hat])
-    c_2 = np.array([x2_2 - x02_hat])
-
-    # c_1 = combo([x1_1, x1_2])
-    # c_2 = combo([x2_1, x2_2])
-    return np.concatenate([c_1, c_2])
+    return c
 
 
-opt = Plex(subproblems=[subproblem1, subproblem2],
+opt = Plex(subproblems=[subproblem1, subproblem2, spy],
            x_init=v_init,
            con=con,
+           tol=1e-5, # outer loop feasibility tolerance
+           mu=3.0, # positive penalty parameter(s)
+           rho=1.2, # penalty increase factor
            )
 
-opt.solve(max_outer_iter=100,
+opt.solve(max_outer_iter=30,
           max_inner_iter=10,
-          eps_inner=1e-2, # inner loop tolerance
+          eps_inner=1e-3, # inner loop tolerance
           eps_outer=1e-5, # outer loop tolerance
-          tol=1e-5, # feasibility tolerance
-          rho=1.1,
-          mu=1.0,
           )
 
 
 print('Solution: ', opt.x)
 print('Time (s): ', opt.time)
-
-
 
 plt.rcParams.update({'font.size': 14})
 
@@ -172,7 +172,6 @@ plt.ylim(-1.5, 1.5)
 plt.xlabel('x')
 plt.ylabel('y')
 
-# Draw circular keep-out constraint
 theta = np.linspace(0, 2*np.pi, 100)
 circle_x = 0.5 * np.cos(theta)
 circle_y = 0.5 * np.sin(theta)
@@ -182,9 +181,7 @@ plt.fill(circle_x, circle_y, color='black', alpha=0.3)
 ticks = [-1, 0, 1]
 plt.xticks(ticks)
 plt.yticks(ticks)
-
 plt.legend()
-
 plt.gca().set_aspect('equal')
 
 # plt.savefig('augmented_lagrangian_circle_constraint.pdf', bbox_inches='tight')
