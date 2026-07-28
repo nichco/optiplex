@@ -34,7 +34,7 @@ safety_factor = 1.5
 tip_disp_target = 0.1
 
 
-n_twist_cp = 17
+n_twist_cp = 15
 twist_bspline_mtx = get_bspline_mtx(n_twist_cp, ns)
 
 n_thickness_cp = 10
@@ -42,7 +42,7 @@ thickness_bspline_mtx = get_bspline_mtx(n_thickness_cp, ns - 1)
 
 
 
-num = 2 # number of operating conditions
+num = 3 # number of operating conditions
 sampler = LatinHypercube(d=2, seed=42)
 samples = scale(sampler.random(num), l_bounds=[0.4, 180], u_bounds=[0.6, 220])
 # samples = [(0.4135, 210), (0.4135, 207)] # test solution a
@@ -71,10 +71,7 @@ def objective(x):
     avg_drag_coef = jnp.mean(jnp.array(drag_coefs))
     obj = avg_drag_coef
 
-    obj += jnp.sum(alphas**2) * 1e1 # remove the differential flatness in the trim solution
-
-    # delta_twist_cp = twist_cp[1:] - twist_cp[:-1] # variation in twist_cp
-    # obj += jnp.sum(delta_twist_cp**2) * 2e-2
+    # obj += jnp.sum(alphas**2) * 1e1 # remove the differential flatness in the trim solution
 
     return 1e2 * obj
 
@@ -125,6 +122,10 @@ def constraints(x):
 
         cons.append(con_i)
 
+    cons = jnp.array(cons).flatten()
+    # add a constraint alphas[0]
+    cons = jnp.concatenate((cons, jnp.array([alphas[0]])))
+
     return jnp.array(cons).flatten()
 
 
@@ -154,8 +155,15 @@ cu_i = np.array([500, 0])
 cl = np.concatenate([cl_i for _ in range(num)])
 cu = np.concatenate([cu_i for _ in range(num)])
 
+# append 0 to the constraint bounds for alphas[0]
+cl = np.concatenate((cl, jnp.array([0])))
+cu = np.concatenate((cu, jnp.array([0])))
+
 c_i_scaler = np.array([1e-2, 1e-4])
 c_scaler = np.concatenate([c_i_scaler for _ in range(num)])
+
+# append 1 to the constraint scaler for alphas[0]
+c_scaler = np.concatenate((c_scaler, jnp.array([1])))
 
 
 x_scaler = np.concatenate([100 * np.ones(num),      # alpha scaler
@@ -208,7 +216,6 @@ ax[1].set_title("Thickness")
 ax[1].set_xlabel("Spanwise location (m)")
 ax[1].set_ylabel("Thickness (m)")
 
-# plt.savefig("crm_multi_point_bsplines_and_stress.png", dpi=500, transparent=True, bbox_inches='tight')
 plt.show()
 
-np.savez('examples/crm_aero_struct/solution_N2.npz', alphas=alphas, twist_cp=twist_cp, thickness_cp=thickness_cp, samples=samples)
+np.savez('examples/crm_aero_struct/solution_N3_V2.npz', alphas=alphas, twist_cp=twist_cp, thickness_cp=thickness_cp, samples=samples)

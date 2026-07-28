@@ -5,19 +5,16 @@ jax.config.update("jax_enable_x64", True)
 import matplotlib.pyplot as plt
 from scipy.stats.qmc import LatinHypercube, scale
 from subproblems_with_bsplines_and_stress import make_subproblem
-from optiplex import PlexC, Plex2, combo
+from optiplex import Plex2, combo
+from jax_b_splines import get_bspline_mtx, bspline_comp
 import tracemalloc
 
-num = 2 # number of operating conditions
+num = 3 # number of operating conditions
 sampler = LatinHypercube(d=2, seed=42)
 samples = scale(sampler.random(num), l_bounds=[0.4, 180], u_bounds=[0.6, 220])
-# samples = [(0.4135, 210), (0.4135, 207)] # test solution a
-# samples = [(0.4135, 210), (0.4135, 210)] # test solution b
-# samples = [(0.4135, 210), (0.5, 191)] # test solution c
-# samples = [(0.4226044, 191.2224312), (0.51414021, 206.05263942)] # test solution d
 print(samples)
 
-ns = 45 # number of spanwise panels
+ns = 65#45 # number of spanwise panels
 
 # generate subproblem functions
 subPfuns, opt_time = [], []
@@ -55,43 +52,25 @@ def con(v_init):
     thickness_cps = [x_init_i[1 + n_twist_cp:] for x_init_i in v_init]
 
     twist_cp_constraint = combo(twist_cps)
-    # print('twist_cp_constraint shape: ', twist_cp_constraint.shape)
     thickness_cp_constraint = combo(thickness_cps)
-    # print('thickness_cp_constraint shape: ', thickness_cp_constraint.shape)
 
-    # return jnp.concatenate((0.125*twist_cp_constraint, 2*thickness_cp_constraint))
     return jnp.concatenate((0.125*twist_cp_constraint, 1*thickness_cp_constraint))
 
 
 
 tracemalloc.start()
 
-# opt = PlexC(subproblems=subPfuns,
-#             x_init=x_init,
-#             con=con,
-#             mu=10,
-#             max_mu=1e5,
-#             rho=1.5,
-#             tau=0.5,
-#             tol=1e-4, # outer loop feasibility
-#             eps=1e-4, # inner loop convergence
-#             )
-
 opt = Plex2(subproblems=subPfuns,
             x_init=x_init,
             con=con,
-            mu=np.ones(n_twist_cp + n_thickness_cp) * 1, # N=2
-            # mu=np.ones((num - 1) * (n_twist_cp + n_thickness_cp)) * 1, # N=3
-            # mu=np.ones((135)) * 1, # N=4
-            # mu=np.ones((378)) * 1, # N=6
-            # mu=np.ones((729)) * 1, # N=8
-            # mu=np.ones((1188)) * 1, # N=10
+            # mu=np.ones(n_twist_cp + n_thickness_cp), # N=2
+            mu=np.ones(54), # N=3
             max_mu=1e6,
             rho=1.5,
             tau=0.5,
-            tol=1e-4, # outer loop feasibility
+            tol=0.5e-4, # outer loop feasibility
             eps=1e-2, # initial inner loop convergence
-            eta=1e-3,#1e-4, # final inner loop convergence
+            eta=1e-4,#1e-3, # final inner loop convergence
             )
 
 opt.solve(max_outer_iter=100, 
@@ -119,28 +98,16 @@ for i in range(num):
 
 
 print('alphas (deg): ', np.rad2deg(alphas))
-
-# print the total optimization time
 print('Total optimization time (s): ', opt_time[-1])
 
-
-
-# save history to an npz file
 # np.savez('examples/crm_aero_struct/distributed_solution_N3_V2.npz', history=opt.history, time=opt.x_time, feasibility=opt.feasibility, mu_history=opt.mu_history, multipliers=opt.y_history)
 
-
-# solution = np.load('examples/crm_aero_struct/test_solution_a.npz')
-# solution = np.load('examples/crm_aero_struct/test_solution_b.npz')
-# solution = np.load('examples/crm_aero_struct/test_solution_c.npz')
-# solution = np.load('examples/crm_aero_struct/solution_num_2_bsplines_and_stress.npz')
-solution = np.load('examples/crm_aero_struct/test_solution_d.npz')
-# solution = np.load('examples/crm_aero_struct/test_solution_N6.npz')
+solution = np.load('examples/crm_aero_struct/solution_N3_V2.npz')
 alphas_star = solution['alphas']
 print('alphas_star (deg): ', np.rad2deg(alphas_star))
 twist_cp_star = solution['twist_cp']
 thickness_cp_star = solution['thickness_cp']
 
-from jax_b_splines import get_bspline_mtx, bspline_comp
 n_twist_cp = 17
 twist_bspline_mtx = get_bspline_mtx(n_twist_cp, ns)
 
@@ -157,7 +124,7 @@ for i in range(num):
     plt.scatter(np.linspace(0, ns - 1, n_twist_cp), twist_cps[i], marker='o', label=f'twist cp {i}')
 
 plt.plot(twist_star, label='twist solution', linestyle='--', linewidth=2)
-plt.scatter(np.linspace(0, ns - 1, n_twist_cp), twist_cp_star, marker='o', label='twist cp solution', color='tab:green')
+plt.scatter(np.linspace(0, ns - 1, n_twist_cp), twist_cp_star, marker='o', label='twist cp solution')
 plt.legend()
 plt.title('Twist')
 plt.show()
@@ -168,7 +135,7 @@ for i in range(num):
     plt.scatter(np.linspace(0, ns - 2, n_thickness_cp), thickness_cps[i], marker='o', label=f'thickness cp {i}')
 
 plt.plot(thickness_star, label='thickness solution', linestyle='--', linewidth=2)
-plt.scatter(np.linspace(0, ns - 2, n_thickness_cp), thickness_cp_star, marker='o', label='thickness cp solution', color='tab:green')
+plt.scatter(np.linspace(0, ns - 2, n_thickness_cp), thickness_cp_star, marker='o', label='thickness cp solution')
 plt.legend()
 plt.title('Thickness')
 plt.show()
@@ -177,9 +144,6 @@ plt.show()
 vars = np.array(opt.history)
 print('vars shape: ', vars.shape) # should be (n, num, len(x_i))
 vars = vars.reshape(vars.shape[0], -1) # reshape to (n, num * len(x_i)) for easier plotting
-
-# plt.plot(vars)
-# plt.show()
 
 plt.semilogy(np.abs(vars))
 plt.show()
@@ -213,13 +177,3 @@ plt.semilogy(error, linewidth=2)
 plt.ylabel('Error')
 plt.xlabel('Iteration')
 plt.show()
-
-
-# N = 2
-# time = 15.92
-
-# N = 6
-# time = 52.76
-
-# N = 10
-# time = 107.42

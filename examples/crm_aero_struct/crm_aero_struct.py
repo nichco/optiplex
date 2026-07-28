@@ -1,6 +1,6 @@
 # from lifting_line_jax_3 import LiftingLine
 from lifting_line_jax_4 import LiftingLine
-from beam_jax_2 import Beam, CSTube
+from beam import Beam, CSTube
 import numpy as np
 from crm_mesh import build_crm_mesh
 import jax.numpy as jnp
