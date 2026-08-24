@@ -3,7 +3,7 @@ import numpy as np
 import modopt as mo
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
-from optiplex import combo
+# from optiplex import combo
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -30,9 +30,12 @@ def subproblem1(v_init, y, mu):
         x2_1 = v[1]
         obj = jnp.squeeze(x1_1**2 + x2_1**2 - 1.5 * x1_1 * x2_1)
 
-        c_1 = combo([x1_1, x1_2])
-        c_2 = combo([x2_1, x2_2])
-        c = jnp.concatenate([c_1, c_2])
+        # c_1 = combo([x1_1, x1_2])
+        # c_2 = combo([x2_1, x2_2])
+        c_1 = x1_1 - x1_2
+        c_2 = x2_1 - x2_2
+        # c = jnp.concatenate([c_1, c_2])
+        c = jnp.array([c_1, c_2])
 
         return obj + y.T @ c + 0.5 * mu * jnp.sum(c**2)
     
@@ -69,9 +72,12 @@ def subproblem2(v_init, y, mu):
         x2_2 = v[1]
         obj = jnp.squeeze(x1_2**2 + x2_2**2 - 1.5 * x1_2 * x2_2)
 
-        c_1 = combo([x1_1, x1_2])
-        c_2 = combo([x2_1, x2_2])
-        c = jnp.concatenate([c_1, c_2])
+        # c_1 = combo([x1_1, x1_2])
+        # c_2 = combo([x2_1, x2_2])
+        c_1 = x1_1 - x1_2
+        c_2 = x2_1 - x2_2
+        # c = jnp.concatenate([c_1, c_2])
+        c = jnp.array([c_1, c_2])
 
         return obj + y.T @ c + 0.5 * mu * jnp.sum(c**2)
     
@@ -103,9 +109,12 @@ def con(v_init):
     x1_2 = v_init[2]
     x2_2 = v_init[3]
 
-    c_1 = combo([x1_1, x1_2])
-    c_2 = combo([x2_1, x2_2])
-    return np.concatenate([c_1, c_2])
+    # c_1 = combo([x1_1, x1_2])
+    # c_2 = combo([x2_1, x2_2])
+    c_1 = x1_1 - x1_2
+    c_2 = x2_1 - x2_2
+    # return np.concatenate([c_1, c_2])
+    return np.array([c_1, c_2])
 
 
 # opt = Plex(subproblems=[subproblem1, subproblem2],
