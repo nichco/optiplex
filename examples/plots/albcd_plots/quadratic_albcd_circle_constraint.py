@@ -1,14 +1,15 @@
-from optiplex import Plex
+from optiplex import Plex, Plex2
 import numpy as np
 import modopt as mo
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
-from optiplex import combo
+# from optiplex import combo
 import warnings
 warnings.filterwarnings("ignore")
 
-v_init = [1.0, -1.0, 1.0, -1.0]
+# v_init = [1.0, -1.0, 1.0, -1.0]
 # v_init = [-1.0, 1.0, -1.0, 1.0]
+v_init = [-0.5, 1.0, -0.5, 1.0]
 
 x1_1_history = [v_init[0]]
 x2_1_history = [v_init[1]]
@@ -29,18 +30,21 @@ def subproblem1(v_init, y, mu):
         x2_1 = v[1]
         obj = jnp.squeeze(x1_1**2 + x2_1**2 - 1.5 * x1_1 * x2_1)
 
-        c_1 = combo([x1_1, x1_2])
-        c_2 = combo([x2_1, x2_2])
-        c = jnp.concatenate([c_1, c_2])
+        # c_1 = combo([x1_1, x1_2])
+        # c_2 = combo([x2_1, x2_2])
+        c_1 = x1_1 - x1_2
+        c_2 = x2_1 - x2_2
+        # c = jnp.concatenate([c_1, c_2])
+        c = jnp.array([c_1, c_2])
 
         return obj + y.T @ c + 0.5 * mu * jnp.sum(c**2)
     
     def jax_con(v):
         x1_1, x2_1 = v[0], v[1]
-        con = x1_1 - 0.5*x2_1
+        con = x1_1**2 + x2_1**2
         return con.flatten()
     
-    jaxprob = mo.JaxProblem(x0=v0, jax_obj=jax_obj, jax_con=jax_con, cl=0., cu=np.inf, order=1)
+    jaxprob = mo.JaxProblem(x0=v0, jax_obj=jax_obj, jax_con=jax_con, cl=0.5**2, cu=np.inf, order=1)
 
     optimizer = mo.SLSQP(jaxprob, solver_options={'maxiter': 100, 'ftol': 1e-7}, turn_off_outputs=True)
     optimizer.solve()
@@ -68,18 +72,21 @@ def subproblem2(v_init, y, mu):
         x2_2 = v[1]
         obj = jnp.squeeze(x1_2**2 + x2_2**2 - 1.5 * x1_2 * x2_2)
 
-        c_1 = combo([x1_1, x1_2])
-        c_2 = combo([x2_1, x2_2])
-        c = jnp.concatenate([c_1, c_2])
+        # c_1 = combo([x1_1, x1_2])
+        # c_2 = combo([x2_1, x2_2])
+        c_1 = x1_1 - x1_2
+        c_2 = x2_1 - x2_2
+        # c = jnp.concatenate([c_1, c_2])
+        c = jnp.array([c_1, c_2])
 
         return obj + y.T @ c + 0.5 * mu * jnp.sum(c**2)
     
     def jax_con(v):
         x1_2, x2_2 = v[0], v[1]
-        con = x1_2 - 0.5*x2_2
+        con = x1_2**2 + x2_2**2
         return con.flatten()
     
-    jaxprob = mo.JaxProblem(x0=v0, jax_obj=jax_obj, jax_con=jax_con, cl=0., cu=np.inf, order=1)
+    jaxprob = mo.JaxProblem(x0=v0, jax_obj=jax_obj, jax_con=jax_con, cl=0.5**2, cu=np.inf, order=1)
 
     optimizer = mo.SLSQP(jaxprob, solver_options={'maxiter': 100, 'ftol': 1e-7}, turn_off_outputs=True)
     optimizer.solve()
@@ -102,28 +109,48 @@ def con(v_init):
     x1_2 = v_init[2]
     x2_2 = v_init[3]
 
-    c_1 = combo([x1_1, x1_2])
-    c_2 = combo([x2_1, x2_2])
-    return jnp.concatenate([c_1, c_2])
+    # c_1 = combo([x1_1, x1_2])
+    # c_2 = combo([x2_1, x2_2])
+    c_1 = x1_1 - x1_2
+    c_2 = x2_1 - x2_2
+    # return np.concatenate([c_1, c_2])
+    return np.array([c_1, c_2])
 
 
-opt = Plex(subproblems=[subproblem1, subproblem2],
-           x_init=v_init,
-           con=con,
-           tol=1e-5, # outer loop feasibility
-           mu=2.0, # initial penalty parameter
-           max_mu=1e6,
-           rho=1.2, # penalty increase factor
-           )
+# opt = Plex(subproblems=[subproblem1, subproblem2],
+#            x_init=v_init,
+#            con=con,
+#            tol=1e-5, # outer loop feasibility
+#            mu=1.0, # initial penalty parameter
+#            max_mu=1e6,
+#            rho=1.2, # penalty increase factor
+#            )
 
-opt.solve(max_outer_iter=100,
-          max_inner_iter=10,
-          eps_inner=1e-2, # inner loop tolerance
-          eps_outer=1e-5, # outer loop tolerance
+# opt.solve(max_outer_iter=100,
+#           max_inner_iter=10,
+#           eps_inner=1e-2, # inner loop tolerance
+#           eps_outer=1e-5, # outer loop tolerance
+#           )
+
+opt = Plex2(subproblems=[subproblem1, subproblem2],
+            x_init=v_init,
+            con=con,
+            mu=10,#1,
+            max_mu=1e6,
+            rho=1.2,
+            tau=0.5,
+            tol=1e-4, # outer loop feasibility
+            eps=1e-3, # initial inner loop convergence
+            eta=1e-4, # final inner loop convergence
+            )
+
+opt.solve(max_outer_iter=100, 
+          max_inner_iter=100,
           )
 
 print('Solution: ', opt.x)
-print('Time (s): ', opt.time)
+print('Total time (s): ', opt.tf)
+# print('Time (s): ', opt.time)
 
 
 
@@ -144,14 +171,11 @@ plt.ylim(-1.5, 1.5)
 plt.xlabel('x')
 plt.ylabel('y')
 
-plt.plot(x, 2*x, '--', color='black', linewidth=2, alpha=0.5)
-
-plt.fill_between(x,
-                 1.5,        # top of plot
-                 2*x,        # constraint line
-                 color='black',
-                 alpha=0.4,
-                 )
+theta = np.linspace(0, 2*np.pi, 100)
+circle_x = 0.5 * np.cos(theta)
+circle_y = 0.5 * np.sin(theta)
+plt.plot(circle_x, circle_y, '--', color='black', linewidth=2, alpha=0.5)
+plt.fill(circle_x, circle_y, color='black', alpha=0.3)
 
 ticks = [-1, 0, 1]
 plt.xticks(ticks)
@@ -159,5 +183,5 @@ plt.yticks(ticks)
 plt.legend()
 plt.gca().set_aspect('equal')
 
-# plt.savefig('augmented_lagrangian_example_2.pdf', bbox_inches='tight')
+# plt.savefig('augmented_lagrangian_circle_constraint.pdf', bbox_inches='tight')
 plt.show()
